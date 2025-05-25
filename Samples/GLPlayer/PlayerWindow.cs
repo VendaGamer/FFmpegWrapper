@@ -1,5 +1,7 @@
+using FFmpeg.AutoGen;
 using FFmpeg.Wrapper;
 
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -23,9 +25,10 @@ public class PlayerWindow : NativeWindow
             new NativeWindowSettings() {
                 Flags = ContextFlags.Debug | ContextFlags.ForwardCompatible,
                 APIVersion = new Version(4, 5),
-                Size = Monitors.GetPrimaryMonitor().WorkArea.Size * 8 / 10
+                ClientSize = Monitors.GetPrimaryMonitor().WorkArea.Size * 8 / 10
             })
     {
+        ffmpeg.RootPath = @"C:\ffmpeg\";
         _demuxer = new MediaDemuxer(videoPath);
 
         var videoStream = _demuxer.FindBestStream(MediaTypes.Video);
@@ -40,7 +43,6 @@ public class PlayerWindow : NativeWindow
         Context.MakeCurrent();
 
         while (!GLFW.WindowShouldClose(WindowPtr)) {
-            ProcessInputEvents();
             ProcessWindowEvents(waitForEvents: false);
 
             HandleInputs();

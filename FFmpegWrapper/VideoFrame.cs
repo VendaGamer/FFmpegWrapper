@@ -181,13 +181,13 @@ public unsafe class VideoFrame : MediaFrame
     public void Clear()
     {
         ThrowIfDisposed();
-        var linesizes = new long_array4();
+        var linesizes = new long4();
 
         for (uint i = 0; i < 4; i++) {
             linesizes[i] = _frame->linesize[i];
         }
         ffmpeg.av_image_fill_black(
-            ref *(byte_ptrArray4*)&_frame->data, linesizes,
+            ref *(byte_ptr4*)&_frame->data, linesizes,
             PixelFormat, _frame->color_range, _frame->width, _frame->height
         ).CheckError("Failed to clear frame.");
     }

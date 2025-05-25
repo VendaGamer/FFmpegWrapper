@@ -45,7 +45,7 @@ for (int i = 0; i < numFrames; i++) {
     }
     paint.ImageFilter = null;
 
-    paint.Shader = SKShader.CreatePerlinNoiseImprovedNoise(0.03f, 0.03f, 3, i / (float)frameRate * 1.3f);
+    paint.Shader = SKShader.CreatePerlinNoiseTurbulence(0.03f, 0.03f, 3, i / (float)frameRate * 1.3f);
     canvas.DrawRect(32, 32, 256, 256, paint);
 
     //Convert to YUV and encode

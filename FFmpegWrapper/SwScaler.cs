@@ -1,5 +1,12 @@
 ﻿namespace FFmpeg.Wrapper;
 
+using AutoGen;
+
+using AVColorRange = AutoGen.Abstractions.AVColorRange;
+using AVFrame = AutoGen.Abstractions.AVFrame;
+using ffmpeg = AutoGen.Abstractions.ffmpeg;
+using SwsContext = AutoGen.Abstractions.SwsContext;
+
 public unsafe class SwScaler : FFObject
 {
     private SwsContext* _ctx;
@@ -46,7 +53,7 @@ public unsafe class SwScaler : FFObject
             dstRange = output.Range == AVColorRange.AVCOL_RANGE_JPEG ? 1 : 0;
         }
 
-        ffmpeg.sws_setColorspaceDetails(_ctx, in *(int_array4*)invTable, srcRange, in *(int_array4*)table, dstRange, brightness, contrast, saturation);
+        ffmpeg.sws_setColorspaceDetails(_ctx, in *(int4*)invTable, srcRange, in *(int4*)table, dstRange, brightness, contrast, saturation);
     }
 
     public void Convert(VideoFrame src, VideoFrame dst)

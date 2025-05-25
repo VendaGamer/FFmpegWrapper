@@ -14,6 +14,8 @@ public static unsafe class FFmpegUtils
         s_LogCallback = cb != null ? NativeCb : ffmpeg.av_log_default_callback;
         ffmpeg.av_log_set_level((int)minLevel);
         ffmpeg.av_log_set_callback(s_LogCallback);
+        
+        return;
 
         void NativeCb(void* avcl, int level, string fmt, byte* vl)
         {

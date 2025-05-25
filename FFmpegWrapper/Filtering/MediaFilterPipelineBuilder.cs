@@ -1,5 +1,11 @@
 namespace FFmpeg.Wrapper;
 
+using AutoGen;
+
+using AVMediaType = AutoGen.Abstractions.AVMediaType;
+using AVOptionType = AutoGen.Abstractions.AVOptionType;
+using ffmpeg = AutoGen.Abstractions.ffmpeg;
+
 partial class MediaFilterPipeline
 {
     public unsafe class Builder
@@ -176,7 +182,7 @@ partial class MediaFilterPipeline
         if (displayMatrix == null) return null;
 
         // https://github.com/FFmpeg/FFmpeg/blob/7b47099bc080ee597327476c0df44d527c349862/fftools/ffmpeg_filter.c#L1711
-        double angle = ffmpeg.av_display_rotation_get(in Unsafe.As<int, int_array9>(ref displayMatrix[0])); // counterclockwise. in range [-180.0, 180.0]
+        double angle = ffmpeg.av_display_rotation_get(in Unsafe.As<int, int9>(ref displayMatrix[0])); // counterclockwise. in range [-180.0, 180.0]
         if (double.IsNaN(angle)) return null;
 
         // https://github.com/FFmpeg/FFmpeg/blob/cdcb4b98b7f74d87a6274899ff70724795d551cb/fftools/cmdutils.c#L1107 
