@@ -1,13 +1,11 @@
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 using FFmpeg.Wrapper;
-
-using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 //Mini OpenGL video player using hardware accelerated decoding.
-//Features:
+//   Features:
 // - Audio playback via the Windows Audio Session API 
 // - Crude A/V synchronization (video stream follows audio).
 // - HDR to SDR output (SMPTE 2084)
@@ -22,13 +20,15 @@ public class PlayerWindow : NativeWindow
 
     public PlayerWindow(string videoPath)
         : base(
-            new NativeWindowSettings() {
+            new NativeWindowSettings{
                 Flags = ContextFlags.Debug | ContextFlags.ForwardCompatible,
                 APIVersion = new Version(4, 5),
                 ClientSize = Monitors.GetPrimaryMonitor().WorkArea.Size * 8 / 10
             })
     {
-        ffmpeg.RootPath = @"C:\ffmpeg\";
+        DynamicallyLoadedBindings.LibrariesPath = @"C:\ffmpeg";
+        DynamicallyLoadedBindings.Initialize();
+        
         _demuxer = new MediaDemuxer(videoPath);
 
         var videoStream = _demuxer.FindBestStream(MediaTypes.Video);

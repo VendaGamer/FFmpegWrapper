@@ -1,6 +1,5 @@
 namespace FFmpegWrapper.Tests;
-
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.Wrapper;
 
 public class CodecTests

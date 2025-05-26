@@ -1,8 +1,7 @@
-# FFmpeg.ApiWrapper
-![GitHub](https://img.shields.io/github/license/dubiousconst282/FFmpegWrapper)
-[![Nuget](https://img.shields.io/nuget/v/FFmpeg.ApiWrapper)](https://www.nuget.org/packages/FFmpeg.ApiWrapper)
+# FFmpegWrapper ![GitHub](https://img.shields.io/github/license/VendaGamer/FFmpegWrapper)
+Fork of [FFmpegWrapper](https://github.com/dubiousconst282/FFmpegWrapper)
 
-Low level, mostly safe FFmpeg API wrappers built on top of [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen).
+Mostly safe FFmpeg API wrappers built on top of [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen).
 
 ---
 
@@ -10,6 +9,7 @@ Using the FFmpeg API tends to be tedious and error prone due to the amount of st
 This library aims to provide idiomatic wrappers and utility functions around several APIs, to facilitate development of media applications.
 
 ## Samples
+
 The samples below show how to use the wrappers for common tasks. Familiarity with the native FFmpeg API may help with more complicated use cases.
 
 - [Extracting video frames](./Samples/FrameExtractor/Program.cs)
@@ -20,6 +20,7 @@ The samples below show how to use the wrappers for common tasks. Familiarity wit
 - [Filtering audio and video](./Samples/AVFiltering/Program.cs)
 
 Misc:
+
 - [Hardware encoding](./Samples/HWEncode/ShaderRecWindow.cs)
 - [Mini OpenGL player with hardware decoding](./Samples/GLPlayer/)
 - [Screen capture using filter graph node API](./Samples/ScreenCap/Program.cs)
@@ -28,9 +29,11 @@ Misc:
 On Windows, FFmpeg binaries must be manually copied to the build directory, or specified through `ffmpeg.RootPath` as [explained here](https://github.com/Ruslan-B/FFmpeg.AutoGen#usage).
 
 # Introduction
+
 Write-up on a few key FFmpeg concepts and the wrapper.
 
 ## Frames and Formats
+
 Uncompressed audio and video frames can be represented in numerous different ways. Video frames are defined by resolution, colorspace, and pixel format; while audio frames are defined by sample rate, channel layout, and sample format.
 
 Some formats can differ in how channels are arranged in memory - in either _interleaved_ or _planar_ layouts. Interleaved (or packed) formats store the value for each channel immediately next to each other, while planar formats store each channel in a different array.
@@ -38,8 +41,7 @@ Some formats can differ in how channels are arranged in memory - in either _inte
 Planar formats can make the implementation of many codecs simpler and more efficient, as each channel can be easily processed independently.  
 They also facilitate chroma subsampling, a scheme where chroma channels (U and V) are typically stored at a factor of the resolution of the luma channel (Y).
 
-Audio formats are a lot simpler than video (but perhaps not as intuitive), as they always represents the same amplitude levels[^2] that are encoded in one of a few handful of sample formats.  
-
+Audio formats are a lot simpler than video (but perhaps not as intuitive), as they always represents the same amplitude levels[^2] that are encoded in one of a few handful of sample formats.
 
 <table>
   <tr>
@@ -77,9 +79,10 @@ rowV[x] = 255;
   </tr>
 </table>
 
-Since codecs generally only support a handful of formats, converting between them is an essential operation.  FFmpeg provides optimized software-based video scaling and format conversion via _libswscale_, which is exposed in the `SwScaler` wrapper. Likewise, _libswresample_ provides for audio conversion, resampling, and mixing, exposed similarly in `SwResampler`.
+Since codecs generally only support a handful of formats, converting between them is an essential operation. FFmpeg provides optimized software-based video scaling and format conversion via _libswscale_, which is exposed in the `SwScaler` wrapper. Likewise, _libswresample_ provides for audio conversion, resampling, and mixing, exposed similarly in `SwResampler`.
 
 ## Timestamps and Time Bases
+
 Because streams can have arbitrary frame and sample rates, representing frame timestamps with floating-point numbers or around a single scale could presumably lead to slight rounding errors that may accumulate over time. Instead, they are represented as fixed-point numbers based around an arbitrary _time base_ - a rational number denoting one second.
 
 For video, the time base is normally set to `1/FrameRate`, and for audio, it is often `1/SampleRate`. When decoding something, it's best not to make any assumptions and properly convert between bases if necessary.  
@@ -90,6 +93,7 @@ Converting between time bases is still often necessary for ease of interpretatio
 ^TODO: PTS/DTS/BestEffortTimestamps
 
 ## Hardware Acceleration
+
 Many video-related tasks can be offloaded to dedicated hardware for better performance and power efficiency. FFmpeg provides support for several platform specific APIs, that can be used for encoding, decoding, and filtering[^1].
 
 The bulk of work in enabling hardware accelerated encoding/decoding typically involves the enumeration of possible hardware configurations (which may or not be supported by the platform), and trying to instantiate appliable devices. Once a valid device is found, the codec setup is fairly simple:
@@ -135,7 +139,6 @@ if (device != null) {
 
 For decoding, `SetupHardwareAccelerator()` setups a negotiation callback via `AVCodecContext.get_format`, which can still reject the device if e.g. the codec settings aren't supported. In that case, it will silently fallback to software decoding.
 
-
 Hardware frames need special handling as they generally refer to data outside main memory. Data needs to be copied via transfer calls or memory mappings (rarely supported).
 
 ```cs
@@ -155,6 +158,7 @@ while (decoder.ReceiveFrame(decodedFrame)) {
 Most encoders can take normal software frames without any additional ceremony, but when that is not possible, hardware frames must be allocated via `HardwareFramePool`.
 
 ## GC and Unmanaged Memory Lifetimes
+
 Most wrappers use GC finalizers to free unmanaged memory in case `Dispose()` fails to be called. When accessing unmanaged properties from the wrappers (e.g. `Handle` properties, and span-returning methods such as `Frame.GetSpan()`), users should ensure that wrapper objects are not collected by the GC while unmanaged memory is in use, otherwise it could be freed by the finalizer.  
 This can be done by keeping external references (in a field), wrapping in `using` blocks, or calling `GC.KeepAlive()` after the code accessing unmanged memory.
 

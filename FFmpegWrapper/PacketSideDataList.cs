@@ -67,7 +67,7 @@ public unsafe struct PacketSideDataList
     public int[]? GetDisplayMatrix()
     {
         var entry = Get(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX);
-        return entry?.GetDataRef<int_array9>().ToArray();
+        return entry?.GetDataRef<int9>().ToArray();
     }
 
     public override string ToString()

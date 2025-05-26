@@ -18,7 +18,9 @@ videoEnc.SetOption("preset", "faster");
 
 //Note that some audio encoders support only a specific set of frame formats and sizes, 
 //requiring use of `SwResampler` as done in the AVTranscode sample.
-using var audioFrame = new AudioFrame(SampleFormats.FloatPlanar, 48000, 2, 1024) { PresentationTimestamp = 0 };
+using var audioFrame = new AudioFrame(SampleFormats.FloatPlanar, 48000, 2, 1024) {
+    PresentationTimestamp = 0
+};
 using var audioEnc = new AudioEncoder(CodecIds.AAC, audioFrame.Format, bitrate: 128_000);
 
 var videoStream = muxer.AddStream(videoEnc);

@@ -4,29 +4,26 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>12</LangVersion>
+    <LangVersion>latest</LangVersion>
     <InvariantGlobalization>true</InvariantGlobalization>
 
-    <PackageId>FFmpeg.ApiWrapper</PackageId>
-    <Description>Low level, mostly safe FFmpeg API wrappers based on FFmpeg.AutoGen.</Description>
-    <Version>0.0.0-dev</Version>
-    <Product>FFmpeg.ApiWrapper</Product>
-    <PackageProjectUrl>https://github.com/dubiousconst282/FFmpegWrapper</PackageProjectUrl>
+    <PackageId>Vencaa.FFmpeg.AutoGen.Wrapper</PackageId>
+    <Description>Mostly safe FFmpeg API wrapper based on FFmpeg.AutoGen.</Description>
+    <Version>7.1.1.0-dev</Version>
+    <Product>Vencaa.FFmpeg.AutoGen.Wrapper</Product>
+    <PackageProjectUrl>https://github.com/VendaGamer/FFmpegWrapper</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Authors>dubiousconst282</Authors>
+    <Authors>VendaGamer</Authors>
 
     <PackageOutputPath>$(SolutionDir)artifacts</PackageOutputPath>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Don't warn about missing xmldocs for public entities. -->
-    <NoWarn>CS1591;CS1573</NoWarn>
 
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
     <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="7.1.1" />
     <PackageReference Include="System.Collections.Immutable" Version="9.0.5" />
   </ItemGroup>

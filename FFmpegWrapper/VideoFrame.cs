@@ -204,7 +204,7 @@ public unsafe class VideoFrame : MediaFrame
             tmp.Save(filename, quality, outWidth, outHeight);
             return;
         }
-
+        
         bool jpeg = filename.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
                     filename.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase);
 

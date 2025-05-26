@@ -1,5 +1,6 @@
 using System.Diagnostics;
 
+using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.Wrapper;
 
 using GL2O;
@@ -35,7 +36,7 @@ public class VideoStreamRenderer : StreamRenderer
         decoder.Open();
 
         //https://en.wikipedia.org/wiki/Perceptual_quantizer
-        _isHDR = stream.CodecPars.ColorTrc == FFmpeg.AutoGen.AVColorTransferCharacteristic.AVCOL_TRC_SMPTE2084;
+        _isHDR = stream.CodecPars.ColorTrc == AVColorTransferCharacteristic.AVCOL_TRC_SMPTE2084;
 
         string shaderBasePath = AppContext.BaseDirectory + "Shaders/";
         _shader = new ShaderProgram();

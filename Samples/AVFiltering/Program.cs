@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.Wrapper;
 
 if (args.Length < 2) {

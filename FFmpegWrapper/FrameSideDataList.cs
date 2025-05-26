@@ -66,7 +66,7 @@ public unsafe struct FrameSideDataList
     public int[]? GetDisplayMatrix()
     {
         var entry = Get(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX);
-        return entry?.GetDataRef<int_array9>().ToArray();
+        return entry?.GetDataRef<int9>().ToArray();
     }
 
     public override string ToString()

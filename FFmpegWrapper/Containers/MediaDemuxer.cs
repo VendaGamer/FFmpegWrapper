@@ -66,7 +66,7 @@ public unsafe class MediaDemuxer : FFObject
     
     private static AVFormatContext* CreateContext(string? url, AVIOContext* pb, IEnumerable<KeyValuePair<string, string>>? options)
     {
-        var ctx = ffmpeg.avformat_alloc_context();
+        AVFormatContext* ctx = ffmpeg.avformat_alloc_context();
         if (ctx == null) {
             throw new OutOfMemoryException("Could not allocate demuxer.");
         }

@@ -46,14 +46,14 @@ foreach (var transcoder in transcoders) {
 
 abstract class MediaTranscoder : IDisposable
 {
-    private MediaDecoder _decoder = null!;
-    protected MediaStream _inStream = null!;
+    private MediaDecoder _decoder;
+    protected MediaStream _inStream;
 
-    private MediaMuxer _muxer = null!;
-    private MediaStream _outStream = null!;
-    protected MediaEncoder _encoder = null!;
+    private MediaMuxer _muxer;
+    private MediaStream _outStream;
+    protected MediaEncoder _encoder;
 
-    private MediaFrame _inFrame = null!;
+    private MediaFrame _inFrame;
 
     public MediaTranscoder(MediaMuxer muxer, MediaDemuxer demuxer, MediaStream inputStream)
     {
