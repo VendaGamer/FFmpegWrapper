@@ -1,5 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
+    
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
