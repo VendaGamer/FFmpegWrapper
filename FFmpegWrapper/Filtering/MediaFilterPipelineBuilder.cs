@@ -1,11 +1,5 @@
 namespace FFmpeg.Wrapper;
 
-using AutoGen;
-
-using AVMediaType = AutoGen.Abstractions.AVMediaType;
-using AVOptionType = AutoGen.Abstractions.AVOptionType;
-using ffmpeg = AutoGen.Abstractions.ffmpeg;
-
 partial class MediaFilterPipeline
 {
     public unsafe class Builder

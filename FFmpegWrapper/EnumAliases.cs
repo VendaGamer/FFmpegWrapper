@@ -100,6 +100,7 @@ public static class HWDeviceTypes
         DXVA2 = AVHWDeviceType.AV_HWDEVICE_TYPE_DXVA2,
         QSV = AVHWDeviceType.AV_HWDEVICE_TYPE_QSV,
         D3D11VA = AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA,
+        D3D12VA = AVHWDeviceType.AV_HWDEVICE_TYPE_D3D12VA,
         DRM = AVHWDeviceType.AV_HWDEVICE_TYPE_DRM,
         OpenCL = AVHWDeviceType.AV_HWDEVICE_TYPE_OPENCL,
         Vulkan = AVHWDeviceType.AV_HWDEVICE_TYPE_VULKAN,

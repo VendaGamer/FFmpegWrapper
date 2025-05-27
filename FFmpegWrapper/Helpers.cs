@@ -5,7 +5,7 @@ namespace FFmpeg.Wrapper;
 
 internal static unsafe class Helpers
 {
-    public static unsafe string ErrorString(int errno)
+    public static string ErrorString(int errno)
     {
         byte* buf = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE + 1];
         ffmpeg.av_strerror(errno, buf, ffmpeg.AV_ERROR_MAX_STRING_SIZE);

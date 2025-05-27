@@ -1,14 +1,9 @@
 ﻿namespace FFmpeg.Wrapper;
 
-public abstract unsafe class IOContext : FFObject
+public abstract unsafe class IOContext : FFObject<AVIOContext>
 {
     private AVIOContext* _ctx;
-    public AVIOContext* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    public override AVIOContext* Handle => _ctx;
 
     public bool CanRead => _readFn != null;
     public bool CanWrite => _writeFn != null;
@@ -102,12 +97,6 @@ public abstract unsafe class IOContext : FFObject
     {
         if (_ctx != null) {
             fixed (AVIOContext** c = &_ctx) ffmpeg.avio_closep(c);
-        }
-    }
-    protected void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(IOContext));
         }
     }
 }

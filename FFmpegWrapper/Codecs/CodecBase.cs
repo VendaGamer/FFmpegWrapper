@@ -1,17 +1,13 @@
-﻿namespace FFmpeg.Wrapper;
+﻿
+namespace FFmpeg.Wrapper;
 
-public unsafe abstract class CodecBase : FFObject
+public unsafe abstract class CodecBase : FFObject<AVCodecContext>
 {
     protected AVCodecContext* _ctx;
-    protected bool _ownsContext;
+    protected bool _ownsContext = false;
     private bool _hasUserExtraData = false;
 
-    public AVCodecContext* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    public override AVCodecContext* Handle => _ctx;
     public bool IsOpen => ffmpeg.avcodec_is_open(Handle) != 0;
 
     public MediaCodec Codec => new(_ctx->codec);
@@ -84,19 +80,20 @@ public unsafe abstract class CodecBase : FFObject
     public void SetThreadCount(int threadCount, bool preferFrameSlices = false)
     {
         ThrowIfOpen();
-
-        _ctx->thread_count = threadCount;
+        
         int caps = _ctx->codec->capabilities;
 
         if ((caps & ffmpeg.AV_CODEC_CAP_SLICE_THREADS) != 0 && preferFrameSlices) {
             _ctx->thread_type = ffmpeg.FF_THREAD_SLICE;
-            return;
+            _ctx->thread_count = threadCount;
         }
-        if ((caps & ffmpeg.AV_CODEC_CAP_FRAME_THREADS) != 0) {
+        else if ((caps & ffmpeg.AV_CODEC_CAP_FRAME_THREADS) != 0) {
             _ctx->thread_type = ffmpeg.FF_THREAD_FRAME;
-            return;
+            _ctx->thread_count = threadCount;
+        } else {
+            _ctx->thread_type = 0;
+            _ctx->thread_count = 1; //no multi-threading capability
         }
-        _ctx->thread_count = 1; //no multi-threading capability
     }
 
     protected void SetHardwareContext(CodecHardwareConfig config, HardwareDevice device, HardwareFramePool? framePool)
@@ -121,21 +118,30 @@ public unsafe abstract class CodecBase : FFObject
         ffmpeg.avcodec_flush_buffers(Handle);
     }
 
-    private void SetExtraData(ReadOnlySpan<byte> buf)
+    private bool SetExtraData(ReadOnlySpan<byte> buf)
     {
         ThrowIfOpen();
-
-        ffmpeg.av_freep(&_ctx->extradata);
-
+        
         if (buf.IsEmpty) {
             _ctx->extradata = null;
             _ctx->extradata_size = 0;
-        } else {
-            _ctx->extradata = (byte*)ffmpeg.av_mallocz((ulong)buf.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE);
-            _ctx->extradata_size = buf.Length;
-            buf.CopyTo(new Span<byte>(_ctx->extradata, buf.Length));
-            _hasUserExtraData = true;
+            return true;
         }
+        
+        if (_ctx->extradata != null)
+            ffmpeg.av_freep(&_ctx->extradata);
+        
+        var data = (byte*)ffmpeg.av_mallocz((ulong)buf.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE);
+        if (data == null) {
+            return false;
+        }
+        
+        _ctx->extradata = data;
+        _ctx->extradata_size = buf.Length;
+        buf.CopyTo(new Span<byte>(_ctx->extradata, buf.Length));
+        _hasUserExtraData = true;
+        
+        return true;
     }
 
     protected void SetOrThrowIfOpen<T>(ref T loc, T value)
@@ -166,12 +172,6 @@ public unsafe abstract class CodecBase : FFObject
             } else {
                 _ctx = null;
             }
-        }
-    }
-    protected void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(CodecBase));
         }
     }
 }

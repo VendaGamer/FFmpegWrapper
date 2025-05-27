@@ -8,10 +8,12 @@ namespace FFmpeg.Wrapper;
 /// timestamps. This struct serves as a generic interface for manipulating 
 /// rational numbers as pairs of numerators and denominators.
 /// </remarks>
-public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>
+public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, IEqualityComparer<Rational>
 {
     public static Rational Zero => new(0, 1);
     public static Rational One => new(1, 1);
+    public static Rational MaxValue => new(int.MaxValue, int.MaxValue);
+    public static Rational MinValue => new(int.MinValue, int.MinValue);
 
     public int Num { get; }
     public int Den { get; }
@@ -64,4 +66,17 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>
 
     public bool Equals(Rational other) => other == this || ((other.Den | Den) == 0 && (other.Num ^ Num) >= 0);
     public int CompareTo(Rational other) => ffmpeg.av_cmp_q(this, other);
+
+    public bool Equals(Rational x, Rational y)
+    {
+        return x.Num == y.Num && x.Den == y.Den;
+    }
+
+    public int GetHashCode(Rational obj)
+    {
+        unchecked
+        {
+            return (obj.Num * 397) ^ obj.Den;
+        }
+    }
 }

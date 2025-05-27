@@ -11,7 +11,7 @@ public unsafe readonly struct CodecHardwareConfig
 
     public CodecHardwareConfig(AVCodec* codec, AVCodecHWConfig* config)
     {
-        Codec = new(codec);
+        Codec = new MediaCodec(codec);
         Handle = config;
     }
 

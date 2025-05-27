@@ -2,16 +2,13 @@
 
 namespace FFmpeg.Wrapper;
 
-public unsafe class MediaDemuxer : FFObject
+public unsafe class MediaDemuxer : FFObject<AVFormatContext>
 {
     private AVFormatContext* _ctx;
-
-    public AVFormatContext* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    /// <summary>
+    /// 
+    /// </summary>
+    public override AVFormatContext* Handle => _ctx;
 
     public IOContext? IOC { get; }
     readonly bool _iocLeaveOpen;
@@ -142,17 +139,19 @@ public unsafe class MediaDemuxer : FFObject
         int result = ffmpeg.av_read_frame(_ctx, packet.UnrefAndGetHandle());
 
         if (result < 0 && result != ffmpeg.AVERROR_EOF) {
-            result.ThrowError("Failed to read packet");
+            result.ThrowError(msg: "Failed to read packet");
         }
         return result >= 0;
     }
 
     /// <summary> Seeks the demuxer to somewhere near <paramref name="timestamp"/>, according to <paramref name="options"/>. </summary>
+    /// <param name="timestamp"></param>
+    /// <param name="options"></param>
     /// <param name="stream">The stream to seek in. If null, a default stream is selected.</param>
     /// <remarks> If this method returns true, all open stream decoders must be flushed by calling <see cref="CodecBase.Flush"/>. </remarks>
     /// <exception cref="InvalidOperationException">If the underlying IO context doesn't support seeks.</exception>
     /// <exception cref="ArgumentException">If <paramref name="stream"/> is not owned by the demuxer.</exception>
-    public bool Seek(TimeSpan timestamp, SeekOptions options, MediaStream? stream = default)
+    public bool Seek(TimeSpan timestamp, SeekOptions options, MediaStream? stream = null)
     {
         ThrowIfDisposed();
 
@@ -162,7 +161,7 @@ public unsafe class MediaDemuxer : FFObject
 
         int streamIndex;
         long ts;
-        if (stream is { }) {
+        if (stream != null) {
             streamIndex = stream.Index;
             if (Streams[streamIndex] != stream) {
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
@@ -173,6 +172,32 @@ public unsafe class MediaDemuxer : FFObject
             ts = ffmpeg.av_rescale(timestamp.Ticks, ffmpeg.AV_TIME_BASE, TimeSpan.TicksPerSecond);
         }
         return ffmpeg.av_seek_frame(_ctx, streamIndex, ts, (int)options) >= 0;
+    }
+
+    public bool SeekToFrame(long frameIndex, MediaStream? stream = null)
+    {
+        ThrowIfDisposed();
+
+        if (!CanSeek) {
+            throw new InvalidOperationException("Backing IO context is not seekable.");
+        }
+        
+        int streamIndex = stream?.Index ?? -1;
+        
+        return ffmpeg.av_seek_frame(_ctx, streamIndex, frameIndex,(int)SeekOptions.Frame) >= 0;
+    }
+    
+    public bool SeekToByte(long frameIndex, MediaStream? stream = null)
+    {
+        ThrowIfDisposed();
+
+        if (!CanSeek) {
+            throw new InvalidOperationException("Backing IO context is not seekable.");
+        }
+        
+        int streamIndex = stream?.Index ?? -1;
+        
+        return ffmpeg.av_seek_frame(_ctx, streamIndex, frameIndex,(int)SeekOptions.Byte) >= 0;
     }
 
     /// <inheritdoc cref="ffmpeg.av_guess_frame_rate(AVFormatContext*, AVStream*, AVFrame*)"/>
@@ -196,17 +221,14 @@ public unsafe class MediaDemuxer : FFObject
             IOC?.Dispose();
         }
     }
-    private void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(MediaDemuxer));
-        }
-    }
 }
+/// <summary>
+/// 
+/// </summary>
 [Flags]
 public enum SeekOptions
 {
-    /// <summary> Seek to the nearest keyframe after or at the requested timestamp. </summary>
+    /// <summary> Seek based on time to the nearest keyframe after or at the requested timestamp. </summary>
     Forward = 0,
 
     /// <summary> Seek to the nearest keyframe before or at the requested timestamp. </summary>
@@ -214,4 +236,11 @@ public enum SeekOptions
 
     /// <summary> Allow seeking to non-keyframes. This may cause decoders to fail or output corrupt frames. </summary>
     AllowNonKeyFrames = ffmpeg.AVSEEK_FLAG_ANY,
+    
+    /// <summary> Seek based on position in bytes </summary>
+    Byte = ffmpeg.AVSEEK_FLAG_BYTE,
+    
+    /// <summary> Seek based on number of frame </summary>
+    Frame = ffmpeg.AVSEEK_FLAG_FRAME,
+    
 }

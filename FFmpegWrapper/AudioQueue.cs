@@ -1,15 +1,10 @@
 ﻿namespace FFmpeg.Wrapper;
 
-public unsafe class AudioQueue : FFObject
+public unsafe class AudioQueue : FFObject<AVAudioFifo>
 {
     private AVAudioFifo* _fifo;
 
-    public AVAudioFifo* Handle {
-        get {
-            ThrowIfDisposed();
-            return _fifo;
-        }
-    }
+    public override AVAudioFifo* Handle => _fifo;
 
     public AVSampleFormat Format { get; }
     public int NumChannels { get; }
@@ -90,12 +85,6 @@ public unsafe class AudioQueue : FFObject
         if (_fifo != null) {
             ffmpeg.av_audio_fifo_free(_fifo);
             _fifo = null;
-        }
-    }
-    private void ThrowIfDisposed()
-    {
-        if (_fifo == null) {
-            throw new ObjectDisposedException(nameof(AudioQueue));
         }
     }
 

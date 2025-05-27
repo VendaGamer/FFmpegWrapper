@@ -1,15 +1,10 @@
 namespace FFmpeg.Wrapper;
 
-public unsafe class HardwareFramePool : FFObject
+public unsafe class HardwareFramePool : FFObject<AVBufferRef>
 {
     private AVBufferRef* _ctx;
 
-    public AVBufferRef* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    public override AVBufferRef* Handle => _ctx;
     public AVHWFramesContext* RawHandle {
         get {
             ThrowIfDisposed();
@@ -38,7 +33,7 @@ public unsafe class HardwareFramePool : FFObject
         int err = ffmpeg.av_hwframe_get_buffer(_ctx, frame, 0);
         if (err < 0) {
             ffmpeg.av_frame_free(&frame);
-            err.ThrowError("Failed to allocate hardware frame");
+            err.ThrowError(msg: "Failed to allocate hardware frame");
         }
         return new VideoFrame(frame, takeOwnership: true);
     }
@@ -49,12 +44,6 @@ public unsafe class HardwareFramePool : FFObject
             fixed (AVBufferRef** ppCtx = &_ctx) {
                 ffmpeg.av_buffer_unref(ppCtx);
             }
-        }
-    }
-    private void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(HardwareFramePool));
         }
     }
 }

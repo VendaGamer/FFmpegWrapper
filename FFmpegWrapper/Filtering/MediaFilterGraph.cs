@@ -2,16 +2,11 @@ namespace FFmpeg.Wrapper;
 
 using System.Text;
 
-public unsafe class MediaFilterGraph : FFObject
+public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
 {
     protected AVFilterGraph* _ctx;
 
-    public AVFilterGraph* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    public override AVFilterGraph* Handle => _ctx;
     public bool IsConfigured { get; private set; }
 
     public MediaFilterGraph()
@@ -249,12 +244,6 @@ public unsafe class MediaFilterGraph : FFObject
     {
         fixed (AVFilterGraph** c = &_ctx) {
             ffmpeg.avfilter_graph_free(c);
-        }
-    }
-    protected void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(MediaFilterGraph));
         }
     }
     protected void ThrowIfConfigured()

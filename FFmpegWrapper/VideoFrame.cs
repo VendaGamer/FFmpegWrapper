@@ -39,9 +39,11 @@ public unsafe class VideoFrame : MediaFrame
     public VideoFrame()
         : this(ffmpeg.av_frame_alloc(), takeOwnership: true) { }
 
+    /// Allocates an empty <see cref="AVFrame"/>
     public VideoFrame(PictureFormat fmt, bool clearToBlack = true)
         : this(fmt.Width, fmt.Height, fmt.PixelFormat, clearToBlack) { }
 
+    /// <inheritdoc />
     public VideoFrame(int width, int height, AVPixelFormat fmt, bool clearToBlack = true)
     {
         if (width <= 0 || height <= 0) {

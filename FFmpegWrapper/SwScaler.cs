@@ -1,22 +1,10 @@
 ﻿namespace FFmpeg.Wrapper;
 
-using AutoGen;
-
-using AVColorRange = AutoGen.Abstractions.AVColorRange;
-using AVFrame = AutoGen.Abstractions.AVFrame;
-using ffmpeg = AutoGen.Abstractions.ffmpeg;
-using SwsContext = AutoGen.Abstractions.SwsContext;
-
-public unsafe class SwScaler : FFObject
+public unsafe class SwScaler : FFObject<SwsContext>
 {
     private SwsContext* _ctx;
-
-    public SwsContext* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    
+    public override SwsContext* Handle => _ctx;
 
     public PictureFormat InputFormat { get; }
     public PictureFormat OutputFormat { get; }
@@ -126,12 +114,6 @@ public unsafe class SwScaler : FFObject
         if (_ctx != null) {
             ffmpeg.sws_freeContext(_ctx);
             _ctx = null;
-        }
-    }
-    private void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(SwScaler));
         }
     }
 }

@@ -1,15 +1,10 @@
 ﻿namespace FFmpeg.Wrapper;
 
-public unsafe class SwResampler : FFObject
+public unsafe class SwResampler : FFObject<SwrContext>
 {
     private SwrContext* _ctx;
 
-    public SwrContext* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    public override SwrContext* Handle => _ctx;
 
     public AudioFormat InputFormat { get; }
     public AudioFormat OutputFormat { get; }
@@ -177,12 +172,6 @@ public unsafe class SwResampler : FFObject
             fixed (SwrContext** s = &_ctx) {
                 ffmpeg.swr_free(s);
             }
-        }
-    }
-    private void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(SwResampler));
         }
     }
 }

@@ -1,17 +1,11 @@
 ﻿namespace FFmpeg.Wrapper;
 
-public unsafe abstract class MediaFrame : FFObject
+public unsafe abstract class MediaFrame : FFObject<AVFrame>
 {
     protected AVFrame* _frame;
     protected bool _ownsFrame = true;
 
-    public AVFrame* Handle {
-        get {
-            ThrowIfDisposed();
-            return _frame;
-        }
-    }
-
+    public override AVFrame* Handle => _frame;
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
     public long? BestEffortTimestamp => Helpers.GetPTS(_frame->best_effort_timestamp);
 
@@ -38,11 +32,5 @@ public unsafe abstract class MediaFrame : FFObject
             }
         }
         _frame = null;
-    }
-    protected void ThrowIfDisposed()
-    {
-        if (_frame == null) {
-            throw new ObjectDisposedException(nameof(MediaFrame));
-        }
     }
 }

@@ -1,15 +1,10 @@
 ﻿namespace FFmpeg.Wrapper;
 
-public unsafe class MediaMuxer : FFObject
+public unsafe class MediaMuxer : FFObject<AVFormatContext>
 {
     private AVFormatContext* _ctx;
 
-    public AVFormatContext* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    public override AVFormatContext* Handle => _ctx;
 
     public IOContext? IOC { get; }
     readonly bool _iocLeaveOpen;
@@ -117,7 +112,7 @@ public unsafe class MediaMuxer : FFObject
     /// <remarks> This method will also open all encoders passed to <see cref="AddStream(MediaEncoder)"/>. </remarks>
     public void Open()
     {
-        Open(Enumerable.Empty<KeyValuePair<string, string>>(), true);
+        Open([], true);
     }
 
     /// <inheritdoc cref="Open()" />
@@ -224,12 +219,6 @@ public unsafe class MediaMuxer : FFObject
                 IOC?.Dispose();
             }
             _tempPacket?.Dispose();
-        }
-    }
-    private void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(MediaMuxer));
         }
     }
 }

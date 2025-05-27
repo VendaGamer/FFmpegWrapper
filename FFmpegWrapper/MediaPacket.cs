@@ -1,15 +1,10 @@
 ﻿namespace FFmpeg.Wrapper;
 
-public unsafe class MediaPacket : FFObject
+public unsafe class MediaPacket : FFObject<AVPacket>
 {
     private AVPacket* _pkt;
 
-    public AVPacket* Handle {
-        get {
-            ThrowIfDisposed();
-            return _pkt;
-        }
-    }
+    public override AVPacket* Handle => _pkt;
 
     /// <summary>
     /// Presentation timestamp in <see cref="MediaStream.TimeBase"/> units; 
@@ -108,12 +103,6 @@ public unsafe class MediaPacket : FFObject
     {
         fixed (AVPacket** pkt = &_pkt) {
             ffmpeg.av_packet_free(pkt);
-        }
-    }
-    private void ThrowIfDisposed()
-    {
-        if (_pkt == null) {
-            throw new ObjectDisposedException(nameof(MediaPacket));
         }
     }
 }

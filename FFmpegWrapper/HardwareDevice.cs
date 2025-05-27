@@ -1,15 +1,12 @@
 namespace FFmpeg.Wrapper;
 
-public unsafe class HardwareDevice : FFObject
+public unsafe class HardwareDevice : FFObject<AVBufferRef>
 {
     private AVBufferRef* _ctx;
-
-    public AVBufferRef* Handle {
-        get {
-            ThrowIfDisposed();
-            return _ctx;
-        }
-    }
+    /// <summary>
+    /// Reference to hw device Specific handle
+    /// </summary>
+    public override AVBufferRef* Handle => _ctx;
     public AVHWDeviceContext* RawHandle {
         get {
             ThrowIfDisposed();
@@ -81,11 +78,13 @@ public unsafe class HardwareDevice : FFObject
             HWDeviceTypes.DXVA2 => AVPixelFormat.AV_PIX_FMT_DXVA2_VLD,
             HWDeviceTypes.QSV   => AVPixelFormat.AV_PIX_FMT_QSV,
             HWDeviceTypes.D3D11VA => AVPixelFormat.AV_PIX_FMT_D3D11,
+            HWDeviceTypes.D3D12VA => AVPixelFormat.AV_PIX_FMT_D3D12,
             HWDeviceTypes.DRM   => AVPixelFormat.AV_PIX_FMT_DRM_PRIME,
             HWDeviceTypes.OpenCL => AVPixelFormat.AV_PIX_FMT_OPENCL,
             HWDeviceTypes.Vulkan => AVPixelFormat.AV_PIX_FMT_VULKAN,
             HWDeviceTypes.VideoToolbox => AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX,
-            HWDeviceTypes.MediaCodec => AVPixelFormat.AV_PIX_FMT_MEDIACODEC
+            HWDeviceTypes.MediaCodec => AVPixelFormat.AV_PIX_FMT_MEDIACODEC,
+            _ => AVPixelFormat.AV_PIX_FMT_YUV420P
         };
     }
 
@@ -95,12 +94,6 @@ public unsafe class HardwareDevice : FFObject
             fixed (AVBufferRef** ppCtx = &_ctx) {
                 ffmpeg.av_buffer_unref(ppCtx);
             }
-        }
-    }
-    private void ThrowIfDisposed()
-    {
-        if (_ctx == null) {
-            throw new ObjectDisposedException(nameof(HardwareDevice));
         }
     }
 }
