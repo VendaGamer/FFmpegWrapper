@@ -2,9 +2,8 @@ namespace FFmpeg.Wrapper;
 
 public unsafe readonly struct CodecHardwareConfig
 {
-    public AVCodecHWConfig* Handle { get; }
-    public MediaCodec Codec { get; }
-
+    public readonly AVCodecHWConfig* Handle;
+    public readonly MediaCodec Codec;
     public AVHWDeviceType DeviceType => Handle->device_type;
     public AVPixelFormat PixelFormat => Handle->pix_fmt;
     public CodecHardwareMethods Methods => (CodecHardwareMethods)Handle->methods;
@@ -14,7 +13,6 @@ public unsafe readonly struct CodecHardwareConfig
         Codec = new MediaCodec(codec);
         Handle = config;
     }
-
     public override string ToString() => Codec.Name + " " + PixelFormat.ToString().Substring("AV_PIX_FMT_".Length);
 }
 [Flags]

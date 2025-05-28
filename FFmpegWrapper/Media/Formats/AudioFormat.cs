@@ -5,7 +5,11 @@ public unsafe readonly struct AudioFormat : IEquatable<AudioFormat>
     public AVSampleFormat SampleFormat { get; }
     public int SampleRate { get; }
     public ChannelLayout Layout { get; }
-
+    /// <summary>
+    /// Gets the number of audio channels configured for AudioFormat.
+    /// This value determines the channel layout (e.g., 1 for mono, 2 for stereo, 6 for 5.1 surround).
+    /// </summary>
+    /// <value>The number of audio channels, typically ranging from 1 to 8 or more.</value>
     public int NumChannels => Layout.NumChannels;
     public int BytesPerSample => ffmpeg.av_get_bytes_per_sample(SampleFormat);
     public bool IsPlanar => ffmpeg.av_sample_fmt_is_planar(SampleFormat) != 0;

@@ -7,7 +7,7 @@ using static AVOptionType;
 /// <summary> Represents an option accepted by a ffmpeg object. </summary>
 public unsafe readonly struct ContextOption
 {
-    public AVOption* Handle { get; }
+    public readonly AVOption* Handle;
 
     public string Name => Helpers.PtrToStringUTF8(Handle->name)!;
     public string Description => Helpers.PtrToStringUTF8(Handle->help)!;
@@ -147,7 +147,7 @@ public unsafe readonly struct ContextOption
 
 public readonly struct OptionValue
 {
-    readonly object _value;
+    private readonly object _value;
 
     public object BoxedValue => _value;
 

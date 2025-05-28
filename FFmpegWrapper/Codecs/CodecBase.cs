@@ -1,5 +1,4 @@
-﻿
-namespace FFmpeg.Wrapper;
+﻿namespace FFmpeg.Wrapper;
 
 public unsafe abstract class CodecBase : FFObject<AVCodecContext>
 {
@@ -149,13 +148,11 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
 
     protected void ThrowIfOpen()
     {
-        ThrowIfDisposed();
-
-        if (IsOpen) {
+        if (IsOpen)
             throw new InvalidOperationException("Value must be set before the codec is open.");
-        }
     }
 
+    /// <inheritdoc />
     protected override void Free()
     {
         if (_handle != null) {
