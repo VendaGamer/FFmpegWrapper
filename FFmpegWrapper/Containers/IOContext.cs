@@ -2,9 +2,6 @@
 
 public abstract unsafe class IOContext : FFObject<AVIOContext>
 {
-    private AVIOContext* _ctx;
-    public override AVIOContext* Handle => _ctx;
-
     public bool CanRead => _readFn != null;
     public bool CanWrite => _writeFn != null;
     public bool CanSeek => _seekFn != null;
@@ -20,12 +17,12 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
             throw new InvalidOperationException("IOContext must be either readable or writeable");
         }
         var buffer = (byte*)ffmpeg.av_mallocz((ulong)bufferSize);
-
+        
         _readFn = canRead ? ReadBridge : null;
         _writeFn = canWrite ? WriteBridge : null;
         _seekFn = canSeek ? SeekBridge : null;
 
-        _ctx = ffmpeg.avio_alloc_context(
+        _handle = ffmpeg.avio_alloc_context(
             buffer, bufferSize, canWrite ? 1 : 0, null,
             _readFn, _writeFn, _seekFn
         );
@@ -95,8 +92,8 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
 
     protected override void Free()
     {
-        if (_ctx != null) {
-            fixed (AVIOContext** c = &_ctx) ffmpeg.avio_closep(c);
+        if (_handle != null) {
+            fixed (AVIOContext** c = &_handle) ffmpeg.avio_closep(c);
         }
     }
 }

@@ -2,12 +2,12 @@
 
 public unsafe class VideoDecoder : MediaDecoder
 {
-    public int Width => _ctx->width;
-    public int Height => _ctx->height;
-    public AVPixelFormat PixelFormat => _ctx->pix_fmt;
+    public int Width => _handle->width;
+    public int Height => _handle->height;
+    public AVPixelFormat PixelFormat => _handle->pix_fmt;
 
-    public PictureFormat FrameFormat => new(Width, Height, PixelFormat, _ctx->sample_aspect_ratio);
-    public PictureColorspace Colorspace => new(_ctx->colorspace, _ctx->color_primaries, _ctx->color_trc, _ctx->color_range);
+    public PictureFormat FrameFormat => new(Width, Height, PixelFormat, _handle->sample_aspect_ratio);
+    public PictureColorspace Colorspace => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
 
     public VideoDecoder(AVCodecID codecId)
         : this(MediaCodec.GetDecoder(codecId)) { }
@@ -31,7 +31,7 @@ public unsafe class VideoDecoder : MediaDecoder
         SetHardwareContext(config, device, null);
         //TODO: support custom decoder negotiation and hw_frames_ctx
 
-        _ctx->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) => {
+        _handle->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) => {
             for (var pFmt = pAvailFmts; *pFmt != PixelFormats.None; pFmt++) {
                 if (*pFmt == config.PixelFormat) {
                     return *pFmt;
@@ -51,9 +51,9 @@ public unsafe class VideoDecoder : MediaDecoder
         int i = 0;
         AVCodecHWConfig* config;
 
-        while ((config = ffmpeg.avcodec_get_hw_config(_ctx->codec, i++)) != null) {
+        while ((config = ffmpeg.avcodec_get_hw_config(_handle->codec, i++)) != null) {
             if ((config->methods & (int)CodecHardwareMethods.DeviceContext) != 0) {
-                configs.Add(new CodecHardwareConfig(_ctx->codec, config));
+                configs.Add(new CodecHardwareConfig(_handle->codec, config));
             }
         }
         return configs;

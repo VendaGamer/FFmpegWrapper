@@ -5,20 +5,20 @@ public abstract unsafe class MediaEncoder : CodecBase
 
     /// <inheritdoc cref="AVCodecContext.bit_rate" />
     public int BitRate {
-        get => (int)_ctx->bit_rate;
-        set => SetOrThrowIfOpen(ref _ctx->bit_rate, value);
+        get => (int)_handle->bit_rate;
+        set => SetOrThrowIfOpen(ref _handle->bit_rate, value);
     }
 
     /// <inheritdoc cref="AVCodecContext.global_quality" />
     public int GlobalQuality {
-        get => _ctx->global_quality;
-        set => SetOrThrowIfOpen(ref _ctx->global_quality, value);
+        get => _handle->global_quality;
+        set => SetOrThrowIfOpen(ref _handle->global_quality, value);
     }
 
     /// <inheritdoc cref="AVCodecContext.compression_level" />
     public int CompressionLevel {
-        get => _ctx->compression_level;
-        set => SetOrThrowIfOpen(ref _ctx->compression_level, value);
+        get => _handle->compression_level;
+        set => SetOrThrowIfOpen(ref _handle->compression_level, value);
     }
 
     public MediaEncoder(AVCodecContext* ctx, AVMediaType expectedType, bool takeOwnership)

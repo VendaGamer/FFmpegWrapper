@@ -3,57 +3,57 @@
 public unsafe class VideoEncoder : MediaEncoder
 {
     public int Width {
-        get => _ctx->width;
-        set => SetOrThrowIfOpen(ref _ctx->width, value);
+        get => _handle->width;
+        set => SetOrThrowIfOpen(ref _handle->width, value);
     }
     public int Height {
-        get => _ctx->height;
-        set => SetOrThrowIfOpen(ref _ctx->height, value);
+        get => _handle->height;
+        set => SetOrThrowIfOpen(ref _handle->height, value);
     }
     public AVPixelFormat PixelFormat {
-        get => _ctx->pix_fmt;
-        set => SetOrThrowIfOpen(ref _ctx->pix_fmt, value);
+        get => _handle->pix_fmt;
+        set => SetOrThrowIfOpen(ref _handle->pix_fmt, value);
     }
 
     public PictureFormat FrameFormat {
-        get => new(Width, Height, PixelFormat, _ctx->sample_aspect_ratio);
+        get => new(Width, Height, PixelFormat, _handle->sample_aspect_ratio);
         set {
             ThrowIfOpen();
-            _ctx->width = value.Width;
-            _ctx->height = value.Height;
-            _ctx->pix_fmt = value.PixelFormat;
+            _handle->width = value.Width;
+            _handle->height = value.Height;
+            _handle->pix_fmt = value.PixelFormat;
         }
     }
 
     public PictureColorspace Colorspace {
-        get => new(_ctx->colorspace, _ctx->color_primaries, _ctx->color_trc, _ctx->color_range);
+        get => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
         set {
             ThrowIfOpen();
-            _ctx->colorspace = value.Matrix;
-            _ctx->color_primaries = value.Primaries;
-            _ctx->color_trc = value.Transfer;
-            _ctx->color_range = value.Range;
+            _handle->colorspace = value.Matrix;
+            _handle->color_primaries = value.Primaries;
+            _handle->color_trc = value.Transfer;
+            _handle->color_range = value.Range;
         }
     }
 
     /// <inheritdoc cref="AVCodecContext.gop_size"/>
     public int GopSize {
-        get => _ctx->gop_size;
-        set => SetOrThrowIfOpen(ref _ctx->gop_size, value);
+        get => _handle->gop_size;
+        set => SetOrThrowIfOpen(ref _handle->gop_size, value);
     }
     /// <inheritdoc cref="AVCodecContext.max_b_frames"/>
     public int MaxBFrames {
-        get => _ctx->max_b_frames;
-        set => SetOrThrowIfOpen(ref _ctx->max_b_frames, value);
+        get => _handle->max_b_frames;
+        set => SetOrThrowIfOpen(ref _handle->max_b_frames, value);
     }
 
     public int MinQuantizer {
-        get => _ctx->qmin;
-        set => SetOrThrowIfOpen(ref _ctx->qmin, value);
+        get => _handle->qmin;
+        set => SetOrThrowIfOpen(ref _handle->qmin, value);
     }
     public int MaxQuantizer {
-        get => _ctx->qmax;
-        set => SetOrThrowIfOpen(ref _ctx->qmax, value);
+        get => _handle->qmax;
+        set => SetOrThrowIfOpen(ref _handle->qmax, value);
     }
 
     public VideoEncoder(AVCodecID codecId, in PictureFormat format, Rational frameRate, int bitrate = 0)

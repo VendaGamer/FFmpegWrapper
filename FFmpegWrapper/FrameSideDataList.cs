@@ -1,13 +1,5 @@
 namespace FFmpeg.Wrapper;
-
 using System.Text;
-
-using AutoGen;
-
-using AVFrame = AutoGen.Abstractions.AVFrame;
-using AVFrameSideData = AutoGen.Abstractions.AVFrameSideData;
-using AVFrameSideDataType = AutoGen.Abstractions.AVFrameSideDataType;
-using ffmpeg = AutoGen.Abstractions.ffmpeg;
 
 public unsafe struct FrameSideDataList
 {

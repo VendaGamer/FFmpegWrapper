@@ -3,24 +3,21 @@ namespace FFmpeg.Wrapper;
 
 public unsafe abstract class CodecBase : FFObject<AVCodecContext>
 {
-    protected AVCodecContext* _ctx;
     protected bool _ownsContext = false;
     private bool _hasUserExtraData = false;
-
-    public override AVCodecContext* Handle => _ctx;
     public bool IsOpen => ffmpeg.avcodec_is_open(Handle) != 0;
 
-    public MediaCodec Codec => new(_ctx->codec);
+    public MediaCodec Codec => new(_handle->codec);
 
     /// <inheritdoc cref="AVCodecContext.time_base"/>
     public Rational TimeBase {
-        get => _ctx->time_base;
-        set => SetOrThrowIfOpen(ref _ctx->time_base, value);
+        get => _handle->time_base;
+        set => SetOrThrowIfOpen(ref _handle->time_base, value);
     }
     /// <inheritdoc cref="AVCodecContext.framerate"/>
     public Rational FrameRate {
-        get => _ctx->framerate;
-        set => SetOrThrowIfOpen(ref _ctx->framerate, value);
+        get => _handle->framerate;
+        set => SetOrThrowIfOpen(ref _handle->framerate, value);
     }
 
     /// <summary>
@@ -33,17 +30,17 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
     /// - decoding: Set by wrapper/user.
     /// </summary>
     public ReadOnlySpan<byte> ExtraData {
-        get => new(_ctx->extradata, _ctx->extradata_size);
+        get => new(_handle->extradata, _handle->extradata_size);
         set => SetExtraData(value);
     }
 
     /// <summary> Indicates if the codec requires flushing with NULL input at the end in order to give the complete and correct output. </summary>
-    public bool IsDelayed => (_ctx->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0;
+    public bool IsDelayed => (_handle->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0;
 
-    public AVMediaType CodecType => _ctx->codec_type;
+    public AVMediaType CodecType => _handle->codec_type;
 
     /// <inheritdoc cref="AVCodecContext.coded_side_data"/>
-    public PacketSideDataList CodedSideData => new(&_ctx->coded_side_data, &_ctx->nb_coded_side_data); 
+    public PacketSideDataList CodedSideData => new(&_handle->coded_side_data, &_handle->nb_coded_side_data); 
 
     internal CodecBase(AVCodecContext* ctx, AVMediaType expectedType, bool takeOwnership)
     {
@@ -52,7 +49,7 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
             
             throw new ArgumentException("Specified codec is not valid for the current media type.");
         }
-        _ctx = ctx;
+        _handle = ctx;
         _ownsContext = takeOwnership;
     }
 
@@ -81,28 +78,28 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
     {
         ThrowIfOpen();
         
-        int caps = _ctx->codec->capabilities;
+        int caps = _handle->codec->capabilities;
 
         if ((caps & ffmpeg.AV_CODEC_CAP_SLICE_THREADS) != 0 && preferFrameSlices) {
-            _ctx->thread_type = ffmpeg.FF_THREAD_SLICE;
-            _ctx->thread_count = threadCount;
+            _handle->thread_type = ffmpeg.FF_THREAD_SLICE;
+            _handle->thread_count = threadCount;
         }
         else if ((caps & ffmpeg.AV_CODEC_CAP_FRAME_THREADS) != 0) {
-            _ctx->thread_type = ffmpeg.FF_THREAD_FRAME;
-            _ctx->thread_count = threadCount;
+            _handle->thread_type = ffmpeg.FF_THREAD_FRAME;
+            _handle->thread_count = threadCount;
         } else {
-            _ctx->thread_type = 0;
-            _ctx->thread_count = 1; //no multi-threading capability
+            _handle->thread_type = 0;
+            _handle->thread_count = 1; //no multi-threading capability
         }
     }
 
     protected void SetHardwareContext(CodecHardwareConfig config, HardwareDevice device, HardwareFramePool? framePool)
     {
-        if (config.Codec.Handle != _ctx->codec || config.DeviceType != device.Type) {
+        if (config.Codec.Handle != _handle->codec || config.DeviceType != device.Type) {
             throw new ArgumentException("Mismatching hardware codec config.");
         }
-        _ctx->hw_device_ctx = ffmpeg.av_buffer_ref(device.Handle);
-        _ctx->hw_frames_ctx = framePool == null ? null : ffmpeg.av_buffer_ref(framePool.Handle);
+        _handle->hw_device_ctx = ffmpeg.av_buffer_ref(device.Handle);
+        _handle->hw_frames_ctx = framePool == null ? null : ffmpeg.av_buffer_ref(framePool.Handle);
 
         if (framePool == null && (config.Methods & ~CodecHardwareMethods.FramesContext) == 0) {
             throw new ArgumentException("Specified hardware codec config requires a frame pool to be provided.");
@@ -123,22 +120,22 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
         ThrowIfOpen();
         
         if (buf.IsEmpty) {
-            _ctx->extradata = null;
-            _ctx->extradata_size = 0;
+            _handle->extradata = null;
+            _handle->extradata_size = 0;
             return true;
         }
         
-        if (_ctx->extradata != null)
-            ffmpeg.av_freep(&_ctx->extradata);
+        if (_handle->extradata != null)
+            ffmpeg.av_freep(&_handle->extradata);
         
         var data = (byte*)ffmpeg.av_mallocz((ulong)buf.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE);
         if (data == null) {
             return false;
         }
         
-        _ctx->extradata = data;
-        _ctx->extradata_size = buf.Length;
-        buf.CopyTo(new Span<byte>(_ctx->extradata, buf.Length));
+        _handle->extradata = data;
+        _handle->extradata_size = buf.Length;
+        buf.CopyTo(new Span<byte>(_handle->extradata, buf.Length));
         _hasUserExtraData = true;
         
         return true;
@@ -161,16 +158,16 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
 
     protected override void Free()
     {
-        if (_ctx != null) {
+        if (_handle != null) {
             if (_hasUserExtraData) {
-                ffmpeg.av_freep(&_ctx->extradata);
+                ffmpeg.av_freep(&_handle->extradata);
             }
             if (_ownsContext) {
-                fixed (AVCodecContext** c = &_ctx) {
+                fixed (AVCodecContext** c = &_handle) {
                     ffmpeg.avcodec_free_context(c);
                 }
             } else {
-                _ctx = null;
+                _handle = null;
             }
         }
     }

@@ -2,10 +2,10 @@
 
 public unsafe class AudioDecoder : MediaDecoder
 {
-    public AVSampleFormat SampleFormat => _ctx->sample_fmt;
-    public int SampleRate => _ctx->sample_rate;
-    public int NumChannels => _ctx->ch_layout.nb_channels;
-    public ChannelLayout ChannelLayout => ChannelLayout.FromExisting(&_ctx->ch_layout);
+    public AVSampleFormat SampleFormat => _handle->sample_fmt;
+    public int SampleRate => _handle->sample_rate;
+    public int NumChannels => _handle->ch_layout.nb_channels;
+    public ChannelLayout ChannelLayout => ChannelLayout.FromExisting(&_handle->ch_layout);
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 

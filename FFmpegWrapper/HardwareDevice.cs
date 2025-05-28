@@ -2,15 +2,10 @@ namespace FFmpeg.Wrapper;
 
 public unsafe class HardwareDevice : FFObject<AVBufferRef>
 {
-    private AVBufferRef* _ctx;
-    /// <summary>
-    /// Reference to hw device Specific handle
-    /// </summary>
-    public override AVBufferRef* Handle => _ctx;
     public AVHWDeviceContext* RawHandle {
         get {
             ThrowIfDisposed();
-            return (AVHWDeviceContext*)_ctx->data;
+            return (AVHWDeviceContext*)_handle->data;
         }
     }
 
@@ -18,7 +13,7 @@ public unsafe class HardwareDevice : FFObject<AVBufferRef>
 
     public HardwareDevice(AVBufferRef* deviceCtx)
     {
-        _ctx = deviceCtx;
+        _handle = deviceCtx;
     }
 
     /// <summary> Open a device of the specified type and create a context for it. </summary>
@@ -35,7 +30,7 @@ public unsafe class HardwareDevice : FFObject<AVBufferRef>
     /// <inheritdoc cref="ffmpeg.av_hwdevice_get_hwframe_constraints(AVBufferRef*, void*)"/>
     public HardwareFrameConstraints? GetMaxFrameConstraints()
     {
-        var desc = ffmpeg.av_hwdevice_get_hwframe_constraints(_ctx, null);
+        var desc = ffmpeg.av_hwdevice_get_hwframe_constraints(_handle, null);
 
         if (desc == null) {
             return null;
@@ -51,7 +46,7 @@ public unsafe class HardwareDevice : FFObject<AVBufferRef>
     {
         ThrowIfDisposed();
 
-        var poolRef = ffmpeg.av_hwframe_ctx_alloc(_ctx);
+        var poolRef = ffmpeg.av_hwframe_ctx_alloc(_handle);
         if (poolRef == null) {
             throw new OutOfMemoryException("Failed to allocate hardware frame pool");
         }
@@ -90,8 +85,8 @@ public unsafe class HardwareDevice : FFObject<AVBufferRef>
 
     protected override void Free()
     {
-        if (_ctx != null) {
-            fixed (AVBufferRef** ppCtx = &_ctx) {
+        if (_handle != null) {
+            fixed (AVBufferRef** ppCtx = &_handle) {
                 ffmpeg.av_buffer_unref(ppCtx);
             }
         }

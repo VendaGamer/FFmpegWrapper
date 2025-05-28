@@ -2,10 +2,6 @@
 
 public unsafe class MediaMuxer : FFObject<AVFormatContext>
 {
-    private AVFormatContext* _ctx;
-
-    public override AVFormatContext* Handle => _ctx;
-
     public IOContext? IOC { get; }
     readonly bool _iocLeaveOpen;
     readonly bool _ownsCtx;
@@ -16,16 +12,16 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     public IReadOnlyList<MediaStream> Streams => _streams.Select(s => s.Stream).ToList();
 
     /// <inheritdoc cref="AVFormatContext.metadata" />
-    public MediaDictionary Metadata => new(&_ctx->metadata);
+    public MediaDictionary Metadata => new(&_handle->metadata);
 
     public bool IsOpen { get; private set; } = false;
 
     public MediaMuxer(string filename)
     {
-        fixed (AVFormatContext** fmtCtx = &_ctx) {
+        fixed (AVFormatContext** fmtCtx = &_handle) {
             ffmpeg.avformat_alloc_output_context2(fmtCtx, null, null, filename).CheckError("Could not allocate muxer");
         }
-        ffmpeg.avio_open(&_ctx->pb, filename, ffmpeg.AVIO_FLAG_WRITE).CheckError("Could not open output file");
+        ffmpeg.avio_open(&_handle->pb, filename, ffmpeg.AVIO_FLAG_WRITE).CheckError("Could not open output file");
     }
 
     public MediaMuxer(IOContext ioc, string formatExtension, bool leaveOpen = false)
@@ -36,19 +32,19 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
         IOC = ioc;
         _iocLeaveOpen = leaveOpen;
 
-        _ctx = ffmpeg.avformat_alloc_context();
-        if (_ctx == null) {
+        _handle = ffmpeg.avformat_alloc_context();
+        if (_handle == null) {
             throw new OutOfMemoryException("Could not allocate muxer");
         }
-        _ctx->oformat = format;
-        _ctx->pb = ioc.Handle;
+        _handle->oformat = format;
+        _handle->pb = ioc.Handle;
     }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
     /// <param name="takeOwnership">True if <paramref name="ctx"/> should be freed when Dispose() is called.</param>
     public MediaMuxer(AVFormatContext* ctx, bool takeOwnership)
     {
-        _ctx = ctx;
+        _handle = ctx;
         _ownsCtx = takeOwnership;
     }
 
@@ -65,15 +61,15 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
             throw new InvalidOperationException("Cannot add stream with an already open encoder.");
         }
 
-        AVStream* stream = ffmpeg.avformat_new_stream(_ctx, encoder.Handle->codec);
+        AVStream* stream = ffmpeg.avformat_new_stream(_handle, encoder.Handle->codec);
         if (stream == null) {
             throw new OutOfMemoryException("Could not allocate stream");
         }
-        stream->id = (int)_ctx->nb_streams - 1;
+        stream->id = (int)_handle->nb_streams - 1;
         stream->time_base = encoder.TimeBase;
 
         //Some formats want stream headers to be separate.
-        if ((_ctx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0) {
+        if ((_handle->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0) {
             encoder.Handle->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
         }
 
@@ -92,7 +88,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
             throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
         }
 
-        AVStream* stream = ffmpeg.avformat_new_stream(_ctx, null);
+        AVStream* stream = ffmpeg.avformat_new_stream(_handle, null);
         if (stream == null) {
             throw new OutOfMemoryException("Could not allocate stream");
         }
@@ -100,7 +96,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
         ffmpeg.avcodec_parameters_copy(stream->codecpar, srcStream.Handle->codecpar).CheckError("Failed to copy codec parameters");
         stream->codecpar->codec_tag = 0;
 
-        stream->id = (int)_ctx->nb_streams - 1;
+        stream->id = (int)_handle->nb_streams - 1;
         stream->time_base = srcStream.TimeBase;
 
         var st = new MediaStream(stream);
@@ -134,7 +130,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
         AVDictionary* rawOpts = null;
         MediaDictionary.Populate(&rawOpts, options);
 
-        ffmpeg.avformat_write_header(_ctx, &rawOpts).CheckError("Could not write header to output file");
+        ffmpeg.avformat_write_header(_handle, &rawOpts).CheckError("Could not write header to output file");
 
         try {
             if (!ignoreUnknownOptions && ffmpeg.av_dict_count(rawOpts) > 0) {
@@ -171,7 +167,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     {
         ThrowIfNotOpen();
 
-        ffmpeg.av_interleaved_write_frame(_ctx, packet == null ? null : packet.Handle).CheckError("Failed to write packet");
+        ffmpeg.av_interleaved_write_frame(_handle, packet == null ? null : packet.Handle).CheckError("Failed to write packet");
     }
 
     /// <summary> Encodes the given frame and muxes the resulting packets to the output file. </summary>
@@ -189,7 +185,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
         while (encoder.ReceivePacket(_tempPacket)) {
             _tempPacket.RescaleTS(encoder.TimeBase, stream.TimeBase);
             _tempPacket.StreamIndex = stream.Index;
-            ffmpeg.av_interleaved_write_frame(_ctx, _tempPacket.Handle).CheckError("Failed to write packet");
+            ffmpeg.av_interleaved_write_frame(_handle, _tempPacket.Handle).CheckError("Failed to write packet");
         }
     }
 
@@ -204,16 +200,16 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
 
     protected override void Free()
     {
-        if (_ctx != null) {
-            ffmpeg.av_write_trailer(_ctx);
+        if (_handle != null) {
+            ffmpeg.av_write_trailer(_handle);
 
             if (_ownsCtx) {
                 if (IOC == null) {
-                    ffmpeg.avio_closep(&_ctx->pb);
+                    ffmpeg.avio_closep(&_handle->pb);
                 }
-                ffmpeg.avformat_free_context(_ctx);
+                ffmpeg.avformat_free_context(_handle);
             }
-            _ctx = null;
+            _handle = null;
 
             if (!_iocLeaveOpen) {
                 IOC?.Dispose();

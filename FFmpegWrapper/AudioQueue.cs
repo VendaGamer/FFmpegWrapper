@@ -2,15 +2,11 @@
 
 public unsafe class AudioQueue : FFObject<AVAudioFifo>
 {
-    private AVAudioFifo* _fifo;
-
-    public override AVAudioFifo* Handle => _fifo;
-
     public AVSampleFormat Format { get; }
     public int NumChannels { get; }
 
-    public int Size => ffmpeg.av_audio_fifo_size(_fifo);
-    public int Space => ffmpeg.av_audio_fifo_space(_fifo);
+    public int Size => ffmpeg.av_audio_fifo_size(_handle);
+    public int Space => ffmpeg.av_audio_fifo_space(_handle);
     public int Capacity => Space + Size;
 
     public AudioQueue(AudioFormat fmt, int initialCapacity)
@@ -21,8 +17,8 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
         Format = fmt;
         NumChannels = numChannels;
 
-        _fifo = ffmpeg.av_audio_fifo_alloc(fmt, numChannels, initialCapacity);
-        if (_fifo == null) {
+        _handle = ffmpeg.av_audio_fifo_alloc(fmt, numChannels, initialCapacity);
+        if (_handle == null) {
             throw new OutOfMemoryException("Could not allocate the audio FIFO.");
         }
     }
@@ -82,9 +78,9 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
 
     protected override void Free()
     {
-        if (_fifo != null) {
-            ffmpeg.av_audio_fifo_free(_fifo);
-            _fifo = null;
+        if (_handle != null) {
+            ffmpeg.av_audio_fifo_free(_handle);
+            _handle = null;
         }
     }
 

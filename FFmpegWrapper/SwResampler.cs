@@ -2,31 +2,27 @@
 
 public unsafe class SwResampler : FFObject<SwrContext>
 {
-    private SwrContext* _ctx;
-
-    public override SwrContext* Handle => _ctx;
-
     public AudioFormat InputFormat { get; }
     public AudioFormat OutputFormat { get; }
 
     /// <summary> Gets an estimated number of buffered output samples. </summary>
-    public int BufferedSamples => (int)ffmpeg.swr_get_delay(_ctx, OutputFormat.SampleRate);
+    public int BufferedSamples => (int)ffmpeg.swr_get_delay(_handle, OutputFormat.SampleRate);
 
     public SwResampler(AudioFormat inFmt, AudioFormat outFmt)
     {
-        _ctx = ffmpeg.swr_alloc();
+        _handle = ffmpeg.swr_alloc();
 
         var tempLayout = inFmt.Layout.Native;
-        ffmpeg.av_opt_set_chlayout(_ctx, "in_chlayout", &tempLayout, 0);
-        ffmpeg.av_opt_set_int(_ctx, "in_sample_rate", inFmt.SampleRate, 0);
-        ffmpeg.av_opt_set_int(_ctx, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
+        ffmpeg.av_opt_set_chlayout(_handle, "in_chlayout", &tempLayout, 0);
+        ffmpeg.av_opt_set_int(_handle, "in_sample_rate", inFmt.SampleRate, 0);
+        ffmpeg.av_opt_set_int(_handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
 
         tempLayout = outFmt.Layout.Native;
-        ffmpeg.av_opt_set_chlayout(_ctx, "out_chlayout", &tempLayout, 0);
-        ffmpeg.av_opt_set_int(_ctx, "out_sample_rate", outFmt.SampleRate, 0);
-        ffmpeg.av_opt_set_int(_ctx, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
+        ffmpeg.av_opt_set_chlayout(_handle, "out_chlayout", &tempLayout, 0);
+        ffmpeg.av_opt_set_int(_handle, "out_sample_rate", outFmt.SampleRate, 0);
+        ffmpeg.av_opt_set_int(_handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
 
-        ffmpeg.swr_init(_ctx);
+        ffmpeg.swr_init(_handle);
 
         InputFormat = inFmt;
         OutputFormat = outFmt;
@@ -155,21 +151,21 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// </summary>
     public int GetOutputSamples(int inputSampleCount)
     {
-        return ffmpeg.swr_get_out_samples(_ctx, inputSampleCount);
+        return ffmpeg.swr_get_out_samples(_handle, inputSampleCount);
     }
 
     /// <summary> Drops the specified number of output samples. </summary>
     public void DropOutputSamples(int count)
     {
-        ffmpeg.swr_drop_output(_ctx, count).CheckError();
+        ffmpeg.swr_drop_output(_handle, count).CheckError();
     }
 
     //TODO: expose swr_next_pts() and whatever else
 
     protected override void Free()
     {
-        if (_ctx != null) {
-            fixed (SwrContext** s = &_ctx) {
+        if (_handle != null) {
+            fixed (SwrContext** s = &_handle) {
                 ffmpeg.swr_free(s);
             }
         }

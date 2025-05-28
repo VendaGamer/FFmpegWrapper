@@ -2,10 +2,6 @@
 
 public unsafe class SwScaler : FFObject<SwsContext>
 {
-    private SwsContext* _ctx;
-    
-    public override SwsContext* Handle => _ctx;
-
     public PictureFormat InputFormat { get; }
     public PictureFormat OutputFormat { get; }
 
@@ -14,10 +10,10 @@ public unsafe class SwScaler : FFObject<SwsContext>
         InputFormat = inFmt;
         OutputFormat = outFmt;
 
-        _ctx = ffmpeg.sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
+        _handle = ffmpeg.sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
                                      outFmt.Width, outFmt.Height, outFmt.PixelFormat,
                                      (int)flags, null, null, null);
-        if (_ctx == null) {
+        if (_handle == null) {
             throw new OutOfMemoryException();
         }
     }
@@ -29,7 +25,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
         ThrowIfDisposed();
         int* table, invTable;
         int srcRange, dstRange, brightness, contrast, saturation;
-        ffmpeg.sws_getColorspaceDetails(_ctx, &invTable, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation);
+        ffmpeg.sws_getColorspaceDetails(_handle, &invTable, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation);
 
         table = ffmpeg.sws_getCoefficients((int)input.Matrix);
         invTable = ffmpeg.sws_getCoefficients((int)output.Matrix);
@@ -41,7 +37,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
             dstRange = output.Range == AVColorRange.AVCOL_RANGE_JPEG ? 1 : 0;
         }
 
-        ffmpeg.sws_setColorspaceDetails(_ctx, in *(int4*)invTable, srcRange, in *(int4*)table, dstRange, brightness, contrast, saturation);
+        ffmpeg.sws_setColorspaceDetails(_handle, in *(int4*)invTable, srcRange, in *(int4*)table, dstRange, brightness, contrast, saturation);
     }
 
     public void Convert(VideoFrame src, VideoFrame dst)
@@ -52,7 +48,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
     {
         CheckFrame(src, InputFormat, input: true);
         CheckFrame(dst, OutputFormat, input: false);
-        ffmpeg.sws_scale_frame(_ctx, dst, src).CheckError();
+        ffmpeg.sws_scale_frame(_handle, dst, src).CheckError();
     }
 
     /// <summary> Converts and rescales <paramref name="src"/> into the given frame. The input pixel format must be interleaved. </summary>
@@ -63,7 +59,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
         CheckFrame(dst.Handle, OutputFormat, input: false);
 
         fixed (byte* pSrc = src) {
-            ffmpeg.sws_scale(Handle, new[] { pSrc }, new[] { stride }, 0, InputFormat.Height, dst.Handle->data, dst.Handle->linesize).CheckError();
+            ffmpeg.sws_scale(Handle, [pSrc], [stride], 0, InputFormat.Height, dst.Handle->data, dst.Handle->linesize).CheckError();
         }
     }
 
@@ -75,7 +71,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
         CheckBuffer(dst, stride, OutputFormat, input: false);
         
         fixed (byte* pDst = dst) {
-            ffmpeg.sws_scale(Handle, src.Handle->data, src.Handle->linesize, 0, src.Height, new[] { pDst }, new[] { stride }).CheckError();
+            ffmpeg.sws_scale(Handle, src.Handle->data, src.Handle->linesize, 0, src.Height, [pDst], [stride]).CheckError();
         }
     }
 
@@ -89,7 +85,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
 
         fixed (byte* pSrc = src)
         fixed (byte* pDst = dst) {
-            ffmpeg.sws_scale(Handle, new[] { pSrc }, new[] { srcStride }, 0, InputFormat.Height, new[] { pDst }, new[] { dstStride }).CheckError();
+            ffmpeg.sws_scale(Handle, [pSrc], [srcStride], 0, InputFormat.Height, [pDst], [dstStride]).CheckError();
         }
     }
 
@@ -111,9 +107,9 @@ public unsafe class SwScaler : FFObject<SwsContext>
 
     protected override void Free()
     {
-        if (_ctx != null) {
-            ffmpeg.sws_freeContext(_ctx);
-            _ctx = null;
+        if (_handle != null) {
+            ffmpeg.sws_freeContext(_handle);
+            _handle = null;
         }
     }
 }

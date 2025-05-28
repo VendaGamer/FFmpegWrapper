@@ -3,19 +3,19 @@
 public unsafe class AudioEncoder : MediaEncoder
 {
     public AVSampleFormat SampleFormat {
-        get => _ctx->sample_fmt;
-        set => SetOrThrowIfOpen(ref _ctx->sample_fmt, value);
+        get => _handle->sample_fmt;
+        set => SetOrThrowIfOpen(ref _handle->sample_fmt, value);
     }
     public int SampleRate {
-        get => _ctx->sample_rate;
-        set => SetOrThrowIfOpen(ref _ctx->sample_rate, value);
+        get => _handle->sample_rate;
+        set => SetOrThrowIfOpen(ref _handle->sample_rate, value);
     }
-    public int NumChannels => _ctx->ch_layout.nb_channels;
+    public int NumChannels => _handle->ch_layout.nb_channels;
     public ChannelLayout ChannelLayout {
-        get => ChannelLayout.FromExisting(&_ctx->ch_layout);
+        get => ChannelLayout.FromExisting(&_handle->ch_layout);
         set {
             ThrowIfOpen();
-            value.CopyTo(&_ctx->ch_layout);
+            value.CopyTo(&_handle->ch_layout);
         }
     }
 
@@ -23,9 +23,9 @@ public unsafe class AudioEncoder : MediaEncoder
         get => new(SampleFormat, SampleRate, ChannelLayout);
         set {
             ThrowIfOpen();
-            _ctx->sample_rate = value.SampleRate;
-            _ctx->sample_fmt = value.SampleFormat;
-            value.Layout.CopyTo(&_ctx->ch_layout);
+            _handle->sample_rate = value.SampleRate;
+            _handle->sample_fmt = value.SampleFormat;
+            value.Layout.CopyTo(&_handle->ch_layout);
         }
     }
 
@@ -34,7 +34,7 @@ public unsafe class AudioEncoder : MediaEncoder
     /// Each submitted frame except the last must contain exactly this amount of samples per channel.
     /// May be null when the codec has <see cref="MediaCodecCaps.VariableFrameSize"/> set, then the frame size is not restricted.
     /// </remarks>
-    public int? FrameSize => _ctx->frame_size == 0 ? null : _ctx->frame_size;
+    public int? FrameSize => _handle->frame_size == 0 ? null : _handle->frame_size;
 
     public AudioEncoder(AVCodecID codecId, in AudioFormat format, int bitrate = 0)
         : this(MediaCodec.GetEncoder(codecId), format, bitrate) { }
