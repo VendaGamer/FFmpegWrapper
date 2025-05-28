@@ -1,35 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     
     <PropertyGroup>
+        <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>latest</LangVersion>
+        <InvariantGlobalization>true</InvariantGlobalization>
         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+        <PackageId>Vencaa.FFmpeg.AutoGen.Wrapper</PackageId>
+        <Description>Mostly safe FFmpeg API wrapper based on FFmpeg.AutoGen.</Description>
+        <Version>7.1.1.0-dev</Version>
+        <Product>Vencaa.FFmpeg.AutoGen.Wrapper</Product>
+        <PackageProjectUrl>https://github.com/VendaGamer/FFmpegWrapper</PackageProjectUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Authors>VendaGamer</Authors>
+        <PackageOutputPath>$(SolutionDir)artifacts</PackageOutputPath>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
-    <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>latest</LangVersion>
-    <InvariantGlobalization>true</InvariantGlobalization>
-
-    <PackageId>Vencaa.FFmpeg.AutoGen.Wrapper</PackageId>
-    <Description>Mostly safe FFmpeg API wrapper based on FFmpeg.AutoGen.</Description>
-    <Version>7.1.1.0-dev</Version>
-    <Product>Vencaa.FFmpeg.AutoGen.Wrapper</Product>
-    <PackageProjectUrl>https://github.com/VendaGamer/FFmpegWrapper</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Authors>VendaGamer</Authors>
-
-    <PackageOutputPath>$(SolutionDir)artifacts</PackageOutputPath>
-
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="7.1.1" />
-    <PackageReference Include="System.Collections.Immutable" Version="9.0.5" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="7.1.1" />
+        <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
+        <PackageReference Include="System.Buffers" Version="4.6.1" />
+        <PackageReference Include="System.Collections.Immutable" Version="9.0.5" />
+        <PackageReference Include="System.Memory" Version="4.6.3" />
+        <PackageReference Include="System.Numerics.Vectors" Version="4.6.1" />
+        <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    </ItemGroup>
 </Project>

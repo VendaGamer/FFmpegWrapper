@@ -1,16 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
+    
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="OpenTK" Version="4.9.4" />
-
-    <Compile Include="../misc/GL2O/**/*.cs" />
-
-    <Content Include="Shaders/**/*.*">
-      <Link>Shaders/%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="OpenTK" Version="4.9.4" />
+        
+        <Compile Include="../misc/GL2O/**/*.cs" />
+        
+        <Content Include="Shaders/**/*.*">
+        <Link>Shaders/%(RecursiveDir)%(Filename)%(Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+    
 </Project>

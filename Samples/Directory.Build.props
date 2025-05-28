@@ -1,19 +1,19 @@
 <Project>
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <InvariantGlobalization>true</InvariantGlobalization>
     
-    <IsPackable>false</IsPackable>
-    <BaseOutputPath>../build</BaseOutputPath>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <IsPackable>false</IsPackable>
+        <BaseOutputPath>../build</BaseOutputPath>
+    </PropertyGroup>
   
-  <ItemGroup>
-    <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
+    </ItemGroup>
+    
 </Project>

@@ -1,8 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="SkiaSharp" Version="3.119.0" />
-  </ItemGroup>
+    
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="SkiaSharp" Version="3.119.0" />
+    </ItemGroup>
+    
 </Project>
