@@ -2,8 +2,11 @@
 
 public unsafe class SwScaler : FFObject<SwsContext>
 {
-    public PictureFormat InputFormat { get; }
-    public PictureFormat OutputFormat { get; }
+    /// <summary>
+    /// 
+    /// </summary>
+    public readonly PictureFormat InputFormat;
+    public readonly PictureFormat OutputFormat;
 
     public SwScaler(PictureFormat inFmt, PictureFormat outFmt, InterpolationMode flags = InterpolationMode.Bicubic)
     {

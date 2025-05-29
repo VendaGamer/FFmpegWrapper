@@ -62,16 +62,23 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
 
     public override string ToString() => $"{Num}/{Den}";
     public override bool Equals(object other) => other is Rational r && Equals(r);
+
+    /// <inheritdoc />
     public override int GetHashCode() => Math.Round((double)this, 10).GetHashCode();
 
+    /// <inheritdoc />
     public bool Equals(Rational other) => other == this || ((other.Den | Den) == 0 && (other.Num ^ Num) >= 0);
+
+    /// <inheritdoc />
     public int CompareTo(Rational other) => ffmpeg.av_cmp_q(this, other);
 
+    /// <inheritdoc />
     public bool Equals(Rational x, Rational y)
     {
         return x.Num == y.Num && x.Den == y.Den;
     }
 
+    /// <inheritdoc />
     public int GetHashCode(Rational obj)
     {
         unchecked
