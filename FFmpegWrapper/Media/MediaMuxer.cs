@@ -1,5 +1,9 @@
 ﻿namespace FFmpeg.Wrapper;
 
+using System.Collections.ObjectModel;
+
+using ZLinq;
+
 public unsafe class MediaMuxer : FFObject<AVFormatContext>
 {
     public IOContext? IOC { get; }
@@ -9,7 +13,8 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     private List<(MediaStream Stream, MediaEncoder? Encoder)> _streams = new();
     private MediaPacket? _tempPacket;
 
-    public IReadOnlyList<MediaStream> Streams => _streams.Select(s => s.Stream).ToList();
+    public IReadOnlyCollection<MediaStream> Streams => 
+        _streams.AsValueEnumerable().Select(list => list.Stream).ToArray();
 
     /// <inheritdoc cref="AVFormatContext.metadata" />
     public MediaDictionary Metadata => new(&_handle->metadata);
@@ -100,7 +105,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
         stream->time_base = srcStream.TimeBase;
 
         var st = new MediaStream(stream);
-        _streams.Add((st, default));
+        _streams.Add((st, null));
         return st;
     }
 

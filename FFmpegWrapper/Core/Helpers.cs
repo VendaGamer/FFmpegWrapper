@@ -46,6 +46,7 @@ internal static unsafe class Helpers
         if (ptr == null) {
             return null;
         }
+        
         var span = new Span<byte>(ptr, int.MaxValue);
         int length = span.IndexOf((byte)0);
         return Encoding.UTF8.GetString(ptr, length);

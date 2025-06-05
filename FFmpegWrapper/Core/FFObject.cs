@@ -96,7 +96,7 @@ public abstract class FFObject<T> : IDisposable, IHandle<T> where T : unmanaged
     /// so it should not access other managed objects that might have been finalized.
     /// </para>
     /// </remarks>
-    protected abstract void Free();
+    protected unsafe abstract void Free();
     
     /// <summary>
     /// Throws an <see cref="ObjectDisposedException"/> if this object has been disposed.

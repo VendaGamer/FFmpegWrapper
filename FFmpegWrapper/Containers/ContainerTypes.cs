@@ -21,6 +21,7 @@ public static class ContainerTypes
         if (fmt == null) {
             throw new NotSupportedException();
         }
+        
         return fmt;
     }
 }

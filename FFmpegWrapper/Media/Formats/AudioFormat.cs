@@ -48,11 +48,11 @@ public unsafe readonly struct ChannelLayout : IEquatable<ChannelLayout>
     public ChannelOrder Order => (ChannelOrder)Native.order;
     public int NumChannels => Native.nb_channels;
 
-    /// <inheritdoc cref="ffmpeg.av_channel_layout_channel_from_index(AVChannelLayout*, uint)"/>
-    public AudioChannel GetChannel(int index)
+    /// <inheritdoc cref="ffmpeg.av_channel_layout_channel_from_index"/>
+    public AudioChannel GetChannel(uint index)
     {
         fixed (AVChannelLayout* self = &Native) {
-            var ch = (AudioChannel)ffmpeg.av_channel_layout_channel_from_index(self, (uint)index);
+            var ch = (AudioChannel)ffmpeg.av_channel_layout_channel_from_index(self, index);
             GC.KeepAlive(_heap);
             return ch;
         }
@@ -125,10 +125,10 @@ public unsafe readonly struct ChannelLayout : IEquatable<ChannelLayout>
     public override string ToString()
     {
         fixed (AVChannelLayout* self = &Native) {
-            var buf = stackalloc byte[1024];
-            int ret = ffmpeg.av_channel_layout_describe(self, buf, 1024).CheckError();
-            GC.KeepAlive(_heap);
-            if (ret > 1024) throw new NotImplementedException();
+            int requiredSize = ffmpeg.av_channel_layout_describe(self, null, 0).CheckError();
+            
+            var buf = stackalloc byte[requiredSize];
+            ffmpeg.av_channel_layout_describe(self, buf, (ulong)requiredSize).CheckError();
             return Helpers.PtrToStringUTF8(buf)!;
         }
     }
