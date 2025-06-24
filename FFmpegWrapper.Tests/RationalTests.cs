@@ -1,18 +1,16 @@
 namespace FFmpegWrapper.Tests;
-
-using FFmpeg.AutoGen;
 using FFmpeg.Wrapper;
 
-public class RationalTests
+public class RationalTests : TestBase
 {
     [Fact]
     public void Casting()
     {
-        var orig = new AVRational() { num = 123, den = 456 };
+        var orig = new AVRational { num = 123, den = 456 };
 
         Assert.Equal(new Rational(123, 456), (Rational)orig);
         Assert.Equal(orig, (AVRational)(Rational)orig);
-        Assert.Equal(new Rational(123, 1), (Rational)123);
+        Assert.Equal(new Rational(123, 1), 123);
 
         Assert.Equal(0.125, (double)new Rational(1, 8));
         Assert.Equal(new Rational(22, 7), Rational.FromDouble(3.14159, 100));

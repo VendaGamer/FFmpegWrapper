@@ -2,7 +2,7 @@ namespace FFmpegWrapper.Tests;
 using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.Wrapper;
 
-public class CodecTests
+public class CodecTests : TestBase
 {
     [Fact]
     public void AVCodec_Props()

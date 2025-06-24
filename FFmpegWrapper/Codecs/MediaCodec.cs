@@ -1,68 +1,204 @@
 namespace FFmpeg.Wrapper;
 
-public unsafe readonly struct MediaCodec
+public readonly struct MediaCodec : IHandle<AVCodec>
 {
-    public AVCodec* Handle { get; }
+    public unsafe AVCodec* Handle { get; }
 
-    public AVCodecID Id => Handle->id;
-    public AVMediaType Type => Handle->type;
+    public AVCodecID Id {
+        get {
+            unsafe
+            {
+                return Handle->id;
+            }
+        }
+    }
+
+    public AVMediaType Type {
+        get {
+            unsafe
+            {
+                return Handle->type;
+            }
+        }
+    }
 
     /// <inheritdoc cref="AVCodec.name" />
-    public string Name => Helpers.PtrToStringUTF8(Handle->name)!;
+    public string Name {
+        get {
+            unsafe
+            {
+                return Helpers.PtrToStringUTF8(Handle->name)!;
+            }
+        }
+    }
 
     /// <inheritdoc cref="AVCodec.long_name" />
-    public string LongName => Helpers.PtrToStringUTF8(Handle->long_name)!;
+    public string LongName {
+        get {
+            unsafe
+            {
+                return Helpers.PtrToStringUTF8(Handle->long_name)!;
+            }
+        }
+    }
 
     /// <inheritdoc cref="AVCodec.wrapper_name" />
-    public string? WrapperName => Helpers.PtrToStringUTF8(Handle->wrapper_name);
+    public string? WrapperName {
+        get {
+            unsafe
+            {
+                return Helpers.PtrToStringUTF8(Handle->wrapper_name);
+            }
+        }
+    }
 
-    public MediaCodecCaps Capabilities => (MediaCodecCaps)Handle->capabilities;
+    public MediaCodecCaps Capabilities {
+        get {
+            unsafe
+            {
+                return (MediaCodecCaps)Handle->capabilities;
+            }
+        }
+    }
 
     /// <inheritdoc cref="AVCodec.max_lowres" />
-    public byte MaxLowres => Handle->max_lowres;
+    public byte MaxLowres {
+        get {
+            unsafe
+            {
+                return Handle->max_lowres;
+            }
+        }
+    }
 
     /// <summary> Span of supported framerates, or empty if any. </summary>
-    public ReadOnlySpan<Rational> SupportedFramerates => Helpers.GetSpanFromSentinelTerminatedPtr((Rational*)Handle->supported_framerates, default);
-
+    public ReadOnlySpan<Rational> SupportedFramerates =>
+        GetSupportedSpan<Rational>(AVCodecConfig.AV_CODEC_CONFIG_FRAME_RATE);
     /// <summary> Span of supported pixel formats, or empty if unknown. </summary>
-    public ReadOnlySpan<AVPixelFormat> SupportedPixelFormats => Helpers.GetSpanFromSentinelTerminatedPtr(Handle->pix_fmts, (AVPixelFormat)(-1));
-
+    public ReadOnlySpan<AVPixelFormat> SupportedPixelFormats =>
+        GetSupportedSpan<AVPixelFormat>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
     /// <summary> Span of supported audio samplerates, or empty if unknown. </summary>
-    public ReadOnlySpan<int> SupportedSampleRates => Helpers.GetSpanFromSentinelTerminatedPtr(Handle->supported_samplerates, 0);
-
+    public ReadOnlySpan<int> SupportedSampleRates =>
+        GetSupportedSpan<int>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_RATE);
     /// <summary> Span of supported sample formats, or empty if unknown. </summary>
-    public ReadOnlySpan<AVSampleFormat> SupportedSampleFormats => Helpers.GetSpanFromSentinelTerminatedPtr(Handle->sample_fmts,(AVSampleFormat)(-1));
+    public ReadOnlySpan<AVSampleFormat> SupportedSampleFormats
+        => GetSupportedSpan<AVSampleFormat>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_FORMAT);
 
     /// <summary> Span of supported channel layouts. </summary>
-    public ReadOnlySpan<AVChannelLayout> SupportedChannelLayouts => Helpers.GetSpanFromSentinelTerminatedPtr(Handle->ch_layouts, default);
-    
-    public bool IsEncoder => ffmpeg.av_codec_is_encoder(Handle) != 0;
-    public bool IsDecoder => ffmpeg.av_codec_is_decoder(Handle) != 0;
+    public ReadOnlySpan<AVChannelLayout> SupportedChannelLayouts
+        => GetSupportedSpan<AVChannelLayout>(AVCodecConfig.AV_CODEC_CONFIG_CHANNEL_LAYOUT);
 
-    public MediaCodec(AVCodec* handle) => Handle = handle;
+    private ReadOnlySpan<T> GetSupportedSpan<T>(AVCodecConfig config) where T : unmanaged
+    {
+        unsafe
+        {
+
+            T* configs = null;
+            int     countValue = 0;
+            int*   countAddr   = &countValue;
+
+            int ret = ffmpeg.avcodec_get_supported_config(
+                null,
+                Handle,
+                config,
+                0,
+                (void**)&configs,
+                countAddr
+            );
+
+            if (countValue > 0) {
+                // configsPtr now points to an array of 'countValue' pointers,
+                // each one can be cast to AVChannelLayout*
+                var layoutSpan = new ReadOnlySpan<T>(
+                    configs,
+                    countValue
+                );
+                return layoutSpan;
+            }
+            
+            return ReadOnlySpan<T>.Empty;
+        }
+    }
+    
+    public bool IsEncoder {
+        get {
+            unsafe
+            {
+                return ffmpeg.av_codec_is_encoder(Handle) != 0;
+            }
+        }
+    }
+
+    public bool IsDecoder {
+        get {
+            unsafe
+            {
+                return ffmpeg.av_codec_is_decoder(Handle) != 0;
+            }
+        }
+    }
+
+    public unsafe MediaCodec(AVCodec* handle) => Handle = handle;
 
     /// <summary> Returns a list of options accepted by this codec. </summary>
     public IReadOnlyList<ContextOption> GetOptions(bool removeAliases = true)
-        => ContextOption.GetOptions(&Handle->priv_class, removeAliases);
+    {
+        unsafe
+        {
+            return ContextOption.GetOptions(&Handle->priv_class, removeAliases);
+        }
+    }
 
-    public static MediaCodec GetEncoder(string name) => WrapChecked(ffmpeg.avcodec_find_encoder_by_name(name), 0, name);
-    public static MediaCodec GetDecoder(string name) => WrapChecked(ffmpeg.avcodec_find_decoder_by_name(name), 0, name);
+    public static MediaCodec GetEncoder(string name)
+    {
+        unsafe
+        {
+            return WrapChecked(ffmpeg.avcodec_find_encoder_by_name(name), 0, name);
+        }
+    }
 
-    public static MediaCodec GetEncoder(AVCodecID id) => WrapChecked(ffmpeg.avcodec_find_encoder(id), id);
-    public static MediaCodec GetDecoder(AVCodecID id) => WrapChecked(ffmpeg.avcodec_find_decoder(id), id);
+    public static MediaCodec GetDecoder(string name)
+    {
+        unsafe
+        {
+            return WrapChecked(ffmpeg.avcodec_find_decoder_by_name(name), 0, name);
+        }
+    }
+
+    public static MediaCodec GetEncoder(AVCodecID id)
+    {
+        unsafe
+        {
+            return WrapChecked(ffmpeg.avcodec_find_encoder(id), id);
+        }
+    }
+
+    public static MediaCodec GetDecoder(AVCodecID id)
+    {
+        unsafe
+        {
+            return WrapChecked(ffmpeg.avcodec_find_decoder(id), id);
+        }
+    }
 
     public static MediaCodec? TryGetEncoder(string name)
     {
-        AVCodec* ptr = ffmpeg.avcodec_find_encoder_by_name(name);
-        return ptr == null ? null : new(ptr);
+        unsafe
+        {
+            AVCodec* ptr = ffmpeg.avcodec_find_encoder_by_name(name);
+            return ptr == null ? null : new MediaCodec(ptr);
+        }
     }
     public static MediaCodec? TryGetDecoder(string name)
     {
-        AVCodec* ptr = ffmpeg.avcodec_find_decoder_by_name(name);
-        return ptr == null ? null : new(ptr);
+        unsafe
+        {
+            AVCodec* ptr = ffmpeg.avcodec_find_decoder_by_name(name);
+            return ptr == null ? null : new MediaCodec(ptr);
+        }
     }
 
-    private static MediaCodec WrapChecked(AVCodec* ptr, AVCodecID id = 0, string? name = null)
+    private static unsafe MediaCodec WrapChecked(AVCodec* ptr, AVCodecID id = 0, string? name = null)
     {
         if (ptr != null) {
             return new MediaCodec(ptr);
@@ -73,14 +209,17 @@ public unsafe readonly struct MediaCodec
 
     public static IEnumerable<MediaCodec> GetRegisteredCodecs()
     {
-        void* iter;
-        AVCodec* codec;
-        var list = new List<MediaCodec>(1024);
+        unsafe
+        {
+            void* iter;
+            AVCodec* codec;
+            var list = new List<MediaCodec>(1024);
 
-        while ((codec = ffmpeg.av_codec_iterate(&iter)) != null) {
-            list.Add(new MediaCodec(codec));
+            while ((codec = ffmpeg.av_codec_iterate(&iter)) != null) {
+                list.Add(new MediaCodec(codec));
+            }
+            return list;
         }
-        return list;
     }
 
     public override string ToString() => LongName;

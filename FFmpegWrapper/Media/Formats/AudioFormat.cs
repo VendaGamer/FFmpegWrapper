@@ -122,6 +122,7 @@ public unsafe readonly struct ChannelLayout : IEquatable<ChannelLayout>
         }
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         fixed (AVChannelLayout* self = &Native) {
@@ -133,6 +134,7 @@ public unsafe readonly struct ChannelLayout : IEquatable<ChannelLayout>
         }
     }
 
+    /// <inheritdoc />
     public bool Equals(ChannelLayout other)
     {
         fixed (AVChannelLayout* a = &Native) {
@@ -142,7 +144,11 @@ public unsafe readonly struct ChannelLayout : IEquatable<ChannelLayout>
             return c == 0;
         }
     }
-    public override bool Equals(object obj) => obj is ChannelLayout other && Equals(other);
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is ChannelLayout other && Equals(other);
+
+    /// <inheritdoc />
     public override int GetHashCode() => NumChannels;
 
     sealed class HeapStorage

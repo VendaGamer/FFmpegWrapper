@@ -9,7 +9,6 @@ public abstract unsafe class MediaDecoder : CodecBase
     public void SendPacket(MediaPacket? packet)
     {
         var result = ffmpeg.avcodec_send_packet(_handle, packet!.Handle);
-        
         // Fast path for success
         if (result == 0) return;
         

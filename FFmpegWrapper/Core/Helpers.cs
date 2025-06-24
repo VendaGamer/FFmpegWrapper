@@ -41,15 +41,19 @@ internal static unsafe class Helpers
         return new ReadOnlySpan<T>(ptr, len);
     }
 
-    public static string? PtrToStringUTF8(byte* ptr)
+    public static string PtrToStringUTF8(byte* ptr)
     {
-        if (ptr == null) {
-            return null;
-        }
+        #if NETSTANDARD2_1_OR_GREATER
+        return Marshal.PtrToStringUTF8((IntPtr)ptr);
+        #else
         
-        var span = new Span<byte>(ptr, int.MaxValue);
-        int length = span.IndexOf((byte)0);
+        int length = 0;
+        while (ptr[length] != 0)
+            length++;
+    
+        // Convert bytes to string using UTF-8 encoding
         return Encoding.UTF8.GetString(ptr, length);
+        #endif
     }
     public static bool StrCmp(byte* a, ReadOnlySpan<byte> b)
     {
