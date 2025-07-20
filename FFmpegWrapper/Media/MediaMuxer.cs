@@ -1,40 +1,51 @@
 ﻿namespace FFmpeg.Wrapper;
 
-using System.Collections.ObjectModel;
+using System.Collections.Immutable;
+using System.Net.Sockets;
 
-using ZLinq;
-
-public unsafe class MediaMuxer : FFObject<AVFormatContext>
+public sealed class MediaMuxer : FFObject<AVFormatContext>
 {
-    public IOContext? IOC { get; }
+    public IOContext? IOContext { get; }
     readonly bool _iocLeaveOpen;
     readonly bool _ownsCtx;
 
-    private List<(MediaStream Stream, MediaEncoder? Encoder)> _streams = new();
+    private ImmutableArray<KeyValuePair<MediaStream, MediaEncoder?>> _streams
+        = ImmutableArray<KeyValuePair<MediaStream, MediaEncoder?>>.Empty;
+    
     private MediaPacket? _tempPacket;
 
-    public IReadOnlyCollection<MediaStream> Streams => 
-        _streams.AsValueEnumerable().Select(list => list.Stream).ToArray();
+    public ImmutableArray<MediaStream> Streams { get; private set; } =
+        ImmutableArray<MediaStream>.Empty;
 
     /// <inheritdoc cref="AVFormatContext.metadata" />
-    public MediaDictionary Metadata => new(&_handle->metadata);
+    public MediaDictionary Metadata {
+        get {
+            unsafe
+            {
+                return new MediaDictionary(&_handle->metadata);
+            }
+        }
+    }
 
     public bool IsOpen { get; private set; } = false;
 
     public MediaMuxer(string filename)
     {
-        fixed (AVFormatContext** fmtCtx = &_handle) {
-            ffmpeg.avformat_alloc_output_context2(fmtCtx, null, null, filename).CheckError("Could not allocate muxer");
+        unsafe
+        {
+            fixed (AVFormatContext** fmtCtx = &_handle) {
+                ffmpeg.avformat_alloc_output_context2(fmtCtx, null, null, filename).CheckError("Could not allocate muxer");
+            }
+            ffmpeg.avio_open(&_handle->pb, filename, ffmpeg.AVIO_FLAG_WRITE).CheckError("Could not open output file");
         }
-        ffmpeg.avio_open(&_handle->pb, filename, ffmpeg.AVIO_FLAG_WRITE).CheckError("Could not open output file");
     }
 
-    public MediaMuxer(IOContext ioc, string formatExtension, bool leaveOpen = false)
-        : this(ioc, ContainerTypes.GetOutputFormat(formatExtension), leaveOpen) { }
+    public unsafe MediaMuxer(IOContext ioContext, string formatExtension, bool leaveOpen = false)
+        : this(ioContext, ContainerTypes.GetOutputFormat(formatExtension), leaveOpen) { }
 
-    public MediaMuxer(IOContext ioc, AVOutputFormat* format, bool leaveOpen = false)
+    public unsafe MediaMuxer(IOContext ioContext, AVOutputFormat* format, bool leaveOpen = false)
     {
-        IOC = ioc;
+        IOContext = ioContext;
         _iocLeaveOpen = leaveOpen;
 
         _handle = ffmpeg.avformat_alloc_context();
@@ -42,12 +53,12 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
             throw new OutOfMemoryException("Could not allocate muxer");
         }
         _handle->oformat = format;
-        _handle->pb = ioc.Handle;
+        _handle->pb = ioContext.Handle;
     }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
     /// <param name="takeOwnership">True if <paramref name="ctx"/> should be freed when Dispose() is called.</param>
-    public MediaMuxer(AVFormatContext* ctx, bool takeOwnership)
+    public unsafe MediaMuxer(AVFormatContext* ctx, bool takeOwnership)
     {
         _handle = ctx;
         _ownsCtx = takeOwnership;
@@ -57,30 +68,33 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     /// <remarks> The <paramref name="encoder"/> must not be open before this is called. </remarks>
     public MediaStream AddStream(MediaEncoder encoder)
     {
-        ThrowIfDisposed();
-        if (IsOpen) {
-            throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
-        }
-        if (encoder.IsOpen) {
-            //This is an unfortunate limitation, but the GlobalHeader flag must be set before the encoder is open.
-            throw new InvalidOperationException("Cannot add stream with an already open encoder.");
-        }
+        unsafe
+        {
+            ThrowIfDisposed();
+            if (IsOpen) {
+                throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
+            }
+            if (encoder.IsOpen) {
+                //This is an unfortunate limitation, but the GlobalHeader flag must be set before the encoder is open.
+                throw new InvalidOperationException("Cannot add stream with an already open encoder.");
+            }
 
-        AVStream* stream = ffmpeg.avformat_new_stream(_handle, encoder.Handle->codec);
-        if (stream == null) {
-            throw new OutOfMemoryException("Could not allocate stream");
-        }
-        stream->id = (int)_handle->nb_streams - 1;
-        stream->time_base = encoder.TimeBase;
+            AVStream* stream = ffmpeg.avformat_new_stream(_handle, encoder.Handle->codec);
+            if (stream == null) {
+                throw new OutOfMemoryException("Could not allocate stream");
+            }
+            stream->id = (int)_handle->nb_streams - 1;
+            stream->time_base = encoder.TimeBase;
 
-        //Some formats want stream headers to be separate.
-        if ((_handle->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0) {
-            encoder.Handle->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
-        }
+            //Some formats want stream headers to be separate.
+            if ((_handle->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0) {
+                encoder.Handle->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+            }
 
-        var st = new MediaStream(stream);
-        _streams.Add((st, encoder));
-        return st;
+            var st = new MediaStream(stream);
+            
+            return st;
+        }
     }
 
     /// <summary>
@@ -88,32 +102,36 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     /// </summary>
     public MediaStream AddStream(MediaStream srcStream)
     {
-        ThrowIfDisposed();
-        if (IsOpen) {
-            throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
+        unsafe
+        {
+            ThrowIfDisposed();
+            if (IsOpen) {
+                throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
+            }
+
+            AVStream* stream = ffmpeg.avformat_new_stream(_handle, null);
+            if (stream == null) {
+                throw new OutOfMemoryException("Could not allocate stream");
+            }
+
+            ffmpeg.avcodec_parameters_copy(stream->codecpar, srcStream.Handle->codecpar).CheckError("Failed to copy codec parameters");
+            stream->codecpar->codec_tag = 0;
+
+            stream->id = (int)_handle->nb_streams - 1;
+            stream->time_base = srcStream.TimeBase;
+
+            var st = new MediaStream(stream);
+
+            _streams = _streams.Add(new KeyValuePair<MediaStream, MediaEncoder?>(st, null));
+            return st;
         }
-
-        AVStream* stream = ffmpeg.avformat_new_stream(_handle, null);
-        if (stream == null) {
-            throw new OutOfMemoryException("Could not allocate stream");
-        }
-
-        ffmpeg.avcodec_parameters_copy(stream->codecpar, srcStream.Handle->codecpar).CheckError("Failed to copy codec parameters");
-        stream->codecpar->codec_tag = 0;
-
-        stream->id = (int)_handle->nb_streams - 1;
-        stream->time_base = srcStream.TimeBase;
-
-        var st = new MediaStream(stream);
-        _streams.Add((st, null));
-        return st;
     }
 
     /// <summary> Opens all streams and writes the container header. </summary>
     /// <remarks> This method will also open all encoders passed to <see cref="AddStream(MediaEncoder)"/>. </remarks>
     public void Open()
     {
-        Open([], true);
+        Open(Enumerable.Empty<KeyValuePair<string, string>>(), true);
     }
 
     /// <inheritdoc cref="Open()" />
@@ -121,31 +139,34 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     /// <param name="ignoreUnknownOptions">When false, throws <see cref="InvalidOperationException" /> when <paramref name="options" /> contains unknown or invalid entries. </param>
     public void Open(IEnumerable<KeyValuePair<string, string>> options, bool ignoreUnknownOptions = false)
     {
-        ThrowIfDisposed();
-        if (IsOpen) {
-            throw new InvalidOperationException("Muxer is already open.");
-        }
-
-        foreach (var (stream, encoder) in _streams) {
-            if (encoder is null) continue;
-            encoder.Open();
-            ffmpeg.avcodec_parameters_from_context(stream.Handle->codecpar, encoder.Handle).CheckError("Could not copy the encoder parameters to the stream.");
-        }
-
-        AVDictionary* rawOpts = null;
-        MediaDictionary.Populate(&rawOpts, options);
-
-        ffmpeg.avformat_write_header(_handle, &rawOpts).CheckError("Could not write header to output file");
-
-        try {
-            if (!ignoreUnknownOptions && ffmpeg.av_dict_count(rawOpts) > 0) {
-                string invalidKeys = string.Join("', '", new MediaDictionary(&rawOpts).Select(e => e.Key));
-                throw new InvalidOperationException($"Unknown or invalid muxer options (keys: '{invalidKeys}')");
+        unsafe
+        {
+            ThrowIfDisposed();
+            if (IsOpen) {
+                throw new InvalidOperationException("Muxer is already open.");
             }
-        } finally {
-            ffmpeg.av_dict_free(&rawOpts);
+            
+            foreach ((MediaStream? stream, MediaEncoder? encoder) in _streams) {
+                if (encoder is null) continue;
+                encoder.Open();
+                ffmpeg.avcodec_parameters_from_context(stream.Handle->codecpar, encoder.Handle).CheckError("Could not copy the encoder parameters to the stream.");
+            }
+
+            AVDictionary* rawOpts = null;
+            MediaDictionary.Populate(&rawOpts, options);
+
+            ffmpeg.avformat_write_header(_handle, &rawOpts).CheckError("Could not write header to output file");
+
+            try {
+                if (!ignoreUnknownOptions && ffmpeg.av_dict_count(rawOpts) > 0) {
+                    string invalidKeys = string.Join("', '", new MediaDictionary(&rawOpts).Select(e => e.Key));
+                    throw new InvalidOperationException($"Unknown or invalid muxer options (keys: '{invalidKeys}')");
+                }
+            } finally {
+                ffmpeg.av_dict_free(&rawOpts);
+            }
+            IsOpen = true;
         }
-        IsOpen = true;
     }
 
     /// <summary> Muxes the given packet to the output file, ensuring correct interleaving. </summary>
@@ -170,9 +191,12 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     /// </param>
     public void Write(MediaPacket? packet)
     {
-        ThrowIfNotOpen();
+        unsafe
+        {
+            ThrowIfNotOpen();
 
-        ffmpeg.av_interleaved_write_frame(_handle, packet == null ? null : packet.Handle).CheckError("Failed to write packet");
+            ffmpeg.av_interleaved_write_frame(_handle, packet == null ? null : packet.Handle).CheckError("Failed to write packet");
+        }
     }
 
     /// <summary> Encodes the given frame and muxes the resulting packets to the output file. </summary>
@@ -180,7 +204,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
     {
         ThrowIfNotOpen();
 
-        if (_streams[stream.Index].Stream != stream) {
+        if (_streams[stream.Index].Key != stream) {
             throw new ArgumentException("Specified stream is not owned by the muxer.");
         }
         _tempPacket ??= new();
@@ -188,9 +212,12 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
         encoder.SendFrame(frame);
 
         while (encoder.ReceivePacket(_tempPacket)) {
-            _tempPacket.RescaleTS(encoder.TimeBase, stream.TimeBase);
-            _tempPacket.StreamIndex = stream.Index;
-            ffmpeg.av_interleaved_write_frame(_handle, _tempPacket.Handle).CheckError("Failed to write packet");
+            unsafe
+            {
+                _tempPacket.RescaleTS(encoder.TimeBase, stream.TimeBase);
+                _tempPacket.StreamIndex = stream.Index;
+                ffmpeg.av_interleaved_write_frame(_handle, _tempPacket.Handle).CheckError("Failed to write packet");
+            }
         }
     }
 
@@ -203,13 +230,14 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
         }
     }
 
-    protected override void Free()
+    /// <inheritdoc />
+    protected unsafe override void Free()
     {
         if (_handle != null) {
             ffmpeg.av_write_trailer(_handle);
 
             if (_ownsCtx) {
-                if (IOC == null) {
+                if (IOContext == null) {
                     ffmpeg.avio_closep(&_handle->pb);
                 }
                 ffmpeg.avformat_free_context(_handle);
@@ -217,7 +245,7 @@ public unsafe class MediaMuxer : FFObject<AVFormatContext>
             _handle = null;
 
             if (!_iocLeaveOpen) {
-                IOC?.Dispose();
+                IOContext?.Dispose();
             }
             _tempPacket?.Dispose();
         }

@@ -7,11 +7,12 @@ if (args.Length < 2) {
     Console.WriteLine("Usage: AVFiltering <input path> <output path>");
     return;
 }
+
 using var demuxer = new MediaDemuxer(args[0]);
 using var muxer = new MediaMuxer(args[1]);
 
-using var videoStream = new StreamInfo(muxer, demuxer, MediaTypes.Video!);
-using var audioStream = new StreamInfo(muxer, demuxer, MediaTypes.Audio!);
+using var videoStream = new StreamInfo(muxer, demuxer, MediaTypes.Video);
+using var audioStream = new StreamInfo(muxer, demuxer, MediaTypes.Audio);
 
 var videoDec = (VideoDecoder)videoStream.Decoder;
 var audioDec = (AudioDecoder)audioStream.Decoder;

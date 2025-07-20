@@ -1,5 +1,4 @@
 using System.Diagnostics;
-
 using FFmpeg.Wrapper;
 
 if (args.Length < 2) {
@@ -62,14 +61,19 @@ abstract class MediaTranscoder : IDisposable
         _decoder = demuxer.CreateStreamDecoder(inputStream, open: false);
         _decoder.SetThreadCount(0); //enable multi-threaded decoding
         _decoder.Open();
-
-        _encoder = CreateEncoder(_decoder);
-        _outStream = muxer.AddStream(_encoder);
+        
+        Init(muxer);
 
         _inFrame = inputStream.Type switch {
             MediaTypes.Audio => new AudioFrame(),
             MediaTypes.Video => new VideoFrame()
         };
+    }
+
+    private void Init(MediaMuxer muxer)
+    {
+        _encoder = CreateEncoder(_decoder);
+        _outStream = muxer.AddStream(_encoder);
     }
 
     public void ReceivePacket(MediaPacket packet)
