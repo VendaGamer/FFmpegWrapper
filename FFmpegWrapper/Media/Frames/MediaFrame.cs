@@ -1,4 +1,6 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media.Frames;
+
+using FFmpegWrapper.Core;
 
 public unsafe abstract class MediaFrame : FFObject<AVFrame>
 {

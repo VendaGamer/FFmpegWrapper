@@ -1,7 +1,18 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media;
 
 using System.Collections.Immutable;
-using System.Net.Sockets;
+
+using Codecs.Encoding;
+
+using Containers;
+
+using FFmpegWrapper.Core;
+
+using Frames;
+
+using Packets;
+
+using Streams;
 
 public sealed class MediaMuxer : FFObject<AVFormatContext>
 {

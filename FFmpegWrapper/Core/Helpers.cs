@@ -1,7 +1,7 @@
-﻿using System.Runtime.InteropServices;
-using System.Text;
+﻿namespace FFmpegWrapper.Core;
 
-namespace FFmpeg.Wrapper;
+using System.Runtime.InteropServices;
+using System.Text;
 
 internal static unsafe class Helpers
 {

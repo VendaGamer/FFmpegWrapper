@@ -1,4 +1,4 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Codecs;
 
 public unsafe readonly struct CodecHardwareConfig
 {

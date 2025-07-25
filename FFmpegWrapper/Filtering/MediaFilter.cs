@@ -1,6 +1,10 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Filtering;
 
 using System.Collections.Generic;
+
+using Configuration;
+
+using FFmpegWrapper.Core;
 
 public unsafe readonly struct MediaFilter
 {

@@ -1,4 +1,5 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Media.Frames;
+
 using System.Text;
 
 public unsafe struct FrameSideDataList

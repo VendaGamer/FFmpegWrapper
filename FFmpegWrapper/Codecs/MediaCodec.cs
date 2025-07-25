@@ -1,4 +1,10 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Codecs;
+
+using Configuration;
+
+using Containers;
+
+using FFmpegWrapper.Core;
 
 public readonly struct MediaCodec : IHandle<AVCodec>
 {

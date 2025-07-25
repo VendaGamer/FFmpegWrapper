@@ -1,6 +1,10 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Configuration;
 
 using System.Collections.Generic;
+
+using FFmpegWrapper.Core;
+
+using Media.Formats;
 
 using static AVOptionType;
 

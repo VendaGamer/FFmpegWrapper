@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <TargetFrameworks>netstandard2.0;netstandard2.1;net9.0</TargetFrameworks>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -24,6 +24,7 @@
     <ItemGroup>
         <PackageReference Include="FFmpeg.AutoGen.Abstractions" />
         <PackageReference Include="Microsoft.NETCore.Platforms" />
+        <PackageReference Include="OwnerCore" />
         <PackageReference Include="System.Collections.Immutable" />
         <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
     </ItemGroup>

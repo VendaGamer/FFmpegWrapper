@@ -1,4 +1,4 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Core;
 
 public enum LavResult
 {

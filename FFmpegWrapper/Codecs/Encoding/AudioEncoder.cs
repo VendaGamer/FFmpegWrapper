@@ -1,4 +1,8 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Codecs.Encoding;
+
+using FFmpegWrapper.Core;
+
+using Media.Formats;
 
 public unsafe class AudioEncoder : MediaEncoder
 {

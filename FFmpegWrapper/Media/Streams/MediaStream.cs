@@ -1,4 +1,8 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media.Streams;
+
+using Containers;
+
+using FFmpegWrapper.Core;
 
 public unsafe class MediaStream
 {

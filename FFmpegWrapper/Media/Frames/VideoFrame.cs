@@ -1,4 +1,15 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media.Frames;
+
+using Codecs.Decoding;
+using Codecs.Encoding;
+
+using FFmpegWrapper.Core;
+
+using Formats;
+
+using Packets;
+
+using Processing;
 
 public unsafe class VideoFrame : MediaFrame
 {

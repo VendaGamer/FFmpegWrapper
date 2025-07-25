@@ -1,4 +1,4 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Core;
 
 using System.Text;
 

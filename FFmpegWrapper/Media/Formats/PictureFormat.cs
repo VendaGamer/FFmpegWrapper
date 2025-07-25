@@ -1,4 +1,7 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media.Formats;
+
+using FFmpegWrapper.Core;
+
 /// <summary>
 /// Represents a picture format with dimensions, pixel format, and optional pixel aspect ratio.
 /// This is a wrapper around FFmpeg's AVPixelFormat that provides convenient methods for format manipulation.

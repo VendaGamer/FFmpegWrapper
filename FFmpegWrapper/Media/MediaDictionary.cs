@@ -1,6 +1,8 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Media;
 
 using System.Collections;
+
+using FFmpegWrapper.Core;
 
 using Entry = KeyValuePair<string, string>;
 

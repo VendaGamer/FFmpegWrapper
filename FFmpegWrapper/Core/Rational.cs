@@ -1,4 +1,4 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Core;
 
 /// <summary> Represents a rational number (pair of numerator and denominator). </summary>
 /// <remarks>

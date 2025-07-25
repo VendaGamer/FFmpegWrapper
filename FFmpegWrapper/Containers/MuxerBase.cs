@@ -1,4 +1,4 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Containers;
 
 public class MuxerBase : FormatContext
 {

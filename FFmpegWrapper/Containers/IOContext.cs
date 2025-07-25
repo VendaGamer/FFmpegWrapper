@@ -1,4 +1,6 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Containers;
+
+using FFmpegWrapper.Core;
 
 public abstract unsafe class IOContext : FFObject<AVIOContext>
 {

@@ -1,4 +1,9 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Codecs.Decoding;
+
+using FFmpegWrapper.Core;
+
+using Media.Frames;
+using Media.Packets;
 
 public abstract unsafe class MediaDecoder : CodecBase
 {

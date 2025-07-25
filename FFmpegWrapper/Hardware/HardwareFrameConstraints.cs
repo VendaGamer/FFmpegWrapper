@@ -1,4 +1,8 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Hardware;
+
+using FFmpegWrapper.Core;
+
+using Media.Formats;
 
 public class HardwareFrameConstraints
 {

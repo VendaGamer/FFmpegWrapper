@@ -1,4 +1,9 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Filtering;
+
+using FFmpegWrapper.Core;
+
+using Media.Formats;
+using Media.Frames;
 
 public unsafe class MediaBufferSource : MediaFilterNode
 {

@@ -1,4 +1,8 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Codecs.Decoding;
+
+using FFmpegWrapper.Core;
+
+using Media.Formats;
 
 public unsafe class AudioDecoder : MediaDecoder
 {

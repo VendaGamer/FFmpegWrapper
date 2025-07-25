@@ -1,6 +1,17 @@
-﻿using System.Collections.Immutable;
+﻿namespace FFmpegWrapper.Media;
 
-namespace FFmpeg.Wrapper;
+using System.Collections.Immutable;
+
+using Codecs;
+using Codecs.Decoding;
+
+using Containers;
+
+using FFmpegWrapper.Core;
+
+using Packets;
+
+using Streams;
 
 public unsafe class MediaDemuxer : FFObject<AVFormatContext>
 {
@@ -96,7 +107,7 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     /// <summary> Creates a decoder for the given audio or video stream. </summary>
     /// <param name="stream">Stream for which is supposed to be created the decoder</param>
     /// <param name="open">
-    /// True to call <see cref="CodecBase.Open()" /> before returning the decoder.
+    /// True to call <see cref="CodecBase.Open" /> before returning the decoder.
     /// Should be set to false if extra setup (e.g. hardware acceleration) is needed before opening.
     /// </param>
     /// <returns></returns>

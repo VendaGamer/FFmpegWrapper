@@ -1,4 +1,11 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Codecs.Encoding;
+
+using FFmpegWrapper.Core;
+
+using Hardware;
+
+using Media.Formats;
+using Media.Frames;
 
 public unsafe class VideoEncoder : MediaEncoder
 {
@@ -84,22 +91,29 @@ public unsafe class VideoEncoder : MediaEncoder
     }
 
     /// <summary> Searches for a hardware device suitable for encoding the given codec and frame format. </summary>
-    public static HardwareDevice? CreateCompatibleHardwareDevice(AVCodecID codecId, in PictureFormat format, out CodecHardwareConfig codecConfig)
+    public static bool TryCreateCompatibleHardwareDevice(AVCodecID codecId, in PictureFormat format, out CodecHardwareConfig codecConfig, out HardwareDevice device)
     {
         foreach (var config in VideoEncoder.GetHardwareConfigs(codecId)) {
             if (config.PixelFormat != format.PixelFormat) continue;
 
-            var device = HardwareDevice.Create(config.DeviceType);
-            var constraints = device?.GetMaxFrameConstraints();
-
-            if (device != null && (constraints == null || constraints.IsValidFormat(format))) {
-                codecConfig = config;
-                return device;
+            if (!HardwareDevice.TryCreate(config.DeviceType, out var created)) {
+                continue;
             }
-            device?.Dispose();
+
+            var constraints = created.GetMaxFrameConstraints();
+
+            if (constraints != null && !constraints.IsValidFormat(format)) {
+                continue;
+            }
+
+            device = created;
+            codecConfig = config;
+            return true;
         }
+
+        device = null!;
         codecConfig = default;
-        return null;
+        return false;
     }
 
     /// <summary> Returns a new list containing all hardware encoder configurations that may or not be available. </summary>

@@ -1,4 +1,4 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Containers;
 /// <summary>
 /// Defines a contract for objects that provide access to unmanaged FFmpeg handles.
 /// This interface enables safe interoperability between managed wrapper objects and 

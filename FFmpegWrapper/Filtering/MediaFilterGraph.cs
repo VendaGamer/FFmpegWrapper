@@ -1,6 +1,14 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Filtering;
 
 using System.Text;
+
+using Configuration;
+
+using FFmpegWrapper.Core;
+
+using Hardware;
+
+using Media.Formats;
 
 public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
 {

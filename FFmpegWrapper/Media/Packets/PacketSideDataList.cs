@@ -1,12 +1,10 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Media.Packets;
 
 using System.Text;
 
-using AutoGen;
-
-using AVPacketSideData = AutoGen.Abstractions.AVPacketSideData;
-using AVPacketSideDataType = AutoGen.Abstractions.AVPacketSideDataType;
-using ffmpeg = AutoGen.Abstractions.ffmpeg;
+using AVPacketSideData = FFmpeg.AutoGen.Abstractions.AVPacketSideData;
+using AVPacketSideDataType = FFmpeg.AutoGen.Abstractions.AVPacketSideDataType;
+using ffmpeg = FFmpeg.AutoGen.Abstractions.ffmpeg;
 
 public unsafe struct PacketSideDataList
 {

@@ -1,4 +1,4 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Containers;
 
 internal class StreamIOContext : IOContext
 {

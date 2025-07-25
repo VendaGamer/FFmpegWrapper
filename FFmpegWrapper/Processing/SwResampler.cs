@@ -1,4 +1,9 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Processing;
+
+using FFmpegWrapper.Core;
+
+using Media.Formats;
+using Media.Frames;
 
 public unsafe class SwResampler : FFObject<SwrContext>
 {

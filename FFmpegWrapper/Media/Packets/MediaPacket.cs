@@ -1,4 +1,8 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media.Packets;
+
+using FFmpegWrapper.Core;
+
+using Streams;
 
 public unsafe class MediaPacket : FFObject<AVPacket>
 {

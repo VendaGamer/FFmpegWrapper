@@ -1,4 +1,8 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Hardware;
+
+using FFmpegWrapper.Core;
+
+using Media.Frames;
 
 public unsafe class HardwareFramePool : FFObject<AVBufferRef>
 {

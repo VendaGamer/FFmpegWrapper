@@ -1,4 +1,8 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Containers;
+
+using FFmpegWrapper.Core;
+
+using Media;
 
 public abstract class FormatContext : FFObject<AVFormatContext>
 {

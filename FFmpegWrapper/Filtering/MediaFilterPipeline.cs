@@ -1,4 +1,6 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Filtering;
+
+using Media.Frames;
 
 /// <summary> Convenience wrapper for a filter graph. </summary>
 public partial class MediaFilterPipeline : IDisposable

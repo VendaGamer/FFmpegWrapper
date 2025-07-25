@@ -1,4 +1,8 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media.Frames;
+
+using FFmpegWrapper.Core;
+
+using Formats;
 
 public unsafe class AudioFrame : MediaFrame
 {

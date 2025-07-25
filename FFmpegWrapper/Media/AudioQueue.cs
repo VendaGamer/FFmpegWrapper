@@ -1,4 +1,10 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media;
+
+using FFmpegWrapper.Core;
+
+using Formats;
+
+using Frames;
 
 public unsafe class AudioQueue : FFObject<AVAudioFifo>
 {

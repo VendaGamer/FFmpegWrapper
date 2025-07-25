@@ -1,11 +1,14 @@
-namespace FFmpeg.Wrapper;
+namespace FFmpegWrapper.Core;
+using System.Collections.Immutable;
+
+using Containers;
 
 /// <summary>
 /// Provides a base implementation for managed wrapper classes that encapsulate unmanaged FFmpeg objects.
 /// This abstract class handles the common patterns of resource management, disposal, and safe access
 /// to underlying FFmpeg structures while implementing the <see cref="IHandle{T}"/> interface.
 /// </summary>
-/// <typeparam name="T">
+/// <typeparam name="TRaw">
 /// The FFmpeg.AutoGen unmanaged structure type that this wrapper encapsulates.
 /// Must be an unmanaged type (value type with no managed references).
 /// </typeparam>
@@ -16,30 +19,31 @@ namespace FFmpeg.Wrapper;
 /// specific to their FFmpeg object type.
 /// </para>
 /// </remarks>
-public abstract class FFObject<T> : IDisposable, IHandle<T> where T : unmanaged
+public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : unmanaged
 {
+    private ImmutableArray<IDisposable> _ownedObjects = ImmutableArray<IDisposable>.Empty;
+    private bool _disposed;
     /// <summary>
     /// pointer to the underlying unmanaged FFmpeg structure.
     /// </summary>
-    protected unsafe T* _handle;
+    protected unsafe TRaw* _handle;
 
     /// <summary>
     /// Gets a pointer to the underlying unmanaged FFmpeg structure.
     /// </summary>
     /// <value>
-    /// A pointer to the native FFmpeg structure of type <typeparamref name="T"/>.
+    /// A pointer to the native FFmpeg structure of type <typeparamref name="TRaw"/>.
     /// Throws if the object has been disposed.
     /// </value>
     /// <returns>
     /// A pointer to the unmanaged FFmpeg structure, or null if disposed.
     /// </returns>
-    public unsafe T* Handle {
+    public unsafe TRaw* Handle {
         get {
             ThrowIfDisposed();
             return _handle;
         }
     }
-
 
     /// <summary>
     /// Releases all resources used by the FFmpeg object and suppresses finalization.
@@ -60,8 +64,22 @@ public abstract class FFObject<T> : IDisposable, IHandle<T> where T : unmanaged
     /// </remarks>
     public void Dispose()
     {
-        Free();
+        Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+        if (disposing) {
+            foreach (var owned in _ownedObjects) {
+                owned.Dispose();
+            }
+        }
+        
+        Free();
+
+        _disposed = true;
     }
 
     /// <summary>
@@ -80,7 +98,7 @@ public abstract class FFObject<T> : IDisposable, IHandle<T> where T : unmanaged
     /// using statement to ensure timely resource cleanup.
     /// </para>
     /// </remarks>
-    ~FFObject() => Free();
+    ~FFObject() => Dispose(false);
     
     /// <summary>
     /// Releases the unmanaged FFmpeg resources associated with this object.
@@ -96,7 +114,7 @@ public abstract class FFObject<T> : IDisposable, IHandle<T> where T : unmanaged
     /// so it should not access other managed objects that might have been finalized.
     /// </para>
     /// </remarks>
-    protected unsafe abstract void Free();
+    protected abstract void Free();
     
     /// <summary>
     /// Throws an <see cref="ObjectDisposedException"/> if this object has been disposed.
@@ -115,5 +133,21 @@ public abstract class FFObject<T> : IDisposable, IHandle<T> where T : unmanaged
         if (_handle == null) {
             throw new ObjectDisposedException(GetType().Name);
         }
+    }
+    /// <summary>
+    /// Takes ownership of managed object.
+    /// When disposing disposes of the given object
+    /// </summary>
+    protected void TakeOwnership(IDisposable objectToOwn)
+    {
+        _ownedObjects = _ownedObjects.Add(objectToOwn);
+    }
+    /// <summary>
+    /// Takes ownership of managed objects.
+    /// When disposing disposes of the given objects
+    /// </summary>
+    protected void TakeOwnership(params ReadOnlySpan<IDisposable> objectsToOwn)
+    {
+        _ownedObjects = _ownedObjects.AddRange(objectsToOwn);
     }
 }

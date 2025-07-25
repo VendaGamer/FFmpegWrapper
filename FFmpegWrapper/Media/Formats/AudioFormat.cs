@@ -1,4 +1,6 @@
-﻿namespace FFmpeg.Wrapper;
+﻿namespace FFmpegWrapper.Media.Formats;
+
+using FFmpegWrapper.Core;
 
 public unsafe readonly struct AudioFormat : IEquatable<AudioFormat>
 {
