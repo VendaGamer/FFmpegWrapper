@@ -10,6 +10,14 @@ public readonly struct MediaCodec : IHandle<AVCodec>
 {
     public unsafe AVCodec* Handle { get; }
 
+    public bool IsValid {
+        get {
+            unsafe {
+                return Handle is not null;
+            }
+        }
+    }
+
     public AVCodecID Id {
         get {
             unsafe

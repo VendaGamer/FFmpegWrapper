@@ -1,6 +1,9 @@
 namespace FFmpegWrapper.Hardware;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Immutable;
+
+using Codecs;
+
 using Core;
 
 using Media.Formats;
@@ -174,6 +177,56 @@ public class HardwareDevice : FFObject<AVBufferRef>
             
         // Unknown device types get lowest priority
         return int.MaxValue;
+    }
+    
+    /// <summary>
+    /// Tries to find and create a hardware device suitable for decoding a specific codec and frame format.
+    /// The search follows a predefined priority list of hardware acceleration types.
+    /// </summary>
+    /// <param name="codecId">The ID of the codec to be decoded.</param>
+    /// <param name="targetFormat">The target picture format (resolution and pixel format) for the output frames.</param>
+    /// <param name="device">When this method returns true, contains the created and ready-to-use HardwareDevice.</param>
+    /// <param name="codecConfig">When this method returns true, contains the hardware configuration used to create the device.</param>
+    /// <returns>true if a compatible hardware device was found and created; otherwise, false.</returns>
+    public static bool TryCreateCompatibleHardwareDevice(
+        AVCodecID codecId,
+        in PictureFormat targetFormat,
+        out HardwareDevice device,
+        out CodecHardwareConfig codecConfig)
+    {
+        // Get all available hardware configurations for the specified codec just once.
+        var availableConfigs = CodecHardwareConfig.GetHardwareConfigs(codecId);
+        
+        // Iterate through our priority list, from highest to lowest priority.
+        foreach (var preferredDeviceType in HardwareDevice.HardwareDevicePriority)
+        {
+            // Find the first available config that matches the current priority level.
+            var config = availableConfigs.FirstOrDefault(c => c.DeviceType == preferredDeviceType);
+
+            if (!config.IsValid) {
+                continue;
+            }
+            // Attempt to create the hardware device. A 'using' block ensures it's disposed if not returned.
+            if (!TryCreate(config.DeviceType, out var hardwareDevice))
+            {
+                continue;
+            }
+
+            var constraints = hardwareDevice.GetMaxFrameConstraints();
+
+            // Check if the device can handle the target format.
+            if (constraints == null || constraints.IsValidFormat(targetFormat))
+            {
+                codecConfig = config;
+                device = hardwareDevice;
+                return true;
+            }
+        }
+
+        // No suitable device was found after checking all priorities.
+        device = null!;
+        codecConfig = default;
+        return false;
     }
 
     protected override void Free()

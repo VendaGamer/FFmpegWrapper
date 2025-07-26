@@ -89,57 +89,5 @@ public unsafe class VideoEncoder : MediaEncoder
     {
         return ffmpeg.av_rescale_q(frameNumber, ffmpeg.av_inv_q(FrameRate), TimeBase);
     }
-
-    /// <summary> Searches for a hardware device suitable for encoding the given codec and frame format. </summary>
-    public static bool TryCreateCompatibleHardwareDevice(AVCodecID codecId, in PictureFormat format, out CodecHardwareConfig codecConfig, out HardwareDevice device)
-    {
-        foreach (var config in VideoEncoder.GetHardwareConfigs(codecId)) {
-            if (config.PixelFormat != format.PixelFormat) continue;
-
-            if (!HardwareDevice.TryCreate(config.DeviceType, out var created)) {
-                continue;
-            }
-
-            var constraints = created.GetMaxFrameConstraints();
-
-            if (constraints != null && !constraints.IsValidFormat(format)) {
-                continue;
-            }
-
-            device = created;
-            codecConfig = config;
-            return true;
-        }
-
-        device = null!;
-        codecConfig = default;
-        return false;
-    }
-
-    /// <summary> Returns a new list containing all hardware encoder configurations that may or not be available. </summary>
-    /// <param name="codecId"> If specified, the list will only include configs for this codec. </param>
-    /// <param name="deviceType"> If specified, the list will only include configs for this device type. </param>
-    public static List<CodecHardwareConfig> GetHardwareConfigs(AVCodecID? codecId = null, AVHWDeviceType? deviceType = null)
-    {
-        var configs = new List<CodecHardwareConfig>();
-
-        void* iterState = null;
-        AVCodec* codec;
-
-        while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
-            if ((codecId != null && codec->id != codecId) || ffmpeg.av_codec_is_encoder(codec) == 0) continue;
-
-            int i = 0;
-            AVCodecHWConfig* config;
-
-            while ((config = ffmpeg.avcodec_get_hw_config(codec, i++)) != null) {
-                const int reqMethods = (int)(CodecHardwareMethods.DeviceContext | CodecHardwareMethods.FramesContext);
-
-                if ((config->methods & reqMethods) != 0 && (deviceType == null || config->device_type == deviceType)) {
-                    configs.Add(new CodecHardwareConfig(codec, config));
-                }
-            }
-        }
-        return configs;
-    }
+    
 }

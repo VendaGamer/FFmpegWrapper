@@ -1,9 +1,6 @@
 ﻿namespace FFmpegWrapper.Codecs;
-
-using FFmpegWrapper.Core;
-
+using Core;
 using Hardware;
-
 using Media.Packets;
 
 public unsafe abstract class CodecBase : FFObject<AVCodecContext>
