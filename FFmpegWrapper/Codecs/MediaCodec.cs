@@ -1,15 +1,41 @@
 namespace FFmpegWrapper.Codecs;
 
+using System.Collections.Immutable;
 using Configuration;
-
 using Containers;
-
-using FFmpegWrapper.Core;
+using Core;
 
 public readonly struct MediaCodec : IHandle<AVCodec>
 {
     public unsafe AVCodec* Handle { get; }
 
+    private static ImmutableArray<MediaCodec> avaliableCodecs;
+
+    public static ImmutableArray<MediaCodec> AvaliableCodecs {
+        get {
+            if (avaliableCodecs.IsDefault) {
+                avaliableCodecs = GetAllAvailableCodecs();
+            }
+
+            return avaliableCodecs;
+        }
+    }
+
+    private static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
+    {
+        var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
+        
+        unsafe {
+            void* iterState = null;
+            AVCodec* codec;
+            while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
+                builder.Add(new MediaCodec(codec));
+            }
+        }
+
+        return builder.ToImmutable();
+    }
+    
     public bool IsValid {
         get {
             unsafe {
@@ -219,21 +245,6 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         }
         name ??= id.ToString();
         throw new KeyNotFoundException($"No registered codec named '{name}'");
-    }
-
-    public static IEnumerable<MediaCodec> GetRegisteredCodecs()
-    {
-        unsafe
-        {
-            void* iter;
-            AVCodec* codec;
-            var list = new List<MediaCodec>(1024);
-
-            while ((codec = ffmpeg.av_codec_iterate(&iter)) != null) {
-                list.Add(new MediaCodec(codec));
-            }
-            return list;
-        }
     }
 
     public override string ToString() => LongName;

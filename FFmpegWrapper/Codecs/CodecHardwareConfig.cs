@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Codecs;
 
+using System.Runtime.InteropServices;
+
 using Containers;
 
 public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
@@ -73,6 +75,8 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
                 if ((codecId != null && codec->id != codecId) ||
                     ffmpeg.av_codec_is_decoder(codec) == 0)
                     continue;
+                
+                
 
                 int i = 0;
                 AVCodecHWConfig* configPtr;
