@@ -1,9 +1,5 @@
 ﻿namespace FFmpegWrapper.Media.Streams;
 
-using Containers;
-
-using FFmpegWrapper.Core;
-
 public unsafe class MediaStream
 {
     public AVStream* Handle { get; }

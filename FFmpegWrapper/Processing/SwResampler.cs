@@ -1,33 +1,37 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-using FFmpegWrapper.Core;
-
-using Media.Formats;
-using Media.Frames;
-
 public unsafe class SwResampler : FFObject<SwrContext>
 {
     public AudioFormat InputFormat { get; }
     public AudioFormat OutputFormat { get; }
 
     /// <summary> Gets an estimated number of buffered output samples. </summary>
-    public int BufferedSamples => (int)ffmpeg.swr_get_delay(_handle, OutputFormat.SampleRate);
+    public int BufferedSamples => (int)ffmpeg.swr_get_delay(handle, OutputFormat.SampleRate);
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="inFmt">Original format</param>
+    /// <param name="outFmt">out</param>
     public SwResampler(AudioFormat inFmt, AudioFormat outFmt)
     {
-        _handle = ffmpeg.swr_alloc();
+        if (inFmt.Equals(outFmt)) {
+            throw new FormatException("Formats cannot be the same");
+        }
+        
+        handle = ffmpeg.swr_alloc();
 
         var tempLayout = inFmt.Layout.Native;
-        ffmpeg.av_opt_set_chlayout(_handle, "in_chlayout", &tempLayout, 0);
-        ffmpeg.av_opt_set_int(_handle, "in_sample_rate", inFmt.SampleRate, 0);
-        ffmpeg.av_opt_set_int(_handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
+        ffmpeg.av_opt_set_chlayout(handle, "in_chlayout", &tempLayout, 0);
+        ffmpeg.av_opt_set_int(handle, "in_sample_rate", inFmt.SampleRate, 0);
+        ffmpeg.av_opt_set_int(handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
 
         tempLayout = outFmt.Layout.Native;
-        ffmpeg.av_opt_set_chlayout(_handle, "out_chlayout", &tempLayout, 0);
-        ffmpeg.av_opt_set_int(_handle, "out_sample_rate", outFmt.SampleRate, 0);
-        ffmpeg.av_opt_set_int(_handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
+        ffmpeg.av_opt_set_chlayout(handle, "out_chlayout", &tempLayout, 0);
+        ffmpeg.av_opt_set_int(handle, "out_sample_rate", outFmt.SampleRate, 0);
+        ffmpeg.av_opt_set_int(handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
 
-        ffmpeg.swr_init(_handle);
+        ffmpeg.swr_init(handle);
 
         InputFormat = inFmt;
         OutputFormat = outFmt;
@@ -71,12 +75,14 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// <returns>The number of samples written to the dst buffer.</returns>
     public int Convert(byte** src, int srcCount, byte** dst, int dstCount)
     {
-        return ffmpeg.swr_convert(Handle, dst, dstCount, src, srcCount).CheckError();
+        ThrowIfDisposed();
+        return ffmpeg.swr_convert(handle, dst, dstCount, src, srcCount).CheckError();
     }
 
-    public int Convert(AudioFrame? src, AudioFrame dst)
+    public int Convert(AudioFrame src, AudioFrame dst)
     {
-        return ffmpeg.swr_convert_frame(Handle, dst.Handle, src == null ? null : src.Handle).CheckError();
+        ThrowIfDisposed();
+        return ffmpeg.swr_convert_frame(handle, ((IHandle<AVFrame>)dst).Handle, ((IHandle<AVFrame>)src).Handle).CheckError();
     }
 
     private bool _flushing;
@@ -156,21 +162,22 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// </summary>
     public int GetOutputSamples(int inputSampleCount)
     {
-        return ffmpeg.swr_get_out_samples(_handle, inputSampleCount);
+        return ffmpeg.swr_get_out_samples(handle, inputSampleCount);
     }
 
     /// <summary> Drops the specified number of output samples. </summary>
     public void DropOutputSamples(int count)
     {
-        ffmpeg.swr_drop_output(_handle, count).CheckError();
+        ffmpeg.swr_drop_output(handle, count).CheckError();
     }
 
     //TODO: expose swr_next_pts() and whatever else
 
+    /// <inheritdoc />
     protected override void Free()
     {
-        if (_handle != null) {
-            fixed (SwrContext** s = &_handle) {
+        if (handle != null) {
+            fixed (SwrContext** s = &handle) {
                 ffmpeg.swr_free(s);
             }
         }

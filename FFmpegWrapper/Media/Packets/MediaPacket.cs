@@ -1,7 +1,5 @@
 ﻿namespace FFmpegWrapper.Media.Packets;
 
-using FFmpegWrapper.Core;
-
 using Streams;
 
 public unsafe class MediaPacket : FFObject<AVPacket>
@@ -18,54 +16,54 @@ public unsafe class MediaPacket : FFObject<AVPacket>
     /// Such timestamps must be converted to true pts/dts before they are stored in AVPacket.
     /// </summary>
     public long? PresentationTimestamp {
-        get => Helpers.GetPTS(_handle->pts);
-        set => Helpers.SetPTS(ref _handle->pts, value);
+        get => Helpers.GetPTS(handle->pts);
+        set => Helpers.SetPTS(ref handle->pts, value);
     }
     public long? DecompressionTimestamp {
-        get => Helpers.GetPTS(_handle->dts);
-        set => Helpers.SetPTS(ref _handle->dts, value);
+        get => Helpers.GetPTS(handle->dts);
+        set => Helpers.SetPTS(ref handle->dts, value);
     }
 
     /// <summary> Duration of this packet in <see cref="MediaStream.TimeBase"/> units, 0 if unknown. Equals next_pts - this_pts in presentation order.  </summary>
     public long Duration {
-        get => _handle->duration;
-        set => _handle->duration = value;
+        get => handle->duration;
+        set => handle->duration = value;
     }
     public int StreamIndex {
-        get => _handle->stream_index;
-        set => _handle->stream_index = value;
+        get => handle->stream_index;
+        set => handle->stream_index = value;
     }
 
     /// <summary> Whether this packet contains a key-frame. (Checks if AV_PKT_FLAG_KEY is set) </summary>
     public bool IsKeyFrame {
-        get => (_handle->flags & ffmpeg.AV_PKT_FLAG_KEY) != 0;
-        set => _handle->flags = value ? (_handle->flags | ffmpeg.AV_PKT_FLAG_KEY) : (_handle->flags & ~ffmpeg.AV_PKT_FLAG_KEY);
+        get => (handle->flags & ffmpeg.AV_PKT_FLAG_KEY) != 0;
+        set => handle->flags = value ? (handle->flags | ffmpeg.AV_PKT_FLAG_KEY) : (handle->flags & ~ffmpeg.AV_PKT_FLAG_KEY);
     }
 
     /// <inheritdoc cref="AVPacket.pos"/>
     public long BytePosition {
-        get => _handle->pos;
-        set => _handle->pos = value;
+        get => handle->pos;
+        set => handle->pos = value;
     }
 
     public Span<byte> Data {
-        get => new(_handle->data, _handle->size);
+        get => new(handle->data, handle->size);
     }
 
-    public PacketSideDataList SideData => new(&_handle->side_data, &_handle->side_data_elems);
+    public PacketSideDataList SideData => new(&handle->side_data, &handle->side_data_elems);
 
     public MediaPacket()
     {
-        _handle = ffmpeg.av_packet_alloc();
+        handle = ffmpeg.av_packet_alloc();
 
-        if (_handle == null) {
+        if (handle == null) {
             throw new OutOfMemoryException();
         }
     }
     public MediaPacket(int size)
         : this()
     {
-        ffmpeg.av_new_packet(_handle, size).CheckError("Failed to allocate packet buffer");
+        ffmpeg.av_new_packet(handle, size).CheckError("Failed to allocate packet buffer");
     }
 
     /// <summary> Copies the specified data span to the packet, ensuring buffer space. </summary>
@@ -73,14 +71,14 @@ public unsafe class MediaPacket : FFObject<AVPacket>
     {
         ThrowIfDisposed();
 
-        if (_handle->buf == null || _handle->buf->size < (ulong)data.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE) {
+        if (handle->buf == null || handle->buf->size < (ulong)data.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE) {
             byte* buffer = (byte*)ffmpeg.av_malloc((ulong)data.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE);
             if (buffer == null) {
                 throw new OutOfMemoryException();
             }
-            ffmpeg.av_packet_from_data(_handle, buffer, data.Length).CheckError("Failed to allocate packet buffer");
+            ffmpeg.av_packet_from_data(handle, buffer, data.Length).CheckError("Failed to allocate packet buffer");
         }
-        _handle->size = data.Length;
+        handle->size = data.Length;
         data.CopyTo(Data);
     }
 
@@ -95,13 +93,13 @@ public unsafe class MediaPacket : FFObject<AVPacket>
     {
         ThrowIfDisposed();
 
-        ffmpeg.av_packet_unref(_handle);
-        return _handle;
+        ffmpeg.av_packet_unref(handle);
+        return handle;
     }
 
     protected override void Free()
     {
-        fixed (AVPacket** pkt = &_handle) {
+        fixed (AVPacket** pkt = &handle) {
             ffmpeg.av_packet_free(pkt);
         }
     }

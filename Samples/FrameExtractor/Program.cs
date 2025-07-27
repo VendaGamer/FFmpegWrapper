@@ -1,6 +1,12 @@
 using System.Diagnostics;
 
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Codecs.Decoding;
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Filtering;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Media.Packets;
+
 
 if (args.Length < 3) {
     Console.WriteLine("Usage: FrameExtractor <input video path> <output directory> <num frames>");
@@ -16,7 +22,7 @@ FFmpegUtils.SetLoggerCallback(FFmpegLogLevel.Verbose);
 
 using var demuxer = new MediaDemuxer(inputPath);
 
-var stream = demuxer.FindBestStream(MediaTypes.Video)!;
+demuxer.TryFindBestStream(MediaTypes.Video, out var stream);
 using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream);
 using var packet = new MediaPacket();
 using var frame = new VideoFrame();

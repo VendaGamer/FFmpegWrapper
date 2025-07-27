@@ -1,66 +1,61 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
-using FFmpegWrapper.Core;
-
 using Hardware;
-
-using Media.Formats;
-using Media.Frames;
 
 public unsafe class VideoEncoder : MediaEncoder
 {
     public int Width {
-        get => _handle->width;
-        set => SetOrThrowIfOpen(ref _handle->width, value);
+        get => handle->width;
+        set => SetOrThrowIfOpen(ref handle->width, value);
     }
     public int Height {
-        get => _handle->height;
-        set => SetOrThrowIfOpen(ref _handle->height, value);
+        get => handle->height;
+        set => SetOrThrowIfOpen(ref handle->height, value);
     }
     public AVPixelFormat PixelFormat {
-        get => _handle->pix_fmt;
-        set => SetOrThrowIfOpen(ref _handle->pix_fmt, value);
+        get => handle->pix_fmt;
+        set => SetOrThrowIfOpen(ref handle->pix_fmt, value);
     }
 
     public PictureFormat FrameFormat {
-        get => new(Width, Height, PixelFormat, _handle->sample_aspect_ratio);
+        get => new(Width, Height, PixelFormat, handle->sample_aspect_ratio);
         set {
             ThrowIfOpen();
-            _handle->width = value.Width;
-            _handle->height = value.Height;
-            _handle->pix_fmt = value.PixelFormat;
+            handle->width = value.Width;
+            handle->height = value.Height;
+            handle->pix_fmt = value.PixelFormat;
         }
     }
 
     public PictureColorspace Colorspace {
-        get => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
+        get => new(handle->colorspace, handle->color_primaries, handle->color_trc, handle->color_range);
         set {
             ThrowIfOpen();
-            _handle->colorspace = value.Matrix;
-            _handle->color_primaries = value.Primaries;
-            _handle->color_trc = value.Transfer;
-            _handle->color_range = value.Range;
+            handle->colorspace = value.Matrix;
+            handle->color_primaries = value.Primaries;
+            handle->color_trc = value.Transfer;
+            handle->color_range = value.Range;
         }
     }
 
     /// <inheritdoc cref="AVCodecContext.gop_size"/>
     public int GopSize {
-        get => _handle->gop_size;
-        set => SetOrThrowIfOpen(ref _handle->gop_size, value);
+        get => handle->gop_size;
+        set => SetOrThrowIfOpen(ref handle->gop_size, value);
     }
     /// <inheritdoc cref="AVCodecContext.max_b_frames"/>
     public int MaxBFrames {
-        get => _handle->max_b_frames;
-        set => SetOrThrowIfOpen(ref _handle->max_b_frames, value);
+        get => handle->max_b_frames;
+        set => SetOrThrowIfOpen(ref handle->max_b_frames, value);
     }
 
     public int MinQuantizer {
-        get => _handle->qmin;
-        set => SetOrThrowIfOpen(ref _handle->qmin, value);
+        get => handle->qmin;
+        set => SetOrThrowIfOpen(ref handle->qmin, value);
     }
     public int MaxQuantizer {
-        get => _handle->qmax;
-        set => SetOrThrowIfOpen(ref _handle->qmax, value);
+        get => handle->qmax;
+        set => SetOrThrowIfOpen(ref handle->qmax, value);
     }
 
     public VideoEncoder(AVCodecID codecId, in PictureFormat format, Rational frameRate, int bitrate = 0)

@@ -2,10 +2,6 @@ namespace FFmpegWrapper.Configuration;
 
 using System.Collections.Generic;
 
-using FFmpegWrapper.Core;
-
-using Media.Formats;
-
 using static AVOptionType;
 
 /// <summary> Represents an option accepted by a ffmpeg object. </summary>

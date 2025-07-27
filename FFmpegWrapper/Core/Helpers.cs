@@ -34,13 +34,26 @@ internal static unsafe class Helpers
     public static ReadOnlySpan<T> GetSpanFromSentinelTerminatedPtr<T>(T* ptr, T terminator) where T : unmanaged
     {
         int len = 0;
-
-        while (ptr != null && !ptr[len].Equals(terminator)) {
+        if (ptr == null) {
+            return ReadOnlySpan<T>.Empty;
+        }
+        
+        while (!ptr[len].Equals(terminator)) {
             len++;
         }
         return new ReadOnlySpan<T>(ptr, len);
     }
 
+    public static string PtrToStringUTF8(byte* ptr, int length)
+    {
+#if NETSTANDARD2_1_OR_GREATER
+        return Marshal.PtrToStringUTF8((IntPtr)ptr, length);
+#else
+        
+        return Encoding.UTF8.GetString(ptr, length);
+#endif
+    }
+    
     public static string PtrToStringUTF8(byte* ptr)
     {
         #if NETSTANDARD2_1_OR_GREATER

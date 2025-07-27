@@ -48,4 +48,6 @@ public interface IHandle<T> where T : unmanaged
     /// is invalid or has been disposed.
     /// </returns>
     unsafe T* Handle { get; }
+
+    bool IsValid { get; }
 }

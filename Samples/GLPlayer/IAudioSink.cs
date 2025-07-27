@@ -1,4 +1,4 @@
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Media.Formats;
 
 public interface IAudioSink : IDisposable
 {

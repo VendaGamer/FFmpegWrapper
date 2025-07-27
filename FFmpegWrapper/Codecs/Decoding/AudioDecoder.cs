@@ -1,15 +1,11 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
-using FFmpegWrapper.Core;
-
-using Media.Formats;
-
 public unsafe class AudioDecoder : MediaDecoder
 {
-    public AVSampleFormat SampleFormat => _handle->sample_fmt;
-    public int SampleRate => _handle->sample_rate;
-    public int NumChannels => _handle->ch_layout.nb_channels;
-    public ChannelLayout ChannelLayout => ChannelLayout.FromExisting(&_handle->ch_layout);
+    public AVSampleFormat SampleFormat => handle->sample_fmt;
+    public int SampleRate => handle->sample_rate;
+    public int NumChannels => handle->ch_layout.nb_channels;
+    public ChannelLayout ChannelLayout => ChannelLayout.FromExisting(&handle->ch_layout);
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 

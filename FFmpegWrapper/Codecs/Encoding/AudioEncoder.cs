@@ -1,25 +1,21 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
-using FFmpegWrapper.Core;
-
-using Media.Formats;
-
 public unsafe class AudioEncoder : MediaEncoder
 {
     public AVSampleFormat SampleFormat {
-        get => _handle->sample_fmt;
-        set => SetOrThrowIfOpen(ref _handle->sample_fmt, value);
+        get => handle->sample_fmt;
+        set => SetOrThrowIfOpen(ref handle->sample_fmt, value);
     }
     public int SampleRate {
-        get => _handle->sample_rate;
-        set => SetOrThrowIfOpen(ref _handle->sample_rate, value);
+        get => handle->sample_rate;
+        set => SetOrThrowIfOpen(ref handle->sample_rate, value);
     }
-    public int NumChannels => _handle->ch_layout.nb_channels;
+    public int NumChannels => handle->ch_layout.nb_channels;
     public ChannelLayout ChannelLayout {
-        get => ChannelLayout.FromExisting(&_handle->ch_layout);
+        get => ChannelLayout.FromExisting(&handle->ch_layout);
         set {
             ThrowIfOpen();
-            value.CopyTo(&_handle->ch_layout);
+            value.CopyTo(&handle->ch_layout);
         }
     }
 
@@ -27,9 +23,9 @@ public unsafe class AudioEncoder : MediaEncoder
         get => new(SampleFormat, SampleRate, ChannelLayout);
         set {
             ThrowIfOpen();
-            _handle->sample_rate = value.SampleRate;
-            _handle->sample_fmt = value.SampleFormat;
-            value.Layout.CopyTo(&_handle->ch_layout);
+            handle->sample_rate = value.SampleRate;
+            handle->sample_fmt = value.SampleFormat;
+            value.Layout.CopyTo(&handle->ch_layout);
         }
     }
 
@@ -38,7 +34,7 @@ public unsafe class AudioEncoder : MediaEncoder
     /// Each submitted frame except the last must contain exactly this amount of samples per channel.
     /// May be null when the codec has <see cref="MediaCodecCaps.VariableFrameSize"/> set, then the frame size is not restricted.
     /// </remarks>
-    public int? FrameSize => _handle->frame_size == 0 ? null : _handle->frame_size;
+    public int? FrameSize => handle->frame_size == 0 ? null : handle->frame_size;
 
     public AudioEncoder(AVCodecID codecId, in AudioFormat format, int bitrate = 0)
         : this(MediaCodec.GetEncoder(codecId), format, bitrate) { }

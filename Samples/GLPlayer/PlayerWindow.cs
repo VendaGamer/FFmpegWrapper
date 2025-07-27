@@ -1,5 +1,10 @@
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 using FFmpeg.Wrapper;
+
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Packets;
+
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -31,10 +36,10 @@ public class PlayerWindow : NativeWindow
         
         _demuxer = new MediaDemuxer(videoPath);
 
-        var videoStream = _demuxer.FindBestStream(MediaTypes.Video);
-        _videoStream = new VideoStreamRenderer(_demuxer, videoStream!, Context);
+        _demuxer.TryFindBestStream(MediaTypes.Video, out var videoStream);
+        _videoStream = new VideoStreamRenderer(_demuxer, videoStream, Context);
 
-        var audioStream = _demuxer.FindBestStream(MediaTypes.Audio);
+        _demuxer.TryFindBestStream(MediaTypes.Video, out var audioStream);
         _audioStream = new AudioStreamRenderer(_demuxer, audioStream!);
     }
 

@@ -1,7 +1,12 @@
 using System.Diagnostics;
 
 using FFmpeg.AutoGen.Abstractions;
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Codecs.Decoding;
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Hardware;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Media.Streams;
 
 using GL2O;
 
@@ -27,7 +32,7 @@ public class VideoStreamRenderer : StreamRenderer
         var decoder = (VideoDecoder)_decoder;
 
         //Setup HW decoder
-        var hwConfig = decoder.GetHardwareConfigs().FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
+        var hwConfig = decoder.TryGetHardwareConfigs().FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
         using var device = HardwareDevice.Create(hwConfig.DeviceType);
 
         if (device != null) {

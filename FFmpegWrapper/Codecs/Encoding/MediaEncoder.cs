@@ -1,29 +1,24 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
-using FFmpegWrapper.Core;
-
-using Media.Frames;
-using Media.Packets;
-
 public abstract unsafe class MediaEncoder : CodecBase
 {
 
     /// <inheritdoc cref="AVCodecContext.bit_rate" />
     public int BitRate {
-        get => (int)_handle->bit_rate;
-        set => SetOrThrowIfOpen(ref _handle->bit_rate, value);
+        get => (int)handle->bit_rate;
+        set => SetOrThrowIfOpen(ref handle->bit_rate, value);
     }
 
     /// <inheritdoc cref="AVCodecContext.global_quality" />
     public int GlobalQuality {
-        get => _handle->global_quality;
-        set => SetOrThrowIfOpen(ref _handle->global_quality, value);
+        get => handle->global_quality;
+        set => SetOrThrowIfOpen(ref handle->global_quality, value);
     }
 
     /// <inheritdoc cref="AVCodecContext.compression_level" />
     public int CompressionLevel {
-        get => _handle->compression_level;
-        set => SetOrThrowIfOpen(ref _handle->compression_level, value);
+        get => handle->compression_level;
+        set => SetOrThrowIfOpen(ref handle->compression_level, value);
     }
 
     public MediaEncoder(AVCodecContext* ctx, AVMediaType expectedType, bool takeOwnership)

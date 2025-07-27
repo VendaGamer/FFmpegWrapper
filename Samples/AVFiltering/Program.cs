@@ -1,7 +1,14 @@
 ﻿using System.Diagnostics;
 
 using FFmpeg.AutoGen.Abstractions;
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Codecs.Decoding;
+using FFmpegWrapper.Codecs.Encoding;
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Filtering;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Media.Packets;
+using FFmpegWrapper.Media.Streams;
 
 if (args.Length < 2) {
     Console.WriteLine("Usage: AVFiltering <input path> <output path>");
@@ -73,7 +80,13 @@ class StreamInfo : IDisposable
     public StreamInfo(MediaMuxer muxer, MediaDemuxer demuxer, AVMediaType type)
     {
         _muxer = muxer;
-        InStream = demuxer.FindBestStream(type)!;
+        
+        if (demuxer.TryFindBestStream(type, out var stream)) {
+            InStream = stream;
+        } else {
+            InStream = demuxer.Streams[0];
+        }
+
         Decoder = demuxer.CreateStreamDecoder(InStream, open: false);
         Decoder.SetThreadCount(0); // enable multi-threaded decoding
         Decoder.Open();

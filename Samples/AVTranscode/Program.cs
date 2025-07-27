@@ -1,5 +1,13 @@
 using System.Diagnostics;
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Codecs.Decoding;
+using FFmpegWrapper.Codecs.Encoding;
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Formats;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Media.Packets;
+using FFmpegWrapper.Media.Streams;
+using FFmpegWrapper.Processing;
 
 if (args.Length < 2) {
     //Note that not all formats support the hardcoded codec settings used here.

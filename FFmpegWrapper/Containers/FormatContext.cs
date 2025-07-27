@@ -1,7 +1,5 @@
 namespace FFmpegWrapper.Containers;
 
-using FFmpegWrapper.Core;
-
 using Media;
 
 public abstract class FormatContext : FFObject<AVFormatContext>
@@ -37,16 +35,23 @@ public abstract class FormatContext : FFObject<AVFormatContext>
             unsafe {
                 ThrowIfDisposed();
                 
-                if (_handle->duration > 0 &&  ffmpeg.avio_size(_handle->pb) > 0) {
+                if (handle->duration > 0 &&  ffmpeg.avio_size(handle->pb) > 0) {
                     throw new InvalidOperationException("Do not set bitrate if duration and filesize is known");
                 }
                 
-                _handle->bit_rate = value;
+                handle->bit_rate = value;
             }
         }
     }
 
-    public unsafe MediaDictionary metadata => new(&_handle->metadata);
+    public MediaDictionary metadata {
+        get {
+            unsafe
+            {
+                return new MediaDictionary(&Handle->metadata);
+            }
+        }
+    }
 
     protected unsafe FormatContext(AVOutputFormat* outputFormat) : this(outputFormat,null,null)
     {
@@ -55,7 +60,7 @@ public abstract class FormatContext : FFObject<AVFormatContext>
 
     private unsafe FormatContext(AVOutputFormat* outputFormat, string? formatName, string? filename)
     {
-        fixed (AVFormatContext** ptr = &_handle) {
+        fixed (AVFormatContext** ptr = &handle) {
             ffmpeg.avformat_alloc_output_context2(ptr, outputFormat, formatName, filename);
         }
     }
@@ -63,13 +68,13 @@ public abstract class FormatContext : FFObject<AVFormatContext>
     protected FormatContext()
     {
         unsafe {
-            _handle = ffmpeg.avformat_alloc_context();
+            handle = ffmpeg.avformat_alloc_context();
         }
     }
     
     /// <inheritdoc/>
     protected override unsafe void Free()
     {
-        ffmpeg.avformat_free_context(_handle);
+        ffmpeg.avformat_free_context(handle);
     }
 }

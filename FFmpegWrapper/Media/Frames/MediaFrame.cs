@@ -1,35 +1,33 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
-using FFmpegWrapper.Core;
-
 public unsafe abstract class MediaFrame : FFObject<AVFrame>
 {
     protected bool _ownsFrame = true;
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
-    public long? BestEffortTimestamp => Helpers.GetPTS(_handle->best_effort_timestamp);
+    public long? BestEffortTimestamp => Helpers.GetPTS(handle->best_effort_timestamp);
 
     /// <inheritdoc cref="AVFrame.pts" />
     public long? PresentationTimestamp {
-        get => Helpers.GetPTS(_handle->pts);
-        set => Helpers.SetPTS(ref _handle->pts, value);
+        get => Helpers.GetPTS(handle->pts);
+        set => Helpers.SetPTS(ref handle->pts, value);
     }
 
     /// <summary> Duration of the frame, in the same units as <see cref="PresentationTimestamp"/>. Null if unknown. </summary>
     public long? Duration {
-        get => _handle->duration > 0 ? _handle->duration : null;
-        set => _handle->duration = value ?? 0;
+        get => handle->duration > 0 ? handle->duration : null;
+        set => handle->duration = value ?? 0;
     }
 
     /// <inheritdoc cref="AVFrame.side_data"/>
-    public FrameSideDataList SideData => new(_handle);
+    public FrameSideDataList SideData => new(handle);
 
     protected override void Free()
     {
-        if (_handle != null && _ownsFrame) {
-            fixed (AVFrame** ppFrame = &_handle) {
+        if (handle != null && _ownsFrame) {
+            fixed (AVFrame** ppFrame = &handle) {
                 ffmpeg.av_frame_free(ppFrame);
             }
         }
-        _handle = null;
+        handle = null;
     }
 }

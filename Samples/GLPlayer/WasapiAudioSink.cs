@@ -4,6 +4,9 @@ using System.Runtime.Versioning;
 using Windows.Win32.Media.Audio;
 using Windows.Win32.System.Com;
 
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Media.Formats;
+
 using static Windows.Win32.PInvoke;
 
 [SupportedOSPlatform("windows10.0")]

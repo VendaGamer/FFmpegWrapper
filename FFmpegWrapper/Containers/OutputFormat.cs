@@ -1,7 +1,6 @@
 namespace FFmpegWrapper.Containers;
 
 using System;
-using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
 public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<OutputFormat>

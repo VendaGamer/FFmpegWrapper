@@ -3,48 +3,44 @@
 using Codecs.Decoding;
 using Codecs.Encoding;
 
-using FFmpegWrapper.Core;
-
-using Formats;
-
-using Packets;
+using Hardware;
 
 using Processing;
 
 public unsafe class VideoFrame : MediaFrame
 {
-    public int Width => _handle->width;
-    public int Height => _handle->height;
-    public AVPixelFormat PixelFormat => (AVPixelFormat)_handle->format;
+    public int Width => Handle->width;
+    public int Height => Handle->height;
+    public AVPixelFormat PixelFormat => (AVPixelFormat)Handle->format;
 
-    public PictureFormat Format => new(Width, Height, PixelFormat, _handle->sample_aspect_ratio);
+    public PictureFormat Format => new(Width, Height, PixelFormat, Handle->sample_aspect_ratio);
     public PictureColorspace Colorspace {
-        get => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
+        get => new(handle->colorspace, handle->color_primaries, handle->color_trc, handle->color_range);
         set {
             ThrowIfDisposed();
-            _handle->colorspace = value.Matrix;
-            _handle->color_primaries = value.Primaries;
-            _handle->color_trc = value.Transfer;
-            _handle->color_range = value.Range;
+            handle->colorspace = value.Matrix;
+            handle->color_primaries = value.Primaries;
+            handle->color_trc = value.Transfer;
+            handle->color_range = value.Range;
         }
     }
 
     /// <summary> Pointers to the pixel data planes. </summary>
     /// <remarks> These can point to the end of image data when used in combination with negative values in <see cref="RowSize"/>. </remarks>
-    public byte** Data => (byte**)&_handle->data;
+    public byte** Data => (byte**)&Handle->data;
 
     /// <summary> An array of positive or negative values indicating the size in bytes of each pixel row. </summary>
     /// <remarks> 
     /// - Values may be larger than the size of usable data -- there may be extra padding present for performance reasons. <br/>
     /// - Values can be negative to achieve a vertically inverted iteration over image rows.
     /// </remarks>
-    public int* RowSize => (int*)&_handle->linesize;
+    public int* RowSize => (int*)&Handle->linesize;
 
     /// <summary> Whether this frame is attached to a hardware frame context. </summary>
-    public bool IsHardwareFrame => _handle->hw_frames_ctx != null;
+    public bool IsHardwareFrame => Handle->hw_frames_ctx != null;
 
     /// <summary> Whether the frame rows are flipped. Alias for <c>RowSize[0] &lt; 0</c>. </summary>
-    public bool IsVerticallyFlipped => _handle->linesize[0] < 0;
+    public bool IsVerticallyFlipped => Handle->linesize[0] < 0;
 
     /// <summary> Allocates an empty <see cref="AVFrame"/>. </summary>
     public VideoFrame()
@@ -60,12 +56,12 @@ public unsafe class VideoFrame : MediaFrame
         if (width <= 0 || height <= 0) {
             throw new ArgumentException("Invalid frame dimensions.");
         }
-        _handle = ffmpeg.av_frame_alloc();
-        _handle->format = (int)fmt;
-        _handle->width = width;
-        _handle->height = height;
+        handle = ffmpeg.av_frame_alloc();
+        handle->format = (int)fmt;
+        handle->width = width;
+        handle->height = height;
 
-        ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
+        ffmpeg.av_frame_get_buffer(handle, 0).CheckError("Failed to allocate frame buffers.");
 
         if (clearToBlack) {
             Clear();
@@ -78,7 +74,7 @@ public unsafe class VideoFrame : MediaFrame
         if (frame == null) {
             throw new ArgumentNullException(nameof(frame));
         }
-        _handle = frame;
+        handle = frame;
         _ownsFrame = takeOwnership;
 
         if (clearToBlack) {
@@ -105,8 +101,8 @@ public unsafe class VideoFrame : MediaFrame
     {
         int height = GetPlaneSize(plane).Height;
 
-        byte* data = _handle->data[(uint)plane];
-        int rowSize = _handle->linesize[(uint)plane];
+        byte* data = handle->data[(uint)plane];
+        int rowSize = handle->linesize[(uint)plane];
 
         if (rowSize < 0) {
             data += rowSize * (height - 1);
@@ -154,11 +150,11 @@ public unsafe class VideoFrame : MediaFrame
         }
 
         var mapping = ffmpeg.av_frame_alloc();
-        int result = ffmpeg.av_hwframe_map(mapping, _handle, (int)flags);
+        int result = ffmpeg.av_hwframe_map(mapping, handle, (int)flags);
 
         if (result == 0) {
-            mapping->width = _handle->width;
-            mapping->height = _handle->height;
+            mapping->width = handle->width;
+            mapping->height = handle->height;
             return new VideoFrame(mapping, takeOwnership: true);
         }
         ffmpeg.av_frame_free(&mapping);
@@ -168,7 +164,7 @@ public unsafe class VideoFrame : MediaFrame
     public void TransferTo(VideoFrame dest)
     {
         ThrowIfDisposed();
-        ffmpeg.av_hwframe_transfer_data(dest.Handle, _handle, 0).CheckError("Failed to transfer data from hardware frame");
+        ffmpeg.av_hwframe_transfer_data(dest.Handle, handle, 0).CheckError("Failed to transfer data from hardware frame");
     }
 
     /// <summary> Gets an array of possible source or dest formats usable in <see cref="TransferTo(VideoFrame)"/>. </summary>
@@ -181,7 +177,7 @@ public unsafe class VideoFrame : MediaFrame
 
         AVPixelFormat* pFormats;
 
-        if (ffmpeg.av_hwframe_transfer_get_formats(_handle->hw_frames_ctx, (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
+        if (ffmpeg.av_hwframe_transfer_get_formats(handle->hw_frames_ctx, (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
             return [];
         }
         var formats = Helpers.GetSpanFromSentinelTerminatedPtr(pFormats, PixelFormats.None).ToArray();
@@ -197,11 +193,11 @@ public unsafe class VideoFrame : MediaFrame
         var linesizes = new long4();
 
         for (uint i = 0; i < 4; i++) {
-            linesizes[i] = _handle->linesize[i];
+            linesizes[i] = handle->linesize[i];
         }
         ffmpeg.av_image_fill_black(
-            ref *(byte_ptr4*)&_handle->data, linesizes,
-            PixelFormat, _handle->color_range, _handle->width, _handle->height
+            ref *(byte_ptr4*)&handle->data, linesizes,
+            PixelFormat, handle->color_range, handle->width, handle->height
         ).CheckError("Failed to clear frame.");
     }
 
@@ -278,7 +274,10 @@ public unsafe class VideoFrame : MediaFrame
     public static VideoFrame Load(string filename, TimeSpan? position = null)
     {
         using var demuxer = new MediaDemuxer(filename);
-        var stream = demuxer.FindBestStream(MediaTypes.Video) ?? throw new FormatException();
+        
+        if (!demuxer.TryFindBestStream(MediaTypes.Video, out var stream)) {
+            throw new FormatException();
+        }
 
         using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream);
         using var packet = new MediaPacket();
@@ -303,31 +302,4 @@ public unsafe class VideoFrame : MediaFrame
         frame.Dispose();
         throw new FormatException();
     }
-}
-/// <summary> Flags to apply to hardware frame memory mappings. </summary>
-public enum HardwareFrameMappingFlags
-{
-    /// <summary> The mapping must be readable. </summary>
-    Read = 1 << 0,
-    /// <summary> The mapping must be writeable. </summary>
-    Write = 1 << 1,
-    /// <summary>
-    /// The mapped frame will be overwritten completely in subsequent
-    /// operations, so the current frame data need not be loaded.  Any values
-    /// which are not overwritten are unspecified.
-    /// </summary>
-    Overwrite = 1 << 2,
-    /// <summary>
-    /// The mapping must be direct.  That is, there must not be any copying in
-    /// the map or unmap steps.  Note that performance of direct mappings may
-    /// be much lower than normal memory.
-    /// </summary>
-    Direct = 1 << 3,
-}
-public enum HardwareFrameTransferDirection
-{
-    /// <summary> Transfer the data from the queried hw frame. </summary>
-    From = AVHWFrameTransferDirection.AV_HWFRAME_TRANSFER_DIRECTION_FROM,
-    /// <summary> Transfer the data to the queried hw frame. </summary>
-    To = AVHWFrameTransferDirection.AV_HWFRAME_TRANSFER_DIRECTION_TO,
 }

@@ -1,4 +1,9 @@
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Codecs.Decoding;
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Media.Streams;
+using FFmpegWrapper.Processing;
 
 public class AudioStreamRenderer : StreamRenderer
 {

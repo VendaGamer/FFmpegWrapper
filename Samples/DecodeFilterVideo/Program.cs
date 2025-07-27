@@ -1,6 +1,14 @@
-﻿using FFmpeg.Wrapper;
+﻿
 
 // https://github.com/FFmpeg/FFmpeg/blob/master/doc/examples/decode_filter_video.c
+
+using FFmpegWrapper.Codecs.Decoding;
+using FFmpegWrapper.Codecs.Encoding;
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Filtering;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Media.Packets;
 
 if (args.Length < 2) {
     Console.WriteLine("Usage: DecodeFilterVideo <input path> <output path> <filter desc>?");
@@ -11,7 +19,8 @@ using var demuxer = new MediaDemuxer(args[0]);
 using var muxer = new MediaMuxer(args[1]);
 string filters = args.Length > 2 ? args[2] : "transpose=clock";
 
-var inputStream = demuxer.FindBestStream(MediaTypes.Video)!;
+demuxer.TryFindBestStream(MediaTypes.Video, out var inputStream);
+
 using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(inputStream);
 
 using var filter = MediaFilterPipeline.CreateBuilder()

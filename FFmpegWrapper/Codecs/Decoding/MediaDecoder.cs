@@ -1,19 +1,13 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
-using FFmpegWrapper.Core;
-
-using Media.Frames;
-using Media.Packets;
-
 public abstract unsafe class MediaDecoder : CodecBase
 {
     public MediaDecoder(AVCodecContext* ctx, AVMediaType expectedType, bool takeOwnership)
         : base(ctx, expectedType, takeOwnership) { }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public void SendPacket(MediaPacket? packet)
     {
-        var result = ffmpeg.avcodec_send_packet(_handle, packet!.Handle);
+        var result = ffmpeg.avcodec_send_packet(handle, packet!.Handle);
         // Fast path for success
         if (result == 0) return;
         
@@ -25,16 +19,14 @@ public abstract unsafe class MediaDecoder : CodecBase
     }
 
     /// <inheritdoc cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LavResult TrySendPacket(MediaPacket? packet)
     {
-        return (LavResult)ffmpeg.avcodec_send_packet(_handle, packet!.Handle);
+        return (LavResult)ffmpeg.avcodec_send_packet(handle, packet!.Handle);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public bool ReceiveFrame(MediaFrame frame)
     {
-        var result = ffmpeg.avcodec_receive_frame(_handle, frame.Handle);
+        var result = ffmpeg.avcodec_receive_frame(handle, frame.Handle);
         
         // Fast path for success (most common case)
         if (result == 0) return true;
@@ -58,7 +50,7 @@ public abstract unsafe class MediaDecoder : CodecBase
         int framesDecoded = 0;
         
         foreach (var packet in packets) {
-            var sendResult = ffmpeg.avcodec_send_packet(_handle, packet.Handle);
+            var sendResult = ffmpeg.avcodec_send_packet(handle, packet.Handle);
             if (sendResult != 0 && sendResult != ffmpeg.AVERROR_EOF) {
                 ((LavResult)sendResult).ThrowIfError("Could not send packet");
                 continue;
@@ -66,7 +58,7 @@ public abstract unsafe class MediaDecoder : CodecBase
 
             // Try to receive multiple frames from this packet
             for (int i = framesDecoded; i < frames.Length; i++) {
-                var receiveResult = ffmpeg.avcodec_receive_frame(_handle, frames[i].Handle);
+                var receiveResult = ffmpeg.avcodec_receive_frame(handle, frames[i].Handle);
                 
                 if (receiveResult == 0) {
                     framesDecoded++;

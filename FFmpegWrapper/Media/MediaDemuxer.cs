@@ -1,15 +1,7 @@
 ﻿namespace FFmpegWrapper.Media;
 
-using System.Collections.Immutable;
-
 using Codecs;
 using Codecs.Decoding;
-
-using Containers;
-
-using FFmpegWrapper.Core;
-
-using Packets;
 
 using Streams;
 
@@ -19,15 +11,15 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     readonly bool _iocLeaveOpen;
     readonly bool _ownsCtx;
 
-    public TimeSpan? Duration => Helpers.GetTimeSpan(_handle->duration, new Rational(1, ffmpeg.AV_TIME_BASE));
+    public TimeSpan? Duration => Helpers.GetTimeSpan(handle->duration, new Rational(1, ffmpeg.AV_TIME_BASE));
 
     /// <summary> An array of all streams in the file. </summary>
     public ImmutableArray<MediaStream> Streams { get; }
 
     /// <inheritdoc cref="AVFormatContext.metadata" />
-    public MediaDictionary Metadata => new(&_handle->metadata);
+    public MediaDictionary Metadata => new(&handle->metadata);
 
-    public bool CanSeek => _handle->pb->seek.Pointer != IntPtr.Zero;
+    public bool CanSeek => handle->pb->seek.Pointer != IntPtr.Zero;
 
     /// <summary> Opens an existing resource URL for demuxing. </summary>
     /// <remarks>
@@ -39,6 +31,7 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     public MediaDemuxer(string url)
         : this(CreateContext(url, null, null), takeOwnership: true) { }
 
+    /// <inheritdoc />
     public MediaDemuxer(IOContext ioc, bool leaveOpen = false)
         : this(CreateContext(null, ioc.Handle, null), takeOwnership: true)
     {
@@ -58,12 +51,12 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     /// <param name="takeOwnership">True if <paramref name="ctx"/> should be freed when Dispose() is called.</param>
     public MediaDemuxer(AVFormatContext* ctx, bool takeOwnership)
     {
-        _handle = ctx;
+        handle = ctx;
         _ownsCtx = takeOwnership;
 
-        var streams = ImmutableArray.CreateBuilder<MediaStream>((int)_handle->nb_streams);
-        for (int i = 0; i < _handle->nb_streams; i++) {
-            streams.Add(new MediaStream(_handle->streams[i]));
+        var streams = ImmutableArray.CreateBuilder<MediaStream>((int)Handle->nb_streams);
+        for (int i = 0; i < handle->nb_streams; i++) {
+            streams.Add(new MediaStream(handle->streams[i]));
         }
         Streams = streams.MoveToImmutable();
     }
@@ -96,12 +89,18 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     /// <summary> Find the "best" stream in the file. The best stream is determined according to various heuristics as the most likely to be what the user expects. </summary>
-    public MediaStream? FindBestStream(AVMediaType type)
+    public bool TryFindBestStream(AVMediaType type, out MediaStream stream)
     {
         ThrowIfDisposed();
-
-        int index = ffmpeg.av_find_best_stream(_handle, type, -1, -1, null, 0);
-        return index < 0 ? null : Streams[index];
+        var index = ffmpeg.av_find_best_stream(handle, type, -1, -1, null, 0);
+        
+        if (index < 0) {
+            stream = null!;
+            return false;
+        }
+        
+        stream = Streams[index];
+        return true;
     }
 
     /// <summary> Creates a decoder for the given audio or video stream. </summary>
@@ -110,7 +109,6 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     /// True to call <see cref="CodecBase.Open" /> before returning the decoder.
     /// Should be set to false if extra setup (e.g. hardware acceleration) is needed before opening.
     /// </param>
-    /// <returns></returns>
     public MediaDecoder CreateStreamDecoder(MediaStream stream, bool open = true)
     {
         ThrowIfDisposed();
@@ -118,7 +116,7 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
         if (Streams[stream.Index] != stream) {
             throw new ArgumentException("Specified stream is not owned by the demuxer.");
         }
-
+        
         var codecId = stream.Handle->codecpar->codec_id;
         var decoder = stream.Type switch {
             MediaTypes.Audio => new AudioDecoder(codecId) as MediaDecoder,
@@ -144,7 +142,7 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     {
         ThrowIfDisposed();
 
-        int result = ffmpeg.av_read_frame(_handle, packet.UnrefAndGetHandle());
+        int result = ffmpeg.av_read_frame(handle, packet.UnrefAndGetHandle());
 
         if (result < 0 && result != ffmpeg.AVERROR_EOF) {
             result.ThrowError(msg: "Failed to read packet");
@@ -159,12 +157,13 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
     /// <remarks> If this method returns true, all open stream decoders must be flushed by calling <see cref="CodecBase.Flush"/>. </remarks>
     /// <exception cref="InvalidOperationException">If the underlying IO context doesn't support seeks.</exception>
     /// <exception cref="ArgumentException">If <paramref name="stream"/> is not owned by the demuxer.</exception>
+    /// <returns>true if succeeded</returns>
     public bool Seek(TimeSpan timestamp, SeekOptions options, MediaStream? stream = null)
     {
         ThrowIfDisposed();
 
         if (!CanSeek) {
-            throw new InvalidOperationException("Backing IO context is not seekable.");
+            return false;
         }
 
         int streamIndex;
@@ -179,33 +178,7 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
             streamIndex = -1;
             ts = ffmpeg.av_rescale(timestamp.Ticks, ffmpeg.AV_TIME_BASE, TimeSpan.TicksPerSecond);
         }
-        return ffmpeg.av_seek_frame(_handle, streamIndex, ts, (int)options) >= 0;
-    }
-
-    public bool SeekToFrame(long frameIndex, MediaStream? stream = null)
-    {
-        ThrowIfDisposed();
-
-        if (!CanSeek) {
-            throw new InvalidOperationException("Backing IO context is not seekable.");
-        }
-        
-        int streamIndex = stream?.Index ?? -1;
-        
-        return ffmpeg.av_seek_frame(_handle, streamIndex, frameIndex,(int)SeekOptions.Frame) >= 0;
-    }
-    
-    public bool SeekToByte(long frameIndex, MediaStream? stream = null)
-    {
-        ThrowIfDisposed();
-
-        if (!CanSeek) {
-            throw new InvalidOperationException("Backing IO context is not seekable.");
-        }
-        
-        int streamIndex = stream?.Index ?? -1;
-        
-        return ffmpeg.av_seek_frame(_handle, streamIndex, frameIndex,(int)SeekOptions.Byte) >= 0;
+        return ffmpeg.av_seek_frame(handle, streamIndex, ts, (int)options) >= 0;
     }
 
     /// <inheritdoc cref="ffmpeg.av_guess_frame_rate(AVFormatContext*, AVStream*, AVFrame*)"/>
@@ -216,39 +189,21 @@ public unsafe class MediaDemuxer : FFObject<AVFormatContext>
         if (Streams[stream.Index] != stream) {
             throw new ArgumentException("Specified stream is not owned by the demuxer.");
         }
-
-        return ffmpeg.av_guess_frame_rate(_handle, stream.Handle, null);
+    
+        var guessedRate = ffmpeg.av_guess_frame_rate(handle, stream.Handle, null);
+    
+        // Return the guessed rate (caller needs to validate)
+        return guessedRate;
     }
 
+    /// <inheritdoc />
     protected override void Free()
     {
-        if (_handle != null && _ownsCtx) {
-            fixed (AVFormatContext** c = &_handle) ffmpeg.avformat_close_input(c);
+        if (handle != null && _ownsCtx) {
+            fixed (AVFormatContext** c = &handle) ffmpeg.avformat_close_input(c);
         }
         if (!_iocLeaveOpen) {
             IOC?.Dispose();
         }
     }
-}
-/// <summary>
-/// 
-/// </summary>
-[Flags]
-public enum SeekOptions
-{
-    /// <summary> Seek based on time to the nearest keyframe after or at the requested timestamp. </summary>
-    Forward = 0,
-
-    /// <summary> Seek to the nearest keyframe before or at the requested timestamp. </summary>
-    Backward = ffmpeg.AVSEEK_FLAG_BACKWARD,
-
-    /// <summary> Allow seeking to non-keyframes. This may cause decoders to fail or output corrupt frames. </summary>
-    AllowNonKeyFrames = ffmpeg.AVSEEK_FLAG_ANY,
-    
-    /// <summary> Seek based on position in bytes </summary>
-    Byte = ffmpeg.AVSEEK_FLAG_BYTE,
-    
-    /// <summary> Seek based on number of frame </summary>
-    Frame = ffmpeg.AVSEEK_FLAG_FRAME,
-    
 }

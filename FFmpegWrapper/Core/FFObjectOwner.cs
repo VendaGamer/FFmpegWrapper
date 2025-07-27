@@ -1,5 +1,6 @@
 namespace FFmpegWrapper.Core;
 
+
 /// <summary>
 /// Provides a base implementation for managed wrapper classes that encapsulate unmanaged FFmpeg objects.
 /// This abstract class handles the common patterns of resource management, disposal, and safe access
@@ -11,17 +12,17 @@ namespace FFmpegWrapper.Core;
 /// </typeparam>
 /// <remarks>
 /// <para>
-/// This class implements the Dispose pattern to ensure proper cleanup of unmanaged FFmpeg resources.
-/// Derived classes must implement the <see cref="Free"/> method to perform the actual resource cleanup
-/// specific to their FFmpeg object type.
+/// This base should be used for optional owning of other <see cref="FFObject{T}"/>
+/// Can be useful for owning IOContext for example
 /// </para>
 /// </remarks>
-public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : unmanaged
+public abstract class FFObjectOwner<TRaw> : IDisposable, IHandle<TRaw> where TRaw : unmanaged
 {
+    private ImmutableArray<IDisposable> _ownedObjects = ImmutableArray<IDisposable>.Empty;
     private bool _disposed;
-    /// <summary>
-    /// pointer to the underlying unmanaged FFmpeg structure.
-    /// </summary>
+    /// <value>
+    /// A pointer to the native FFmpeg structure of type <typeparamref name="TRaw"/>.
+    /// </value>
     protected unsafe TRaw* handle;
 
     internal unsafe TRaw* Handle {
@@ -30,6 +31,7 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
             return handle;
         }
     }
+    
     bool IHandle<TRaw>.IsValid {
         get {
             unsafe
@@ -38,7 +40,6 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
             }
         }
     }
-
 
     /// <summary>
     /// Gets a pointer to the underlying unmanaged FFmpeg structure.
@@ -50,7 +51,7 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
     /// <returns>
     /// A pointer to the unmanaged FFmpeg structure, or null if disposed.
     /// </returns>
-    unsafe TRaw* IHandle<TRaw>.Handle => Handle;
+    unsafe TRaw* IHandle<TRaw>.Handle => handle;
 
     /// <summary>
     /// Releases all resources used by the FFmpeg object and suppresses finalization.
@@ -78,22 +79,16 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
     private void Dispose(bool disposing)
     {
         if (_disposed) return;
-        
         if (disposing) {
-            FreeManaged();
+            
+            foreach (var owned in _ownedObjects) {
+                owned.Dispose();
+            }
         }
         
         Free();
 
         _disposed = true;
-    }
-
-    /// <summary>
-    /// Should be overriden when owning any disposables
-    /// </summary>
-    protected virtual void FreeManaged()
-    {
-        
     }
 
     /// <summary>
@@ -112,14 +107,11 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
     /// using statement to ensure timely resource cleanup.
     /// </para>
     /// </remarks>
-    ~FFObject() => Dispose(false);
+    ~FFObjectOwner() => Dispose(false);
     
     /// <summary>
     /// Releases the unmanaged FFmpeg resources associated with this object.
     /// </summary>
-    /// <remarks>
-    /// Do not use for disposing of managed objects in that case use <see cref="FreeManaged"/> instead
-    /// </remarks>
     /// <remarks>
     /// <para>
     /// Derived classes must implement this method to perform the actual cleanup
@@ -150,5 +142,21 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
         if (handle == null) {
             throw new ObjectDisposedException($"The underlying unmanaged {typeof(TRaw).Name} has been disposed. ");
         }
+    }
+    /// <summary>
+    /// Takes ownership of managed object.
+    /// When disposing disposes of the given object
+    /// </summary>
+    protected void TakeOwnership(IDisposable objectToOwn)
+    {
+        _ownedObjects = _ownedObjects.Add(objectToOwn);
+    }
+    /// <summary>
+    /// Takes ownership of managed objects.
+    /// When disposing disposes of the given objects
+    /// </summary>
+    protected void TakeOwnership(params ReadOnlySpan<IDisposable> objectsToOwn)
+    {
+        _ownedObjects = _ownedObjects.AddRange(objectsToOwn);
     }
 }

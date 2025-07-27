@@ -1,10 +1,5 @@
 ﻿namespace FFmpegWrapper.Filtering;
 
-using FFmpegWrapper.Core;
-
-using Media.Formats;
-using Media.Frames;
-
 public unsafe class MediaBufferSource : MediaFilterNode
 {
     internal MediaBufferSource(AVFilterContext* handle)
@@ -12,6 +7,7 @@ public unsafe class MediaBufferSource : MediaFilterNode
 
     public void SendFrame(MediaFrame? frame)
     {
+        ThrowIfDisposed();
         ffmpeg.av_buffersrc_write_frame(Handle, frame == null ? null : frame.Handle).CheckError();
     }
 }
@@ -45,8 +41,9 @@ public abstract unsafe class MediaBufferSink : MediaFilterNode
     public bool ReceiveFrame(MediaFrame frame, bool onlyIfBuffered = false)
     {
         // NOTE: av_buffersink_get_frame() will leak memory if the output frame is not empty.
-        ffmpeg.av_frame_unref(frame.Handle);
-        var result = (LavResult)ffmpeg.av_buffersink_get_frame_flags(Handle, frame.Handle, onlyIfBuffered ? ffmpeg.AV_BUFFERSINK_FLAG_NO_REQUEST : 0);
+        var handle = frame.Handle;
+        ffmpeg.av_frame_unref(handle);
+        var result = (LavResult)ffmpeg.av_buffersink_get_frame_flags(Handle, handle, onlyIfBuffered ? ffmpeg.AV_BUFFERSINK_FLAG_NO_REQUEST : 0);
         return result.IsSuccess();
     }
 }

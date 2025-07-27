@@ -1,19 +1,15 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
-using Core;
-
 using Hardware;
-
-using Media.Formats;
 
 public unsafe class VideoDecoder : MediaDecoder
 {
-    public int Width => _handle->width;
-    public int Height => _handle->height;
-    public AVPixelFormat PixelFormat => _handle->pix_fmt;
+    public int Width => handle->width;
+    public int Height => handle->height;
+    public AVPixelFormat PixelFormat => handle->pix_fmt;
 
-    public PictureFormat FrameFormat => new(Width, Height, PixelFormat, _handle->sample_aspect_ratio);
-    public PictureColorspace Colorspace => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
+    public PictureFormat FrameFormat => new(Width, Height, PixelFormat, handle->sample_aspect_ratio);
+    public PictureColorspace Colorspace => new(handle->colorspace, handle->color_primaries, handle->color_trc, handle->color_range);
 
     public VideoDecoder(AVCodecID codecId)
         : this(MediaCodec.GetDecoder(codecId)) { }
@@ -37,7 +33,7 @@ public unsafe class VideoDecoder : MediaDecoder
         SetHardwareContext(config, device, null);
         //TODO: support custom decoder negotiation and hw_frames_ctx
 
-        _handle->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) => {
+        handle->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) => {
             for (var pFmt = pAvailFmts; *pFmt != PixelFormats.None; pFmt++) {
                 if (*pFmt == config.PixelFormat) {
                     return *pFmt;

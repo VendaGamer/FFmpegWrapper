@@ -1,15 +1,11 @@
 namespace FFmpegWrapper.Hardware;
 
-using FFmpegWrapper.Core;
-
-using Media.Frames;
-
 public unsafe class HardwareFramePool : FFObject<AVBufferRef>
 {
     public AVHWFramesContext* RawHandle {
         get {
             ThrowIfDisposed();
-            return (AVHWFramesContext*)_handle->data;
+            return (AVHWFramesContext*)handle->data;
         }
     }
 
@@ -24,14 +20,14 @@ public unsafe class HardwareFramePool : FFObject<AVBufferRef>
 
     public HardwareFramePool(AVBufferRef* deviceCtx)
     {
-        _handle = deviceCtx;
+        handle = deviceCtx;
     }
 
     /// <summary> Allocate a new frame attached to the current hardware frame pool. </summary>
     public VideoFrame AllocFrame()
     {
         var frame = ffmpeg.av_frame_alloc();
-        int err = ffmpeg.av_hwframe_get_buffer(_handle, frame, 0);
+        int err = ffmpeg.av_hwframe_get_buffer(handle, frame, 0);
         if (err < 0) {
             ffmpeg.av_frame_free(&frame);
             err.ThrowError(msg: "Failed to allocate hardware frame");
@@ -41,8 +37,8 @@ public unsafe class HardwareFramePool : FFObject<AVBufferRef>
 
     protected override void Free()
     {
-        if (_handle != null) {
-            fixed (AVBufferRef** ppCtx = &_handle) {
+        if (handle != null) {
+            fixed (AVBufferRef** ppCtx = &handle) {
                 ffmpeg.av_buffer_unref(ppCtx);
             }
         }

@@ -1,10 +1,5 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-using FFmpegWrapper.Core;
-
-using Media.Formats;
-using Media.Frames;
-
 public unsafe class SwScaler : FFObject<SwsContext>
 {
     /// <summary>
@@ -18,10 +13,10 @@ public unsafe class SwScaler : FFObject<SwsContext>
         InputFormat = inFmt;
         OutputFormat = outFmt;
 
-        _handle = ffmpeg.sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
+        handle = ffmpeg.sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
                                      outFmt.Width, outFmt.Height, outFmt.PixelFormat,
                                      (int)flags, null, null, null);
-        if (_handle == null) {
+        if (handle == null) {
             throw new OutOfMemoryException();
         }
     }
@@ -33,7 +28,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
         ThrowIfDisposed();
         int* table, invTable;
         int srcRange, dstRange, brightness, contrast, saturation;
-        ffmpeg.sws_getColorspaceDetails(_handle, &invTable, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation);
+        ffmpeg.sws_getColorspaceDetails(handle, &invTable, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation);
 
         table = ffmpeg.sws_getCoefficients((int)input.Matrix);
         invTable = ffmpeg.sws_getCoefficients((int)output.Matrix);
@@ -45,7 +40,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
             dstRange = output.Range == AVColorRange.AVCOL_RANGE_JPEG ? 1 : 0;
         }
 
-        ffmpeg.sws_setColorspaceDetails(_handle, in *(int4*)invTable, srcRange, in *(int4*)table, dstRange, brightness, contrast, saturation);
+        ffmpeg.sws_setColorspaceDetails(handle, in *(int4*)invTable, srcRange, in *(int4*)table, dstRange, brightness, contrast, saturation);
     }
 
     public void Convert(VideoFrame src, VideoFrame dst)
@@ -56,7 +51,7 @@ public unsafe class SwScaler : FFObject<SwsContext>
     {
         CheckFrame(src, InputFormat, input: true);
         CheckFrame(dst, OutputFormat, input: false);
-        ffmpeg.sws_scale_frame(_handle, dst, src).CheckError();
+        ffmpeg.sws_scale_frame(handle, dst, src).CheckError();
     }
 
     /// <summary> Converts and rescales <paramref name="src"/> into the given frame. The input pixel format must be interleaved. </summary>
@@ -115,9 +110,9 @@ public unsafe class SwScaler : FFObject<SwsContext>
 
     protected override void Free()
     {
-        if (_handle != null) {
-            ffmpeg.sws_freeContext(_handle);
-            _handle = null;
+        if (handle != null) {
+            ffmpeg.sws_freeContext(handle);
+            handle = null;
         }
     }
 }

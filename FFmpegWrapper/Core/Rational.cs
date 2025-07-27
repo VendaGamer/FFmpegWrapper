@@ -14,9 +14,10 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
     public static Rational One => new(1, 1);
     public static Rational MaxValue => new(int.MaxValue, int.MaxValue);
     public static Rational MinValue => new(int.MinValue, int.MinValue);
-
-    public int Num { get; }
-    public int Den { get; }
+    
+    public readonly int Num;
+    public readonly int Den;
+    public bool IsValidFrameRate => Num > 0 && Den > 0;
 
     public Rational(int num, int den)
     {

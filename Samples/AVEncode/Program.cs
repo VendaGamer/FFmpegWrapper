@@ -1,6 +1,10 @@
 using System.Diagnostics;
 
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Codecs;
+using FFmpegWrapper.Codecs.Encoding;
+using FFmpegWrapper.Core;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Frames;
 
 if (args.Length < 1) {
     Console.WriteLine("Usage: AVEncode <output path>");

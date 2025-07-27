@@ -1,6 +1,10 @@
 using System.Diagnostics;
 
-using FFmpeg.Wrapper;
+using FFmpegWrapper.Codecs.Decoding;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Media.Packets;
+using FFmpegWrapper.Media.Streams;
 
 public abstract class StreamRenderer : IDisposable
 {
