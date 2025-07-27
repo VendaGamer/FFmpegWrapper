@@ -1,4 +1,7 @@
 ﻿namespace FFmpegWrapper.Codecs;
+
+using System.Collections.Immutable;
+
 using Core;
 using Hardware;
 using Media.Packets;

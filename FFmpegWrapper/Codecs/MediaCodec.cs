@@ -8,33 +8,6 @@ using Core;
 public readonly struct MediaCodec : IHandle<AVCodec>
 {
     public unsafe AVCodec* Handle { get; }
-
-    private static ImmutableArray<MediaCodec> avaliableCodecs;
-
-    public static ImmutableArray<MediaCodec> AvaliableCodecs {
-        get {
-            if (avaliableCodecs.IsDefault) {
-                avaliableCodecs = GetAllAvailableCodecs();
-            }
-
-            return avaliableCodecs;
-        }
-    }
-
-    private static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
-    {
-        var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
-        
-        unsafe {
-            void* iterState = null;
-            AVCodec* codec;
-            while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
-                builder.Add(new MediaCodec(codec));
-            }
-        }
-
-        return builder.ToImmutable();
-    }
     
     public bool IsValid {
         get {
@@ -248,6 +221,42 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     }
 
     public override string ToString() => LongName;
+    
+    /// <summary>
+    /// Workaround class.
+    /// Cannot be directly in MediaCodec struct cause of this issue:
+    /// https://github.com/dotnet/runtime/pull/112115
+    /// </summary>
+    public static class Utils
+    {
+        private static ImmutableArray<MediaCodec> avaliableCodecs;
+
+        public static ImmutableArray<MediaCodec> AvaliableCodecs {
+            get {
+                if (avaliableCodecs.IsDefault) {
+                    avaliableCodecs = GetAllAvailableCodecs();
+                }
+
+                return avaliableCodecs;
+            }
+        }
+
+        private static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
+        {
+            var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
+        
+            unsafe {
+                void* iterState = null;
+                AVCodec* codec;
+                while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
+                    builder.Add(new MediaCodec(codec));
+                }
+            }
+
+            return builder.ToImmutable();
+        }
+    }
+    
 }
 [Flags]
 public enum MediaCodecCaps

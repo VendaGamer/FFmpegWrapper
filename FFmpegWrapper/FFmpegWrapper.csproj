@@ -26,5 +26,6 @@
         <PackageReference Include="OwnerCore" />
         <PackageReference Include="System.Collections.Immutable" />
         <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
+
     </ItemGroup>
 </Project>

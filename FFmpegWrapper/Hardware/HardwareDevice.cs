@@ -1,11 +1,7 @@
 namespace FFmpegWrapper.Hardware;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections.Immutable;
-
 using Codecs;
-
 using Core;
-
 using Media.Formats;
 
 public class HardwareDevice : FFObject<AVBufferRef>
