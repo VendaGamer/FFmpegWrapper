@@ -221,40 +221,41 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     }
 
     public override string ToString() => LongName;
+
+    public static ImmutableArray<MediaCodec> AvaliableCodecs {
+        get {
+            if (Utils.avaliableCodecs.IsDefault) {
+                Utils.avaliableCodecs = GetAllAvailableCodecs();
+            }
+
+            return Utils.avaliableCodecs;
+        }
+    }
+
+    private static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
+    {
+        var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
+        
+        unsafe {
+            void* iterState = null;
+            AVCodec* codec;
+            while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
+                builder.Add(new MediaCodec(codec));
+            }
+        }
+
+        return builder.ToImmutable();
+    }
+    
     
     /// <summary>
     /// Workaround class.
     /// Cannot be directly in MediaCodec struct cause of this issue:
-    /// https://github.com/dotnet/runtime/pull/112115
+    /// https://github.com/dotnet/runtime/issues/104511
     /// </summary>
-    public static class Utils
+    private static class Utils
     {
-        private static ImmutableArray<MediaCodec> avaliableCodecs;
-
-        public static ImmutableArray<MediaCodec> AvaliableCodecs {
-            get {
-                if (avaliableCodecs.IsDefault) {
-                    avaliableCodecs = GetAllAvailableCodecs();
-                }
-
-                return avaliableCodecs;
-            }
-        }
-
-        private static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
-        {
-            var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
-        
-            unsafe {
-                void* iterState = null;
-                AVCodec* codec;
-                while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
-                    builder.Add(new MediaCodec(codec));
-                }
-            }
-
-            return builder.ToImmutable();
-        }
+        public static ImmutableArray<MediaCodec> avaliableCodecs = default;
     }
     
 }
