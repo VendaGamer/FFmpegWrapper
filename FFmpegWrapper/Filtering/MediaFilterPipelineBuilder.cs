@@ -1,7 +1,7 @@
 namespace FFmpegWrapper.Filtering;
 
 using Codecs.Decoding;
-
+using Media;
 using Processing;
 
 partial class MediaFilterPipeline

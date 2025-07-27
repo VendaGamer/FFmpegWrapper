@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Containers;
 
+using Media;
+
 /// <inheritdoc cref="AVCodecParameters" />
 public unsafe readonly struct MediaCodecParameters
 {

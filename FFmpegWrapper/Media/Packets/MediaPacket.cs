@@ -89,12 +89,12 @@ public unsafe class MediaPacket : FFObject<AVPacket>
     }
 
     /// <summary> Returns the underlying packet pointer after calling av_packet_unref() on it. </summary>
-    public AVPacket* UnrefAndGetHandle()
+    public IHandle<AVPacket> UnrefAndGetHandle()
     {
         ThrowIfDisposed();
 
         ffmpeg.av_packet_unref(handle);
-        return handle;
+        return this;
     }
 
     protected override void Free()

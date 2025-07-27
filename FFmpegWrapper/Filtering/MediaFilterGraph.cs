@@ -4,6 +4,8 @@ using System.Text;
 using Configuration;
 using Hardware;
 
+using Media;
+
 public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
 {
     public bool IsConfigured { get; private set; }

@@ -2,6 +2,8 @@
 
 using Hardware;
 
+using Media;
+
 public unsafe class VideoEncoder : MediaEncoder
 {
     public int Width {

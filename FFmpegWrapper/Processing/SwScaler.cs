@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Processing;
 
+using Media;
+
 public unsafe class SwScaler : FFObject<SwsContext>
 {
     /// <summary>

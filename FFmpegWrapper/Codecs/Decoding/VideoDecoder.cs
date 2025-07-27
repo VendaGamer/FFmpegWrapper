@@ -2,6 +2,8 @@
 
 using Hardware;
 
+using Media;
+
 public unsafe class VideoDecoder : MediaDecoder
 {
     public int Width => handle->width;

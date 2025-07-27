@@ -1,6 +1,8 @@
 namespace FFmpegWrapper.Hardware;
 using Codecs;
-
+/// <summary>
+/// Wrapper of Hardware Device
+/// </summary>
 public sealed class HardwareDevice : FFObject<AVBufferRef>
 {
     
