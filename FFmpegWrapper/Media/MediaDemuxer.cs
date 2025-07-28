@@ -80,7 +80,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
         Streams = streams.MoveToImmutable();
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     private static unsafe AVFormatContext* CreateContext(string? url, AVIOContext* pb, IEnumerable<KeyValuePair<string, string>>? options)
     {
         AVFormatContext* ctx = ffmpeg.avformat_alloc_context();

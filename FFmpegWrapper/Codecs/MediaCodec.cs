@@ -219,30 +219,8 @@ public readonly struct MediaCodec : IHandle<AVCodec>
 
     public override string ToString() => LongName;
 
-    public static ImmutableArray<MediaCodec> AvaliableCodecs {
-        get {
-            if (Utils.avaliableCodecs.IsDefault) {
-                Utils.avaliableCodecs = GetAllAvailableCodecs();
-            }
-
-            return Utils.avaliableCodecs;
-        }
-    }
-
-    private static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
-    {
-        var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
-        
-        unsafe {
-            void* iterState = null;
-            AVCodec* codec;
-            while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
-                builder.Add(new MediaCodec(codec));
-            }
-        }
-
-        return builder.ToImmutable();
-    }
+    public static ImmutableArray<MediaCodec> AvaliableCodecs
+        => Utils.GetAllAvailableCodecs();
     
     
     /// <summary>
@@ -252,7 +230,28 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     /// </summary>
     private static class Utils
     {
-        public static ImmutableArray<MediaCodec> avaliableCodecs = default;
+        private static ImmutableArray<MediaCodec> avaliableCodecs;
+        
+        public static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
+        {
+            
+            if (!avaliableCodecs.IsDefault) {
+                return avaliableCodecs;
+            }
+            
+            var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
+        
+            unsafe {
+                void* iterState = null;
+                AVCodec* codec;
+                while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
+                    builder.Add(new MediaCodec(codec));
+                }
+            }
+
+            avaliableCodecs =  builder.ToImmutable();
+            return avaliableCodecs;
+        }
     }
     
 }

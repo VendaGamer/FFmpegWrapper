@@ -1,7 +1,6 @@
 namespace FFmpegWrapper.Containers;
 
 using System;
-using System.Runtime.InteropServices;
 
 public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<OutputFormat>
 {
@@ -30,13 +29,13 @@ public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<Output
     }
 
     // Properties wrapping AVOutputFormat fields
-    public unsafe string Name => Marshal.PtrToStringAnsi((IntPtr)Handle->name) ?? string.Empty;
+    public unsafe string Name => Helpers.PtrToStringUTF8(Handle->name);
+
+    public unsafe string LongName => Helpers.PtrToStringUTF8(Handle->long_name);
     
-    public unsafe string LongName => Marshal.PtrToStringAnsi((IntPtr)Handle->long_name) ?? string.Empty;
+    public unsafe string MimeType => Helpers.PtrToStringUTF8(Handle->mime_type);
     
-    public unsafe string MimeType => Marshal.PtrToStringAnsi((IntPtr)Handle->mime_type) ?? string.Empty;
-    
-    public unsafe string Extensions => Marshal.PtrToStringAnsi((IntPtr)Handle->extensions) ?? string.Empty;
+    public unsafe string Extensions => Helpers.PtrToStringUTF8(Handle->extensions);
     
     public unsafe AVCodecID AudioCodec => Handle->audio_codec;
     
@@ -61,30 +60,39 @@ public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<Output
 
     // Get all available output formats
 
-    private static ImmutableArray<OutputFormat> allOutputFormats;
-
-    public static ImmutableArray<OutputFormat> AllOutputFormats {
-        get {
-            if (!allOutputFormats.IsDefault) {
-                return allOutputFormats;
+    public static ImmutableArray<OutputFormat> AvaliableOutputFormats 
+        => Utils.GetAllAvailableOutputFormats();
+    
+    
+    /// <summary>
+    /// Workaround class.
+    /// Cannot be directly in MediaCodec struct cause of this issue:
+    /// https://github.com/dotnet/runtime/issues/104511
+    /// </summary>
+    private static class Utils
+    {
+        private static ImmutableArray<OutputFormat> AvaliableOutputFormats = default;
+        
+        public static ImmutableArray<OutputFormat> GetAllAvailableOutputFormats()
+        {
+            if (!AvaliableOutputFormats.IsDefault) {
+                return AvaliableOutputFormats;
+            }
+            
+            var builder = ImmutableArray.CreateBuilder<OutputFormat>(768);
+        
+            unsafe {
+                void* iterState = null;
+                AVOutputFormat* outputFormat;
+                
+                while ((outputFormat = ffmpeg.av_muxer_iterate(&iterState)) != null) {
+                    builder.Add(FromHandle(outputFormat));
+                }
             }
 
-            return allOutputFormats = IterateOverFormats();
+            AvaliableOutputFormats = builder.ToImmutable();
+            return AvaliableOutputFormats;
         }
-    }
-    
-    private static unsafe ImmutableArray<OutputFormat> IterateOverFormats()
-    {
-        var formats = ImmutableArray.CreateBuilder<OutputFormat>();
-        void* opaque = null;
-        AVOutputFormat* format;
-        
-        while ((format = ffmpeg.av_muxer_iterate(&opaque)) != null)
-        {
-            formats.Add(FromHandle(format));
-        }
-        
-        return formats.ToImmutable();
     }
 
     // Find format by name
