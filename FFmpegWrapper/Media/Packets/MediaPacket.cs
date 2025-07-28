@@ -1,5 +1,4 @@
 ﻿namespace FFmpegWrapper.Media.Packets;
-
 using Streams;
 
 public unsafe class MediaPacket : FFObject<AVPacket>
@@ -16,12 +15,12 @@ public unsafe class MediaPacket : FFObject<AVPacket>
     /// Such timestamps must be converted to true pts/dts before they are stored in AVPacket.
     /// </summary>
     public long? PresentationTimestamp {
-        get => Helpers.GetPTS(handle->pts);
-        set => Helpers.SetPTS(ref handle->pts, value);
+        get => Helpers.GetPTS(Handle->pts);
+        set => Helpers.SetPTS(ref Handle->pts, value);
     }
     public long? DecompressionTimestamp {
-        get => Helpers.GetPTS(handle->dts);
-        set => Helpers.SetPTS(ref handle->dts, value);
+        get => Helpers.GetPTS(Handle->dts);
+        set => Helpers.SetPTS(ref Handle->dts, value);
     }
 
     /// <summary> Duration of this packet in <see cref="MediaStream.TimeBase"/> units, 0 if unknown. Equals next_pts - this_pts in presentation order.  </summary>
@@ -50,12 +49,17 @@ public unsafe class MediaPacket : FFObject<AVPacket>
         get => new(handle->data, handle->size);
     }
 
+    internal byte* DataRaw {
+        get => handle->data;
+    }
+
+    internal int DataLength => handle->size;
+
     public PacketSideDataList SideData => new(&handle->side_data, &handle->side_data_elems);
 
     public MediaPacket()
     {
         handle = ffmpeg.av_packet_alloc();
-
         if (handle == null) {
             throw new OutOfMemoryException();
         }

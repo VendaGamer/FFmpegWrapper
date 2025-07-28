@@ -18,6 +18,15 @@ internal static unsafe class Helpers
         }
         return errno;
     }
+    /// <summary>
+    /// Use when sure that cannot be EAGAIN or EOF
+    /// </summary>
+    /// <param name="errno">result of ffmpeg call</param>
+    /// <returns>true if not error otherwise false</returns>
+    public static bool IsSuccess(this int errno)
+    {
+        return errno >= 0;
+    }
     public static int CheckError(this int errno, string msg)
     {
         if (errno < 0 && errno != ffmpeg.EAGAIN && errno != ffmpeg.AVERROR_EOF) {
@@ -81,12 +90,29 @@ internal static unsafe class Helpers
     public static long? GetPTS(long pts) => pts != ffmpeg.AV_NOPTS_VALUE ? pts : null;
     public static void SetPTS(ref long pts, long? value) => pts = value ?? ffmpeg.AV_NOPTS_VALUE;
 
-    public static TimeSpan? GetTimeSpan(long pts, Rational timeBase)
+    public static TimeSpan?  GetTimeSpan(long pts, Rational timeBase)
     {
         if (pts == ffmpeg.AV_NOPTS_VALUE) {
             return null;
         }
         return Rational.GetTimeSpan(pts, timeBase);
+    }
+    
+    public static IntPtr StringToHGlobalUTF8(string? s, out int length)
+    {
+        if (s is null)
+        {
+            length = 0;
+            return IntPtr.Zero;
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(s);
+        var ptr = Marshal.AllocHGlobal(bytes.Length + 1);
+        Marshal.Copy(bytes, 0, ptr, bytes.Length);
+        Marshal.WriteByte(ptr, bytes.Length, 0);
+        length = bytes.Length;
+
+        return ptr;
     }
 
 

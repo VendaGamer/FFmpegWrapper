@@ -11,14 +11,6 @@ public readonly ref struct MediaDictionaryEntry : IHandle<AVDictionaryEntry>
     private readonly unsafe AVDictionaryEntry* handle;
     unsafe AVDictionaryEntry* IHandle<AVDictionaryEntry>.Handle => handle;
 
-    bool IHandle<AVDictionaryEntry>.IsValid {
-        get {
-            unsafe {
-                return handle is not null;
-            }
-        }
-    }
-
     public string Key {
         get {
             unsafe

@@ -30,14 +30,6 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
             return handle;
         }
     }
-    bool IHandle<TRaw>.IsValid {
-        get {
-            unsafe
-            {
-                return handle is not null;
-            }
-        }
-    }
 
 
     /// <summary>
@@ -78,12 +70,18 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
     private void Dispose(bool disposing)
     {
         if (_disposed) return;
-        
-        if (disposing) {
-            FreeManaged();
+        try {
+
+            if (disposing) {
+                FreeManaged();
+            }
+
+            Free();
+
+        } catch (ObjectDisposedException e) {
+            Console.WriteLine(e);
         }
-        
-        Free();
+
 
         _disposed = true;
     }

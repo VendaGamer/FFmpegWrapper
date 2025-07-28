@@ -5,15 +5,22 @@ using System.Runtime.InteropServices;
 
 public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<OutputFormat>
 {
-    public unsafe AVOutputFormat* Handle { get; } = null!;
+    public unsafe AVOutputFormat* Handle => handle;
+
+    private readonly unsafe AVOutputFormat* handle;
 
     // Private constructor to ensure only valid instances are created
     private unsafe OutputFormat(AVOutputFormat* handle)
     {
-        Handle = handle;
+        this.handle = handle;
     }
-
-    // Factory method to create from handle
+    
+    /// <summary>
+    /// Factory method to create from handle
+    /// </summary>
+    /// <param name="handle"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static unsafe OutputFormat FromHandle(AVOutputFormat* handle)
     {
         if (handle == null)

@@ -80,7 +80,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
         Streams = streams.MoveToImmutable();
     }
-    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe AVFormatContext* CreateContext(string? url, AVIOContext* pb, IEnumerable<KeyValuePair<string, string>>? options)
     {
         AVFormatContext* ctx = ffmpeg.avformat_alloc_context();
@@ -92,7 +92,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
 
         AVDictionary* rawOpts = null;
         MediaDictionary.Populate(&rawOpts, options);
-
+        
         ffmpeg.avformat_open_input(&ctx, url, null, &rawOpts).CheckError("Could not open input");
 
         try {

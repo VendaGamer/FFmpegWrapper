@@ -3,6 +3,8 @@
 using Codecs.Decoding;
 using Codecs.Encoding;
 
+using Flags;
+
 using Hardware;
 
 using Processing;
@@ -142,7 +144,7 @@ public unsafe class VideoFrame : MediaFrame
     }
 
     /// <summary> Attempts to create a hardware frame memory mapping. Returns null if the backing device does not support frame mappings. </summary>
-    public VideoFrame? Map(HardwareFrameMappingFlags flags)
+    public VideoFrame? Map(HardwareFrameMapping flags)
     {
         ThrowIfDisposed();
         if (!IsHardwareFrame) {
@@ -230,10 +232,10 @@ public unsafe class VideoFrame : MediaFrame
             // This seems to be redundant, but keeping for good sake.
             rgbFrame.Colorspace = new PictureColorspace(AVColorSpace.AVCOL_SPC_RGB, AVColorPrimaries.AVCOL_PRI_BT470M, AVColorTransferCharacteristic.AVCOL_TRC_GAMMA22, AVColorRange.AVCOL_RANGE_JPEG);
 
-            using (var tempScaler = new SwScaler(Format, rgbFrame.Format, InterpolationMode.Bilinear | InterpolationMode.HighQuality)) {
-                tempScaler.SetColorspace(Colorspace, rgbFrame.Colorspace);
-                tempScaler.Convert(this, rgbFrame);
-            }
+            SwScaler.Shared.Reinit(Format, rgbFrame.Format, InterpolationMode.Bilinear | InterpolationMode.HighQuality);
+            SwScaler.Shared.SetColorspace(Colorspace, rgbFrame.Colorspace);
+            SwScaler.Shared.Convert(this, rgbFrame);
+            
             rgbFrame.Save(filename, quality, outWidth, outHeight);
             return;
         }
@@ -254,19 +256,31 @@ public unsafe class VideoFrame : MediaFrame
             //zlib compression (0-9)
             encoder.CompressionLevel = quality * 9 / 100;
         }
+        
         encoder.Open();
 
         var scalerMode = quality >= 80 ? InterpolationMode.Bicubic | InterpolationMode.HighQuality : InterpolationMode.Bilinear;
-        using var sws = new SwScaler(Format, tempFrame.Format, scalerMode);
-        sws.SetColorspace(this.Colorspace, tempFrame.Colorspace);
-        sws.Convert(this, tempFrame);
+        
+        SwScaler.Shared.Reinit(Format, tempFrame.Format, scalerMode);
+        SwScaler.Shared.SetColorspace(this.Colorspace, tempFrame.Colorspace);
+        SwScaler.Shared.Convert(this, tempFrame);
 
         encoder.SendFrame(tempFrame);
-
+        
         using var packet = new MediaPacket();
         encoder.ReceivePacket(packet);
-
-        File.WriteAllBytes(filename, packet.Data.ToArray());
+        
+        #if NET9_0_OR_GREATER
+        File.WriteAllBytes(filename, packet.Data);
+        #elif NETSTANDARD2_1_OR_GREATER
+        using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
+        fs.Write(packet.Data);
+        #else
+            using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
+            using var us = new UnmanagedMemoryStream(packet.DataRaw, packet.DataLength);
+            us.CopyTo(fs);
+            
+        #endif
     }
 
     /// <summary> Decodes a single frame from the specified image or video file. </summary>

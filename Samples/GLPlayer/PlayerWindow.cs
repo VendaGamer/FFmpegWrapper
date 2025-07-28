@@ -1,5 +1,4 @@
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
-using FFmpeg.Wrapper;
 
 using FFmpegWrapper.Core;
 using FFmpegWrapper.Media;

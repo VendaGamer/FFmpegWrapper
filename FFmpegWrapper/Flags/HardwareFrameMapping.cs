@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Hardware;
 [Flags]
-public enum HardwareFrameMappingFlags
+public enum HardwareFrameMapping
 {
     /// <summary> The mapping must be readable. </summary>
     Read = 1 << 0,

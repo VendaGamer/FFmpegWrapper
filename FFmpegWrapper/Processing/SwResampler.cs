@@ -1,12 +1,20 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-public unsafe class SwResampler : FFObject<SwrContext>
+public sealed class SwResampler : FFObject<SwrContext>
 {
-    public AudioFormat InputFormat { get; }
-    public AudioFormat OutputFormat { get; }
+    public AudioFormat InputFormat { get; private set; }
+    public AudioFormat OutputFormat { get; private set; }
 
     /// <summary> Gets an estimated number of buffered output samples. </summary>
-    public int BufferedSamples => (int)ffmpeg.swr_get_delay(handle, OutputFormat.SampleRate);
+    public int BufferedSamples {
+        get {
+            unsafe
+            {
+                ThrowIfDisposed();
+                return (int)ffmpeg.swr_get_delay(handle, OutputFormat.SampleRate);
+            }
+        }
+    }
 
     /// <summary>
     /// 
@@ -15,26 +23,78 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// <param name="outFmt">out</param>
     public SwResampler(AudioFormat inFmt, AudioFormat outFmt)
     {
+        unsafe
+        {
+            if (inFmt.Equals(outFmt)) {
+                throw new FormatException("Formats cannot be the same");
+            }
+        
+            handle = ffmpeg.swr_alloc();
+
+            var tempLayout = inFmt.Layout.Native;
+            ffmpeg.av_opt_set_chlayout(handle, "in_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(handle, "in_sample_rate", inFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
+
+            tempLayout = outFmt.Layout.Native;
+
+            ffmpeg.av_opt_set_chlayout(handle, "out_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(handle, "out_sample_rate", outFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
+
+            ffmpeg.swr_init(handle);
+        
+        
+            
+            InputFormat = inFmt;
+            OutputFormat = outFmt;
+        }
+    }
+
+    public bool Reinit(AudioFormat inFmt, AudioFormat outFmt)
+    {
         if (inFmt.Equals(outFmt)) {
-            throw new FormatException("Formats cannot be the same");
+            return false;
+        }
+
+        if (InputFormat.Equals(inFmt) && OutputFormat.Equals(outFmt)) {
+            return false;
         }
         
-        handle = ffmpeg.swr_alloc();
+        Close();
+        unsafe
+        {
+            var tempLayout = inFmt.Layout.Native;
+            ffmpeg.av_opt_set_chlayout(handle, "in_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(handle, "in_sample_rate", inFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
 
-        var tempLayout = inFmt.Layout.Native;
-        ffmpeg.av_opt_set_chlayout(handle, "in_chlayout", &tempLayout, 0);
-        ffmpeg.av_opt_set_int(handle, "in_sample_rate", inFmt.SampleRate, 0);
-        ffmpeg.av_opt_set_int(handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
+            tempLayout = outFmt.Layout.Native;
+            ffmpeg.av_opt_set_chlayout(handle, "out_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(handle, "out_sample_rate", outFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
 
-        tempLayout = outFmt.Layout.Native;
-        ffmpeg.av_opt_set_chlayout(handle, "out_chlayout", &tempLayout, 0);
-        ffmpeg.av_opt_set_int(handle, "out_sample_rate", outFmt.SampleRate, 0);
-        ffmpeg.av_opt_set_int(handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
+            ffmpeg.swr_init(handle);
+        }
 
-        ffmpeg.swr_init(handle);
+        return true;
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns>true if closed, false indicates already closed</returns>
+    public bool Close()
+    {
+        ThrowIfDisposed();
+        unsafe
+        {
+            if (ffmpeg.swr_is_initialized(handle) == 0) {
+                return false;
+            }
 
-        InputFormat = inFmt;
-        OutputFormat = outFmt;
+            ffmpeg.swr_close(handle);
+            return true;
+        }
     }
 
     /// <summary> Convert interleaved audio samples from <paramref name="src"/> and writes the result to <paramref name="dst"/>. </summary>
@@ -44,21 +104,24 @@ public unsafe class SwResampler : FFObject<SwrContext>
         where TSrc : unmanaged 
         where TDst : unmanaged
     {
-        if (InputFormat.IsPlanar || OutputFormat.IsPlanar) {
-            throw new InvalidOperationException("This overload does not support planar formats.");
-        }
-        if (src.Length % InputFormat.NumChannels != 0 || dst.Length % OutputFormat.NumChannels != 0) {
-            throw new ArgumentException("Buffer sizes must be aligned to channel count.");
-        }
-        if (InputFormat.BytesPerSample != sizeof(TSrc) || OutputFormat.BytesPerSample != sizeof(TDst)) {
-            throw new ArgumentException("Buffer types must match resampler format.");
-        }
+        unsafe
+        {
+            if (InputFormat.IsPlanar || OutputFormat.IsPlanar) {
+                throw new InvalidOperationException("This overload does not support planar formats.");
+            }
+            if (src.Length % InputFormat.NumChannels != 0 || dst.Length % OutputFormat.NumChannels != 0) {
+                throw new ArgumentException("Buffer sizes must be aligned to channel count.");
+            }
+            if (InputFormat.BytesPerSample != sizeof(TSrc) || OutputFormat.BytesPerSample != sizeof(TDst)) {
+                throw new ArgumentException("Buffer types must match resampler format.");
+            }
 
-        fixed (TSrc* pSrc = src)
-        fixed (TDst* pDst = dst) {
-            var ppSrc = pSrc == null ? null : &pSrc;
-            return Convert((byte**)ppSrc, src.Length / InputFormat.NumChannels,
-                           (byte**)&pDst, dst.Length / OutputFormat.NumChannels);
+            fixed (TSrc* pSrc = src)
+            fixed (TDst* pDst = dst) {
+                var ppSrc = pSrc == null ? null : &pSrc;
+                return Convert((byte**)ppSrc, src.Length / InputFormat.NumChannels,
+                    (byte**)&pDst, dst.Length / OutputFormat.NumChannels);
+            }
         }
     }
 
@@ -73,7 +136,7 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// <param name="srcCount">Number of samples (per channel) in the src buffer.</param>
     /// <param name="dstCount">Capacity, in samples (per channel) of the dst buffer.</param>
     /// <returns>The number of samples written to the dst buffer.</returns>
-    public int Convert(byte** src, int srcCount, byte** dst, int dstCount)
+    public unsafe int Convert(byte** src, int srcCount, byte** dst, int dstCount)
     {
         ThrowIfDisposed();
         return ffmpeg.swr_convert(handle, dst, dstCount, src, srcCount).CheckError();
@@ -81,8 +144,11 @@ public unsafe class SwResampler : FFObject<SwrContext>
 
     public int Convert(AudioFrame src, AudioFrame dst)
     {
-        ThrowIfDisposed();
-        return ffmpeg.swr_convert_frame(handle, ((IHandle<AVFrame>)dst).Handle, ((IHandle<AVFrame>)src).Handle).CheckError();
+        unsafe
+        {
+            ThrowIfDisposed();
+            return ffmpeg.swr_convert_frame(handle, ((IHandle<AVFrame>)dst).Handle, ((IHandle<AVFrame>)src).Handle).CheckError();
+        }
     }
 
     private bool _flushing;
@@ -94,16 +160,19 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// </summary>
     public void SendFrame(AudioFrame? frame)
     {
-        byte** inputData = null;
-        int inputLen = 0;
+        unsafe
+        {
+            byte** inputData = null;
+            int inputLen = 0;
 
-        if (frame != null) {
-            inputData = frame.Data;
-            inputLen = frame.Count;
-        } else {
-            _flushing = true;
+            if (frame != null) {
+                inputData = frame.Data;
+                inputLen = frame.Count;
+            } else {
+                _flushing = true;
+            }
+            Convert(inputData, inputLen, null, 0);
         }
-        Convert(inputData, inputLen, null, 0);
     }
 
     /// <summary>
@@ -117,38 +186,44 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// </returns>
     public bool ReceiveFrame(AudioFrame frame)
     {
-        if (frame.Count >= frame.Capacity) {
-            frame.Count = 0;
-        }
-        //Calculate remaining space and starting pointers
-        int count = frame.Capacity - frame.Count;
-        int offset = frame.Count * frame.Format.BytesPerSample * (frame.IsPlanar ? 1 : frame.NumChannels);
-        int numPlanes = frame.IsPlanar ? frame.NumChannels : 1;
-        byte** data = stackalloc byte*[numPlanes];
+        unsafe
+        {
+            if (frame.Count >= frame.Capacity) {
+                frame.Count = 0;
+            }
+            //Calculate remaining space and starting pointers
+            int count = frame.Capacity - frame.Count;
+            int offset = frame.Count * frame.Format.BytesPerSample * (frame.IsPlanar ? 1 : frame.NumChannels);
+            int numPlanes = frame.IsPlanar ? frame.NumChannels : 1;
+            byte** data = stackalloc byte*[numPlanes];
 
-        for (int i = 0; i < numPlanes; i++) {
-            data[i] = &frame.Data[i][offset];
-        }
-        var inData = _flushing ? null : data; //input ptr must be non-null to prevent transitioning the resampler to flush state.
-        int actualOut = Convert(inData, 0, data, count);
+            for (int i = 0; i < numPlanes; i++) {
+                data[i] = &frame.Data[i][offset];
+            }
+            var inData = _flushing ? null : data; //input ptr must be non-null to prevent transitioning the resampler to flush state.
+            int actualOut = Convert(inData, 0, data, count);
 
-        frame.Count += actualOut;
-        return frame.Count >= frame.Capacity;
+            frame.Count += actualOut;
+            return frame.Count >= frame.Capacity;
+        }
     }
 
     /// <summary> Retrieves converted samples from the internal buffer. </summary>
     /// <returns> The number of samples written to <paramref name="buffer"/>. </returns>
     public int ReceiveFrame<T>(Span<T> buffer) where T : unmanaged
     {
-        if (OutputFormat.IsPlanar) {
-            throw new InvalidOperationException("This overload does not support planar output formats.");
-        }
-        fixed (T* pBuffer = buffer) {
-            byte** outData = stackalloc byte*[1] { (byte*)pBuffer };
-            int count = buffer.Length * sizeof(T) / (OutputFormat.NumChannels * OutputFormat.BytesPerSample);
+        unsafe
+        {
+            if (OutputFormat.IsPlanar) {
+                throw new InvalidOperationException("This overload does not support planar output formats.");
+            }
+            fixed (T* pBuffer = buffer) {
+                byte** outData = stackalloc byte*[1] { (byte*)pBuffer };
+                int count = buffer.Length * sizeof(T) / (OutputFormat.NumChannels * OutputFormat.BytesPerSample);
 
-            var inData = _flushing ? null : outData; //input ptr must be non-null to prevent transitioning the resampler to flush state.
-            return Convert(inData, 0, outData, count);
+                var inData = _flushing ? null : outData; //input ptr must be non-null to prevent transitioning the resampler to flush state.
+                return Convert(inData, 0, outData, count);
+            }
         }
     }
 
@@ -162,19 +237,25 @@ public unsafe class SwResampler : FFObject<SwrContext>
     /// </summary>
     public int GetOutputSamples(int inputSampleCount)
     {
-        return ffmpeg.swr_get_out_samples(handle, inputSampleCount);
+        unsafe
+        {
+            return ffmpeg.swr_get_out_samples(handle, inputSampleCount);
+        }
     }
 
     /// <summary> Drops the specified number of output samples. </summary>
-    public void DropOutputSamples(int count)
+    public bool DropOutputSamples(int count)
     {
-        ffmpeg.swr_drop_output(handle, count).CheckError();
+        unsafe
+        {
+            return ffmpeg.swr_drop_output(handle, count).IsSuccess();
+        }
     }
 
     //TODO: expose swr_next_pts() and whatever else
 
     /// <inheritdoc />
-    protected override void Free()
+    protected override unsafe void Free()
     {
         if (handle != null) {
             fixed (SwrContext** s = &handle) {
