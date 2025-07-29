@@ -1,9 +1,7 @@
 ﻿namespace FFmpegWrapper.Core;
 
-using System.Buffers.Text;
 using System.Runtime.InteropServices;
 using System.Text;
-
 using CommunityToolkit.HighPerformance.Buffers;
 
 internal static unsafe class Helpers
@@ -40,6 +38,7 @@ internal static unsafe class Helpers
     public static Exception ThrowError(this int errno, string? msg = null)
     {
         msg ??= "Operation failed";
+        
         throw new InvalidOperationException(msg + ": " + ErrorString(errno));
     }
 
@@ -90,11 +89,12 @@ internal static unsafe class Helpers
     public static long? GetPTS(long pts) => pts != ffmpeg.AV_NOPTS_VALUE ? pts : null;
     public static void SetPTS(ref long pts, long? value) => pts = value ?? ffmpeg.AV_NOPTS_VALUE;
 
-    public static TimeSpan?  GetTimeSpan(long pts, Rational timeBase)
+    public static TimeSpan? GetTimeSpan(long pts, Rational timeBase)
     {
         if (pts == ffmpeg.AV_NOPTS_VALUE) {
             return null;
         }
+        
         return Rational.GetTimeSpan(pts, timeBase);
     }
     

@@ -125,16 +125,16 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     /// <summary> Array of supported framerates, or empty if any. </summary>
     public readonly ImmutableArray<Rational> SupportedFramerates;
 
-    /// <summary> Array of supported pixel formats, or empty if unknown. </summary>
+    /// <summary> Array of supported pixel formats, or empty if any. </summary>
     public readonly ImmutableArray<AVPixelFormat> SupportedPixelFormats;
 
-    /// <summary> Array of supported audio samplerates, or empty if unknown. </summary>
+    /// <summary> Array of supported audio samplerates, or empty if any. </summary>
     public readonly ImmutableArray<int> SupportedSampleRates;
 
-    /// <summary> Array of supported sample formats, or empty if unknown. </summary>
+    /// <summary> Array of supported sample formats, or empty if any. </summary>
     public readonly ImmutableArray<AVSampleFormat> SupportedSampleFormats;
 
-    /// <summary> Array of supported channel layouts. </summary>
+    /// <summary> Array of supported channel layouts, or empty if any. </summary>
     public readonly ImmutableArray<AVChannelLayout> SupportedChannelLayouts;
 
     private ImmutableArray<T> GetSupported<T>(AVCodecConfig config) where T : unmanaged
@@ -259,7 +259,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     public static ImmutableArray<MediaCodec> AvaliableCodecs
         => Utils.GetAllAvailableCodecs();
     
-    
+     
     /// <summary>
     /// Workaround class.
     /// Cannot be directly in MediaCodec struct cause of this issue:
