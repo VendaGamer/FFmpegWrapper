@@ -51,6 +51,7 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
             throw new ArgumentException("Specified codec is not valid for the current media type.");
         }
         handle = ctx;
+        Codec = MediaCodec.FromHandle(ctx->codec);
         _ownsContext = takeOwnership;
     }
 

@@ -1,5 +1,8 @@
 namespace FFmpegWrapper.Hardware;
 using Codecs;
+
+using Extensions;
+
 /// <summary>
 /// Wrapper of Hardware Device
 /// </summary>
@@ -86,12 +89,12 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
         var availableConfigs = CodecHardwareConfig.GetHardwareConfigs(codecId);
         
         // Iterate through our priority list, from highest to lowest priority.
-        foreach (var preferredDeviceType in HardwareDevice.HardwareDevicePriority)
+        foreach (var preferredDeviceType in HardwareDevicePriority)
         {
             // Find the first available config that matches the current priority level.
             var config = availableConfigs.FirstOrDefault(c => c.DeviceType == preferredDeviceType);
 
-            if (!config.IsValid) {
+            if (config.IsNull()) {
                 continue;
             }
             // Attempt to create the hardware device. A 'using' block ensures it's disposed if not returned.
@@ -99,11 +102,10 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
             {
                 continue;
             }
-
-            var constraints = hardwareDevice.FrameConstraints;
-
+            
             // Check if the device can handle the target format.
-            if (constraints == null || constraints.IsValidFormat(targetFormat))
+            if (hardwareDevice.FrameConstraints == null ||
+                hardwareDevice.FrameConstraints.IsValidFormat(targetFormat))
             {
                 codecConfig = config;
                 device = hardwareDevice;

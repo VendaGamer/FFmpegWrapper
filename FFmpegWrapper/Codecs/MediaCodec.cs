@@ -2,8 +2,6 @@ namespace FFmpegWrapper.Codecs;
 
 using Configuration;
 
-using Extensions;
-
 public readonly struct MediaCodec : IHandle<AVCodec>
 {
     internal readonly unsafe AVCodec* handle;
@@ -249,7 +247,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
 
     private static unsafe MediaCodec WrapChecked(AVCodec* ptr, AVCodecID id = 0, string? name = null)
     {
-        if (ptr != null) {
+        if (ptr is not null) {
             return new MediaCodec(ptr);
         }
         name ??= id.ToString();

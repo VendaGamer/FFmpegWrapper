@@ -47,17 +47,9 @@ public sealed class SwScaler : FFObject<SwsContext>
         
         unsafe
         {
-            var original = handle;
-            
-            handle = ffmpeg.sws_getCachedContext(original, inFmt.Width, inFmt.Height, inFmt.PixelFormat,
+            handle = ffmpeg.sws_getCachedContext(handle, inFmt.Width, inFmt.Height, inFmt.PixelFormat,
                 outFmt.Width, outFmt.Height, outFmt.PixelFormat,
                 (int)flags, null, null, null);
-
-            if (original != handle)
-            {
-                // Only free if a new context was allocated
-                ffmpeg.sws_freeContext(original);
-            }
             
             InputFormat = inFmt;
             OutputFormat = outFmt;

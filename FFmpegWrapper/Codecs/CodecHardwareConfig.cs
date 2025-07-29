@@ -104,21 +104,16 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
     }
 
     #endregion
-    public unsafe AVCodecHWConfig* Handle { get; }
 
-    public bool IsValid {
-        get {
-            unsafe {
-                return Handle is not null;
-            }
-        }
-    }
+    private readonly unsafe AVCodecHWConfig* handle;
+    unsafe AVCodecHWConfig* IHandle<AVCodecHWConfig>.Handle => handle;
+
     public readonly MediaCodec Codec;
     public AVHWDeviceType DeviceType {
         get {
             unsafe
             {
-                return Handle->device_type;
+                return handle->device_type;
             }
         }
     }
@@ -127,7 +122,7 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
         get {
             unsafe
             {
-                return Handle->pix_fmt;
+                return handle->pix_fmt;
             }
         }
     }
@@ -136,7 +131,7 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
         get {
             unsafe
             {
-                return (CodecHardwareMethods)Handle->methods;
+                return (CodecHardwareMethods)handle->methods;
             }
         }
     }
@@ -144,13 +139,13 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
     private unsafe CodecHardwareConfig(AVCodec* codec, AVCodecHWConfig* config)
     {
         Codec = MediaCodec.FromHandle(codec);
-        Handle = config;
+        handle = config;
     }
 
     private unsafe CodecHardwareConfig(MediaCodec codec, AVCodecHWConfig* config)
     {
         Codec = codec;
-        Handle = config;
+        handle = config;
     }
     public override string ToString() 
     {
