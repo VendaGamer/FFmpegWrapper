@@ -8,7 +8,7 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
     private bool _hasUserExtraData = false;
     public bool IsOpen => ffmpeg.avcodec_is_open(Handle) != 0;
 
-    public MediaCodec Codec => new(handle->codec);
+    public readonly MediaCodec Codec;
 
     /// <inheritdoc cref="AVCodecContext.time_base"/>
     public Rational TimeBase {
@@ -56,7 +56,7 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
 
     protected static AVCodecContext* AllocContext(MediaCodec codec)
     {
-        var ctx = ffmpeg.avcodec_alloc_context3(codec.Handle);
+        var ctx = ffmpeg.avcodec_alloc_context3(codec.handle);
 
         if (ctx == null) {
             throw new OutOfMemoryException("Failed to allocate codec context.");
@@ -96,9 +96,10 @@ public unsafe abstract class CodecBase : FFObject<AVCodecContext>
 
     protected void SetHardwareContext(CodecHardwareConfig config, HardwareDevice device, HardwareFramePool? framePool)
     {
-        if (config.Codec.Handle != handle->codec || config.DeviceType != device.Type) {
+        if (config.Codec.handle != handle->codec || config.DeviceType != device.Type) {
             throw new ArgumentException("Mismatching hardware codec config.");
         }
+        
         handle->hw_device_ctx = ffmpeg.av_buffer_ref(device.Handle);
         handle->hw_frames_ctx = framePool == null ? null : ffmpeg.av_buffer_ref(framePool.Handle);
 

@@ -41,7 +41,7 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
                     var index = 0;
                     AVCodecHWConfig* res = null!;
                     
-                    while((res = ffmpeg.avcodec_get_hw_config(codec.Handle, index)) != null)
+                    while((res = ffmpeg.avcodec_get_hw_config(codec.handle, index)) != null)
                     {
                         if (codec.IsDecoder) {
                             decBuilder.Add(new CodecHardwareConfig(codec, res));
@@ -143,7 +143,7 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
 
     private unsafe CodecHardwareConfig(AVCodec* codec, AVCodecHWConfig* config)
     {
-        Codec = new MediaCodec(codec);
+        Codec = MediaCodec.FromHandle(codec);
         Handle = config;
     }
 

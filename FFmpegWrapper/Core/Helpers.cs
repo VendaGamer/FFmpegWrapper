@@ -1,7 +1,10 @@
 ﻿namespace FFmpegWrapper.Core;
 
+using System.Buffers.Text;
 using System.Runtime.InteropServices;
 using System.Text;
+
+using CommunityToolkit.HighPerformance.Buffers;
 
 internal static unsafe class Helpers
 {
@@ -53,30 +56,27 @@ internal static unsafe class Helpers
         return new ReadOnlySpan<T>(ptr, len);
     }
 
-    public static string PtrToStringUTF8(byte* ptr, int length)
+    public static string SpanToStringUTF8(ReadOnlySpan<byte> span)
     {
-#if NETSTANDARD2_1_OR_GREATER
-        return Marshal.PtrToStringUTF8((IntPtr)ptr, length);
-#else
-        
-        return Encoding.UTF8.GetString(ptr, length);
-#endif
+        return StringPool.Shared.GetOrAdd(span, Encoding.UTF8);
     }
     
+#if NET6_0_OR_GREATER
     public static string PtrToStringUTF8(byte* ptr)
     {
-        #if NETSTANDARD2_1_OR_GREATER
-        return Marshal.PtrToStringUTF8((IntPtr)ptr);
-        #else
-        
+        return SpanToStringUTF8(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr));
+    }
+#else
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string PtrToStringUTF8(byte* ptr)
+    {
         int length = 0;
         while (ptr[length] != 0)
             length++;
-    
-        // Convert bytes to string using UTF-8 encoding
-        return Encoding.UTF8.GetString(ptr, length);
-        #endif
+        
+        return SpanToStringUTF8(new ReadOnlySpan<byte>(ptr, length));
     }
+#endif
     public static bool StrCmp(byte* a, ReadOnlySpan<byte> b)
     {
         for (int i = 0; i < b.Length; i++) {
