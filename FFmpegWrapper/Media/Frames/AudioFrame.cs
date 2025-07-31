@@ -5,7 +5,7 @@ public unsafe class AudioFrame : MediaFrame
     public AVSampleFormat SampleFormat => (AVSampleFormat)handle->format;
     public int SampleRate => handle->sample_rate;
     public int NumChannels => handle->ch_layout.nb_channels;
-    public ChannelLayout ChannelLayout => ChannelLayout.FromExisting(&handle->ch_layout);
+    public ChannelLayout ChannelLayout => ChannelLayout.FromHandle(&handle->ch_layout);
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 

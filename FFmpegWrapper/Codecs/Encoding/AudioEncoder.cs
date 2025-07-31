@@ -1,45 +1,104 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
-public unsafe class AudioEncoder : MediaEncoder
+public class AudioEncoder : MediaEncoder
 {
     public AVSampleFormat SampleFormat {
-        get => handle->sample_fmt;
-        set => SetOrThrowIfOpen(ref handle->sample_fmt, value);
-    }
-    public int SampleRate {
-        get => handle->sample_rate;
-        set => SetOrThrowIfOpen(ref handle->sample_rate, value);
-    }
-    public int NumChannels => handle->ch_layout.nb_channels;
-    public ChannelLayout ChannelLayout {
-        get => ChannelLayout.FromExisting(&handle->ch_layout);
+        get {
+            unsafe
+            {
+                return Handle->sample_fmt;
+            }
+        }
         set {
-            ThrowIfOpen();
-            value.CopyTo(&handle->ch_layout);
+            unsafe
+            {
+                SetOrThrowIfOpen(ref Handle->sample_fmt, value);
+            }
+        }
+    }
+
+    public int SampleRate {
+        get {
+            unsafe
+            {
+                return Handle->sample_rate;
+            }
+        }
+        set {
+            unsafe
+            {
+                SetOrThrowIfOpen(ref Handle->sample_rate, value);
+            }
+        }
+    }
+
+    public int NumChannels {
+        get {
+            unsafe
+            {
+                return Handle->ch_layout.nb_channels;
+            }
+        }
+    }
+
+    public ChannelLayout ChannelLayout {
+        get {
+            unsafe
+            {
+                return ChannelLayout.FromHandle(&Handle->ch_layout);
+            }
+        }
+        set {
+            unsafe
+            {
+                ThrowIfOpen();
+                value.CopyTo(&Handle->ch_layout);
+            }
         }
     }
 
     public AudioFormat Format {
-        get => new(SampleFormat, SampleRate, ChannelLayout);
+        get {
+            unsafe
+            {
+                ThrowIfOpen();
+                ThrowIfDisposed();
+                
+                return new AudioFormat(handle->sample_fmt, handle->sample_rate,
+                    ChannelLayout.FromHandle(&handle->ch_layout));
+            }
+        }
         set {
-            ThrowIfOpen();
-            handle->sample_rate = value.SampleRate;
-            handle->sample_fmt = value.SampleFormat;
-            value.Layout.CopyTo(&handle->ch_layout);
+            unsafe
+            {
+                ThrowIfOpen();
+                ThrowIfDisposed();
+                
+                handle->sample_rate = value.SampleRate;
+                handle->sample_fmt = value.SampleFormat;
+                value.Layout.CopyTo(&handle->ch_layout);
+            }
         }
     }
 
     /// <summary> Number of samples per channel in an audio frame (set after the encoder is opened). </summary>
     /// <remarks>
     /// Each submitted frame except the last must contain exactly this amount of samples per channel.
-    /// May be null when the codec has <see cref="MediaCodecCaps.VariableFrameSize"/> set, then the frame size is not restricted.
+    /// May be 0 when the codec has <see cref="MediaCodecCaps.VariableFrameSize"/> set, then the frame size is not restricted.
     /// </remarks>
-    public int? FrameSize => handle->frame_size == 0 ? null : handle->frame_size;
+    public int FrameSize {
+        get {
+            unsafe
+            {
+                return Handle->frame_size;
+            }
+        }
+    }
 
     public AudioEncoder(AVCodecID codecId, in AudioFormat format, int bitrate = 0)
         : this(MediaCodec.GetEncoder(codecId), format, bitrate) { }
 
-    public AudioEncoder(MediaCodec codec, in AudioFormat format, int bitrate = 0)
+    public unsafe AudioEncoder(MediaCodec codec, in AudioFormat format, int bitrate = 0)
         : this(AllocContext(codec), takeOwnership: true)
     {
         Format = format;
@@ -47,6 +106,6 @@ public unsafe class AudioEncoder : MediaEncoder
         TimeBase = new Rational(1, format.SampleRate);
     }
 
-    public AudioEncoder(AVCodecContext* ctx, bool takeOwnership)
+    public unsafe AudioEncoder(AVCodecContext* ctx, bool takeOwnership)
         : base(ctx, MediaTypes.Audio, takeOwnership) { }
 }

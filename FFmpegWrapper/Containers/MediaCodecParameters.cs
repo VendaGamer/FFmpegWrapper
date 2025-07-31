@@ -101,7 +101,7 @@ public unsafe readonly struct MediaCodecParameters
     public int SeekPrerollSamples => Handle->seek_preroll;
 
     /// <inheritdoc cref="AVCodecParameters.ch_layout" />
-    public ChannelLayout ChannelLayout => ChannelLayout.FromExisting(&Handle->ch_layout);
+    public ChannelLayout ChannelLayout => ChannelLayout.FromHandle(&Handle->ch_layout);
 
     public int NumChannels => Handle->ch_layout.nb_channels;
     public AVSampleFormat SampleFormat => (AVSampleFormat)Handle->format;

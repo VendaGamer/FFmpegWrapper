@@ -61,7 +61,7 @@ public unsafe class AudioBufferSink : MediaBufferSink
 
             AVChannelLayout nativeLayout;
             ffmpeg.av_buffersink_get_ch_layout(Handle, &nativeLayout);
-            var layout = ChannelLayout.FromExisting(&nativeLayout);
+            var layout = ChannelLayout.FromHandle(&nativeLayout);
             ffmpeg.av_channel_layout_uninit(&nativeLayout);
             
             return new AudioFormat((AVSampleFormat)fmt, rate, layout);

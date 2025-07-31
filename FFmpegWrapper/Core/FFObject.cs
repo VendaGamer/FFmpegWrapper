@@ -1,5 +1,8 @@
 namespace FFmpegWrapper.Core;
 
+using System.Runtime.ConstrainedExecution;
+using System.Security;
+
 /// <summary>
 /// Provides a base implementation for managed wrapper classes that encapsulate unmanaged FFmpeg objects.
 /// This abstract class handles the common patterns of resource management, disposal, and safe access
@@ -16,7 +19,8 @@ namespace FFmpegWrapper.Core;
 /// specific to their FFmpeg object type.
 /// </para>
 /// </remarks>
-public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : unmanaged
+///
+public abstract class FFObject<TRaw> : CriticalFinalizerObject, IDisposable, IHandle<TRaw> where TRaw : unmanaged
 {
     private bool _disposed;
     /// <summary>
@@ -110,6 +114,7 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
     /// using statement to ensure timely resource cleanup.
     /// </para>
     /// </remarks>
+
     ~FFObject() => Dispose(false);
     
     /// <summary>
@@ -143,9 +148,9 @@ public abstract class FFObject<TRaw> : IDisposable, IHandle<TRaw> where TRaw : u
     /// the underlying FFmpeg structure to ensure the object is still valid for use.
     /// </para>
     /// </remarks>
-    protected unsafe void ThrowIfDisposed()
+    protected void ThrowIfDisposed()
     {
-        if (handle == null) {
+        if (_disposed) {
             throw new ObjectDisposedException($"The underlying unmanaged {typeof(TRaw).Name} has been disposed. ");
         }
     }

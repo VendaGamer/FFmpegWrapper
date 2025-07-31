@@ -1,20 +1,54 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
-public unsafe class AudioDecoder : MediaDecoder
+/// <summary>
+/// Decodes audio files
+/// </summary>
+public class AudioDecoder : MediaDecoder
 {
-    public AVSampleFormat SampleFormat => handle->sample_fmt;
-    public int SampleRate => handle->sample_rate;
-    public int NumChannels => handle->ch_layout.nb_channels;
-    public ChannelLayout ChannelLayout => ChannelLayout.FromExisting(&handle->ch_layout);
+    public AVSampleFormat SampleFormat {
+        get {
+            unsafe
+            {
+                return Handle->sample_fmt;
+            }
+        }
+    }
+
+    public int SampleRate {
+        get {
+            unsafe
+            {
+                return Handle->sample_rate;
+            }
+        }
+    }
+
+    public int NumChannels {
+        get {
+            unsafe
+            {
+                return Handle->ch_layout.nb_channels;
+            }
+        }
+    }
+
+    public ChannelLayout ChannelLayout {
+        get {
+            unsafe
+            {
+                return ChannelLayout.FromHandle(&Handle->ch_layout);
+            }
+        }
+    }
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 
     public AudioDecoder(AVCodecID codecId)
         : this(MediaCodec.GetDecoder(codecId)) { }
 
-    public AudioDecoder(MediaCodec codec)
+    public unsafe AudioDecoder(MediaCodec codec)
         : this(AllocContext(codec), takeOwnership: true) { }
 
-    public AudioDecoder(AVCodecContext* ctx, bool takeOwnership)
+    public unsafe AudioDecoder(AVCodecContext* ctx, bool takeOwnership)
         : base(ctx, MediaTypes.Audio, takeOwnership) { }
 }
