@@ -1,7 +1,5 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-using System.Runtime.InteropServices;
-
 using Flags;
 using Media;
 

@@ -4,7 +4,7 @@ namespace FFmpegWrapper.Containers;
 /// Flags for AVOutputFormat that control various aspects of muxing behavior
 /// </summary>
 [Flags]
-public enum OutputFormatFlags
+public enum MediaFormatFlags
 {
     /// <summary>
     /// No special flags
@@ -106,66 +106,66 @@ public static class OutputFormatFlagsExtensions
     /// <summary>
     /// Checks if the format supports seeking
     /// </summary>
-    public static bool SupportsSeek(this OutputFormatFlags flags)
+    public static bool SupportsSeek(this MediaFormatFlags flags)
     {
-        return !flags.HasFlag(OutputFormatFlags.NoBinSearch) && 
-               !flags.HasFlag(OutputFormatFlags.NoGenSearch) && 
-               !flags.HasFlag(OutputFormatFlags.NoByteSeek);
+        return !flags.HasFlag(MediaFormatFlags.NoBinSearch) && 
+               !flags.HasFlag(MediaFormatFlags.NoGenSearch) && 
+               !flags.HasFlag(MediaFormatFlags.NoByteSeek);
     }
     
     /// <summary>
     /// Checks if the format requires external file handling
     /// </summary>
-    public static bool RequiresExternalFile(this OutputFormatFlags flags)
+    public static bool RequiresExternalFile(this MediaFormatFlags flags)
     {
-        return !flags.HasFlag(OutputFormatFlags.NoFile);
+        return !flags.HasFlag(MediaFormatFlags.NoFile);
     }
     
     /// <summary>
     /// Checks if the format supports variable frame rates
     /// </summary>
-    public static bool SupportsVariableFps(this OutputFormatFlags flags)
+    public static bool SupportsVariableFps(this MediaFormatFlags flags)
     {
-        return flags.HasFlag(OutputFormatFlags.VariableFps);
+        return flags.HasFlag(MediaFormatFlags.VariableFps);
     }
     
     /// <summary>
     /// Checks if the format requires numbered filenames (like image sequences)
     /// </summary>
-    public static bool RequiresNumberedFiles(this OutputFormatFlags flags)
+    public static bool RequiresNumberedFiles(this MediaFormatFlags flags)
     {
-        return flags.HasFlag(OutputFormatFlags.NeedNumber);
+        return flags.HasFlag(MediaFormatFlags.NeedNumber);
     }
     
     /// <summary>
     /// Checks if the format supports flushing operations
     /// </summary>
-    public static bool SupportsFlush(this OutputFormatFlags flags)
+    public static bool SupportsFlush(this MediaFormatFlags flags)
     {
-        return flags.HasFlag(OutputFormatFlags.AllowFlush);
+        return flags.HasFlag(MediaFormatFlags.AllowFlush);
     }
     
     /// <summary>
     /// Checks if the format requires a global header
     /// </summary>
-    public static bool RequiresGlobalHeader(this OutputFormatFlags flags)
+    public static bool RequiresGlobalHeader(this MediaFormatFlags flags)
     {
-        return flags.HasFlag(OutputFormatFlags.GlobalHeader);
+        return flags.HasFlag(MediaFormatFlags.GlobalHeader);
     }
     
     /// <summary>
     /// Checks if the format works with timestamps
     /// </summary>
-    public static bool WorksWithTimestamps(this OutputFormatFlags flags)
+    public static bool WorksWithTimestamps(this MediaFormatFlags flags)
     {
-        return !flags.HasFlag(OutputFormatFlags.NoTimestamps);
+        return !flags.HasFlag(MediaFormatFlags.NoTimestamps);
     }
     
     /// <summary>
     /// Checks if the format supports negative timestamps
     /// </summary>
-    public static bool SupportsNegativeTimestamps(this OutputFormatFlags flags)
+    public static bool SupportsNegativeTimestamps(this MediaFormatFlags flags)
     {
-        return flags.HasFlag(OutputFormatFlags.TsNegative);
+        return flags.HasFlag(MediaFormatFlags.TsNegative);
     }
 }
