@@ -20,33 +20,24 @@ using System.Security;
 /// </para>
 /// </remarks>
 ///
-public abstract class FFObject<TRaw> : CriticalFinalizerObject, IDisposable, IHandle<TRaw> where TRaw : unmanaged
+public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<TRaw>
+    where TRaw : unmanaged
 {
     private bool _disposed;
+
     /// <summary>
     /// pointer to the underlying unmanaged FFmpeg structure.
     /// </summary>
-    protected unsafe TRaw* handle;
+    protected unsafe TRaw* _handle;
 
-    internal unsafe TRaw* Handle {
+    public FFHandle<TRaw> Handle {
         get {
-            ThrowIfDisposed();
-            return handle;
+            unsafe {
+                ThrowIfDisposed();
+                return _handle;
+            }
         }
     }
-
-
-    /// <summary>
-    /// Gets a pointer to the underlying unmanaged FFmpeg structure.
-    /// </summary>
-    /// <value>
-    /// A pointer to the native FFmpeg structure of type <typeparamref name="TRaw"/>.
-    /// Throws if the object has been disposed.
-    /// </value>
-    /// <returns>
-    /// A pointer to the unmanaged FFmpeg structure, or null if disposed.
-    /// </returns>
-    unsafe TRaw* IHandle<TRaw>.Handle => Handle;
 
     /// <summary>
     /// Releases all resources used by the FFmpeg object and suppresses finalization.
@@ -151,7 +142,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IDisposable, IHa
     protected void ThrowIfDisposed()
     {
         if (_disposed) {
-            throw new ObjectDisposedException($"The underlying unmanaged {typeof(TRaw).Name} has been disposed. ");
+            throw new ObjectDisposedException($"The underlying unmanaged {typeof(TRaw).Name} has been disposed.");
         }
     }
 }

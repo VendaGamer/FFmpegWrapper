@@ -2,15 +2,15 @@
 
 public unsafe class AudioFrame : MediaFrame
 {
-    public AVSampleFormat SampleFormat => (AVSampleFormat)handle->format;
-    public int SampleRate => handle->sample_rate;
-    public int NumChannels => handle->ch_layout.nb_channels;
-    public ChannelLayout ChannelLayout => ChannelLayout.FromHandle(&handle->ch_layout);
+    public AVSampleFormat SampleFormat => (AVSampleFormat)_handle->format;
+    public int SampleRate => _handle->sample_rate;
+    public int NumChannels => _handle->ch_layout.nb_channels;
+    public ChannelLayout ChannelLayout => ChannelLayout.FromHandle(&_handle->ch_layout);
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 
-    public byte** Data => (byte**)&handle->data;
-    public int Stride => handle->linesize[0];
+    public byte** Data => (byte**)&_handle->data;
+    public int Stride => _handle->linesize[0];
 
     public bool IsPlanar => ffmpeg.av_sample_fmt_is_planar(SampleFormat) != 0;
     /// <summary>
@@ -18,12 +18,12 @@ public unsafe class AudioFrame : MediaFrame
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">Is thrown if value is less then zero or if value is greater than Capacity</exception>
     public int Count {
-        get => handle->nb_samples;
+        get => _handle->nb_samples;
         set {
             if (value < 0 || value > Capacity) {
                 throw new ArgumentOutOfRangeException(nameof(value), "Must must be positive and not exceed the frame capacity.");
             }
-            handle->nb_samples = value;
+            _handle->nb_samples = value;
         }
     }
 
@@ -35,13 +35,13 @@ public unsafe class AudioFrame : MediaFrame
 
     public AudioFrame(in AudioFormat fmt, int capacity)
     {
-        handle = ffmpeg.av_frame_alloc();
-        handle->format = (int)fmt.SampleFormat;
-        handle->sample_rate = fmt.SampleRate;
-        fmt.Layout.CopyTo(&handle->ch_layout);
+        _handle = ffmpeg.av_frame_alloc();
+        _handle->format = (int)fmt.SampleFormat;
+        _handle->sample_rate = fmt.SampleRate;
+        fmt.Layout.CopyTo(&_handle->ch_layout);
 
-        handle->nb_samples = capacity;
-        ffmpeg.av_frame_get_buffer(handle, 0).CheckError("Failed to allocate frame buffers.");
+        _handle->nb_samples = capacity;
+        ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
     }
     public AudioFrame(AVSampleFormat fmt, int sampleRate, int numChannels, int capacity)
         : this(new AudioFormat(fmt, sampleRate, numChannels), capacity) { }
@@ -53,7 +53,7 @@ public unsafe class AudioFrame : MediaFrame
         if (frame == null) {
             throw new ArgumentNullException(nameof(frame));
         }
-        handle = frame;
+        _handle = frame;
         _ownsFrame = takeOwnership;
     }
 
@@ -86,7 +86,7 @@ public unsafe class AudioFrame : MediaFrame
 
         fixed (T* ptr = samples) {
             byte** temp = stackalloc byte*[1] { (byte*)ptr };
-            ffmpeg.av_samples_copy(handle->extended_data, temp, 0, 0, count, fmt.NumChannels, fmt.SampleFormat);
+            ffmpeg.av_samples_copy(_handle->extended_data, temp, 0, 0, count, fmt.NumChannels, fmt.SampleFormat);
         }
         return count;
     }

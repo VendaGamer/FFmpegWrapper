@@ -64,8 +64,8 @@ public class AudioEncoder : MediaEncoder
                 ThrowIfOpen();
                 ThrowIfDisposed();
                 
-                return new AudioFormat(handle->sample_fmt, handle->sample_rate,
-                    ChannelLayout.FromHandle(&handle->ch_layout));
+                return new AudioFormat(_handle->sample_fmt, _handle->sample_rate,
+                    ChannelLayout.FromHandle(&_handle->ch_layout));
             }
         }
         set {
@@ -74,9 +74,9 @@ public class AudioEncoder : MediaEncoder
                 ThrowIfOpen();
                 ThrowIfDisposed();
                 
-                handle->sample_rate = value.SampleRate;
-                handle->sample_fmt = value.SampleFormat;
-                value.Layout.CopyTo(&handle->ch_layout);
+                _handle->sample_rate = value.SampleRate;
+                _handle->sample_fmt = value.SampleFormat;
+                value.Layout.CopyTo(&_handle->ch_layout);
             }
         }
     }

@@ -17,13 +17,13 @@ public unsafe class VideoFrame : MediaFrame
 
     public PictureFormat Format => new(Width, Height, PixelFormat, Handle->sample_aspect_ratio);
     public PictureColorspace Colorspace {
-        get => new(handle->colorspace, handle->color_primaries, handle->color_trc, handle->color_range);
+        get => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
         set {
             ThrowIfDisposed();
-            handle->colorspace = value.Matrix;
-            handle->color_primaries = value.Primaries;
-            handle->color_trc = value.Transfer;
-            handle->color_range = value.Range;
+            _handle->colorspace = value.Matrix;
+            _handle->color_primaries = value.Primaries;
+            _handle->color_trc = value.Transfer;
+            _handle->color_range = value.Range;
         }
     }
 
@@ -58,12 +58,12 @@ public unsafe class VideoFrame : MediaFrame
         if (width <= 0 || height <= 0) {
             throw new ArgumentException("Invalid frame dimensions.");
         }
-        handle = ffmpeg.av_frame_alloc();
-        handle->format = (int)fmt;
-        handle->width = width;
-        handle->height = height;
+        _handle = ffmpeg.av_frame_alloc();
+        _handle->format = (int)fmt;
+        _handle->width = width;
+        _handle->height = height;
 
-        ffmpeg.av_frame_get_buffer(handle, 0).CheckError("Failed to allocate frame buffers.");
+        ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
 
         if (clearToBlack) {
             Clear();
@@ -76,7 +76,7 @@ public unsafe class VideoFrame : MediaFrame
         if (frame == null) {
             throw new ArgumentNullException(nameof(frame));
         }
-        handle = frame;
+        _handle = frame;
         _ownsFrame = takeOwnership;
 
         if (clearToBlack) {
@@ -103,8 +103,8 @@ public unsafe class VideoFrame : MediaFrame
     {
         int height = GetPlaneSize(plane).Height;
 
-        byte* data = handle->data[(uint)plane];
-        int rowSize = handle->linesize[(uint)plane];
+        byte* data = _handle->data[(uint)plane];
+        int rowSize = _handle->linesize[(uint)plane];
 
         if (rowSize < 0) {
             data += rowSize * (height - 1);
@@ -152,11 +152,11 @@ public unsafe class VideoFrame : MediaFrame
         }
 
         var mapping = ffmpeg.av_frame_alloc();
-        int result = ffmpeg.av_hwframe_map(mapping, handle, (int)flags);
+        int result = ffmpeg.av_hwframe_map(mapping, _handle, (int)flags);
 
         if (result == 0) {
-            mapping->width = handle->width;
-            mapping->height = handle->height;
+            mapping->width = _handle->width;
+            mapping->height = _handle->height;
             return new VideoFrame(mapping, takeOwnership: true);
         }
         ffmpeg.av_frame_free(&mapping);
@@ -166,7 +166,7 @@ public unsafe class VideoFrame : MediaFrame
     public void TransferTo(VideoFrame dest)
     {
         ThrowIfDisposed();
-        ffmpeg.av_hwframe_transfer_data(dest.Handle, handle, 0).CheckError("Failed to transfer data from hardware frame");
+        ffmpeg.av_hwframe_transfer_data(dest.Handle, _handle, 0).CheckError("Failed to transfer data from hardware frame");
     }
 
     /// <summary> Gets an array of possible source or dest formats usable in <see cref="TransferTo(VideoFrame)"/>. </summary>
@@ -179,7 +179,7 @@ public unsafe class VideoFrame : MediaFrame
 
         AVPixelFormat* pFormats;
 
-        if (ffmpeg.av_hwframe_transfer_get_formats(handle->hw_frames_ctx, (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
+        if (ffmpeg.av_hwframe_transfer_get_formats(_handle->hw_frames_ctx, (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
             return [];
         }
         var formats = Helpers.GetSpanFromSentinelTerminatedPtr(pFormats, PixelFormats.None).ToArray();
@@ -195,11 +195,11 @@ public unsafe class VideoFrame : MediaFrame
         var linesizes = new long4();
 
         for (uint i = 0; i < 4; i++) {
-            linesizes[i] = handle->linesize[i];
+            linesizes[i] = _handle->linesize[i];
         }
         ffmpeg.av_image_fill_black(
-            ref *(byte_ptr4*)&handle->data, linesizes,
-            PixelFormat, handle->color_range, handle->width, handle->height
+            ref *(byte_ptr4*)&_handle->data, linesizes,
+            PixelFormat, _handle->color_range, _handle->width, _handle->height
         ).CheckError("Failed to clear frame.");
     }
 

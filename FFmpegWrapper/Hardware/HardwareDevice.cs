@@ -124,7 +124,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
     
     public unsafe AVHWDeviceContext* CtxHandle {
         get {
-            return (AVHWDeviceContext*)Handle->data;
+            return (AVHWDeviceContext*)Handle.Ref.data;
         }
     }
 
@@ -139,9 +139,9 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
 
     internal unsafe HardwareDevice(AVBufferRef* deviceCtx)
     {
-        handle = deviceCtx;
+        _handle = deviceCtx;
         
-        var desc = ffmpeg.av_hwdevice_get_hwframe_constraints(handle, null);
+        var desc = ffmpeg.av_hwdevice_get_hwframe_constraints(_handle, null);
         if (desc is not null) {
             FrameConstraints = new HardwareFrameConstraints(desc);
         }
@@ -215,8 +215,8 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
     {
         unsafe
         {
-            if (handle != null) {
-                fixed (AVBufferRef** ppCtx = &handle) {
+            if (_handle != null) {
+                fixed (AVBufferRef** ppCtx = &_handle) {
                     ffmpeg.av_buffer_unref(ppCtx);
                 }
             }

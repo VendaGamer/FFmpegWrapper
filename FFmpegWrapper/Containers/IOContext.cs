@@ -22,7 +22,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
         _writeFn = canWrite ? WriteBridge : null;
         _seekFn = canSeek ? SeekBridge : null;
 
-        handle = ffmpeg.avio_alloc_context(
+        _handle = ffmpeg.avio_alloc_context(
             buffer, bufferSize, canWrite ? 1 : 0, null,
             _readFn, _writeFn, _seekFn
         );
@@ -52,7 +52,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
         if (!CanWrite) {
             throw new InvalidOperationException();
         }
-        ffmpeg.avio_flush(handle);
+        ffmpeg.avio_flush(_handle);
     }
 
     /// <summary> Creates an IOContext that reads from the given stream. </summary>
@@ -92,8 +92,8 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
 
     protected override void Free()
     {
-        if (handle != null) {
-            fixed (AVIOContext** c = &handle) ffmpeg.avio_closep(c);
+        if (_handle != null) {
+            fixed (AVIOContext** c = &_handle) ffmpeg.avio_closep(c);
         }
     }
 }

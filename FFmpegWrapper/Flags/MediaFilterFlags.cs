@@ -3,6 +3,7 @@ namespace FFmpegWrapper.Filtering;
 [Flags]
 public enum MediaFilterFlags
 {
+    None = 0,
     /// <summary>
     /// The number of the filter inputs is not determined just by AVFilter.inputs.
     /// The filter might add additional inputs during initialization depending on the

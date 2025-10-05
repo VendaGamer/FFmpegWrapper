@@ -11,7 +11,7 @@ public sealed class SwResampler : FFObject<SwrContext>
             unsafe
             {
                 ThrowIfDisposed();
-                return (int)ffmpeg.swr_get_delay(handle, OutputFormat.SampleRate);
+                return (int)ffmpeg.swr_get_delay(_handle, OutputFormat.SampleRate);
             }
         }
     }
@@ -29,20 +29,20 @@ public sealed class SwResampler : FFObject<SwrContext>
                 throw new FormatException("Formats cannot be the same");
             }
         
-            handle = ffmpeg.swr_alloc();
+            _handle = ffmpeg.swr_alloc();
 
             var tempLayout = inFmt.Layout.Native;
-            ffmpeg.av_opt_set_chlayout(handle, "in_chlayout", &tempLayout, 0);
-            ffmpeg.av_opt_set_int(handle, "in_sample_rate", inFmt.SampleRate, 0);
-            ffmpeg.av_opt_set_int(handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
+            ffmpeg.av_opt_set_chlayout(_handle, "in_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(_handle, "in_sample_rate", inFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(_handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
 
             tempLayout = outFmt.Layout.Native;
 
-            ffmpeg.av_opt_set_chlayout(handle, "out_chlayout", &tempLayout, 0);
-            ffmpeg.av_opt_set_int(handle, "out_sample_rate", outFmt.SampleRate, 0);
-            ffmpeg.av_opt_set_int(handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
+            ffmpeg.av_opt_set_chlayout(_handle, "out_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(_handle, "out_sample_rate", outFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(_handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
 
-            ffmpeg.swr_init(handle);
+            ffmpeg.swr_init(_handle);
         
         
             
@@ -65,16 +65,16 @@ public sealed class SwResampler : FFObject<SwrContext>
         unsafe
         {
             var tempLayout = inFmt.Layout.Native;
-            ffmpeg.av_opt_set_chlayout(handle, "in_chlayout", &tempLayout, 0);
-            ffmpeg.av_opt_set_int(handle, "in_sample_rate", inFmt.SampleRate, 0);
-            ffmpeg.av_opt_set_int(handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
+            ffmpeg.av_opt_set_chlayout(_handle, "in_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(_handle, "in_sample_rate", inFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(_handle, "in_sample_fmt", (long)inFmt.SampleFormat, 0);
 
             tempLayout = outFmt.Layout.Native;
-            ffmpeg.av_opt_set_chlayout(handle, "out_chlayout", &tempLayout, 0);
-            ffmpeg.av_opt_set_int(handle, "out_sample_rate", outFmt.SampleRate, 0);
-            ffmpeg.av_opt_set_int(handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
+            ffmpeg.av_opt_set_chlayout(_handle, "out_chlayout", &tempLayout, 0);
+            ffmpeg.av_opt_set_int(_handle, "out_sample_rate", outFmt.SampleRate, 0);
+            ffmpeg.av_opt_set_int(_handle, "out_sample_fmt", (long)outFmt.SampleFormat, 0);
 
-            ffmpeg.swr_init(handle);
+            ffmpeg.swr_init(_handle);
         }
 
         return true;
@@ -88,11 +88,11 @@ public sealed class SwResampler : FFObject<SwrContext>
         ThrowIfDisposed();
         unsafe
         {
-            if (ffmpeg.swr_is_initialized(handle) == 0) {
+            if (ffmpeg.swr_is_initialized(_handle) == 0) {
                 return false;
             }
 
-            ffmpeg.swr_close(handle);
+            ffmpeg.swr_close(_handle);
             return true;
         }
     }
@@ -139,7 +139,7 @@ public sealed class SwResampler : FFObject<SwrContext>
     public unsafe int Convert(byte** src, int srcCount, byte** dst, int dstCount)
     {
         ThrowIfDisposed();
-        return ffmpeg.swr_convert(handle, dst, dstCount, src, srcCount).CheckError();
+        return ffmpeg.swr_convert(_handle, dst, dstCount, src, srcCount).CheckError();
     }
 
     public int Convert(AudioFrame src, AudioFrame dst)
@@ -147,7 +147,7 @@ public sealed class SwResampler : FFObject<SwrContext>
         unsafe
         {
             ThrowIfDisposed();
-            return ffmpeg.swr_convert_frame(handle, ((IHandle<AVFrame>)dst).Handle, ((IHandle<AVFrame>)src).Handle).CheckError();
+            return ffmpeg.swr_convert_frame(_handle, ((IHandle<AVFrame>)dst).Handle, ((IHandle<AVFrame>)src).Handle).CheckError();
         }
     }
 
@@ -239,7 +239,7 @@ public sealed class SwResampler : FFObject<SwrContext>
     {
         unsafe
         {
-            return ffmpeg.swr_get_out_samples(handle, inputSampleCount);
+            return ffmpeg.swr_get_out_samples(_handle, inputSampleCount);
         }
     }
 
@@ -248,7 +248,7 @@ public sealed class SwResampler : FFObject<SwrContext>
     {
         unsafe
         {
-            return ffmpeg.swr_drop_output(handle, count).IsSuccess();
+            return ffmpeg.swr_drop_output(_handle, count).IsSuccess();
         }
     }
 
@@ -257,8 +257,8 @@ public sealed class SwResampler : FFObject<SwrContext>
     /// <inheritdoc />
     protected override unsafe void Free()
     {
-        if (handle != null) {
-            fixed (SwrContext** s = &handle) {
+        if (_handle != null) {
+            fixed (SwrContext** s = &_handle) {
                 ffmpeg.swr_free(s);
             }
         }

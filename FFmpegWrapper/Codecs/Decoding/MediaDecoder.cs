@@ -11,7 +11,7 @@ public abstract class MediaDecoder : CodecBase
         {
             ThrowIfDisposed();
         
-            var result = ffmpeg.avcodec_send_packet(handle, packet!.Handle);
+            var result = ffmpeg.avcodec_send_packet(_handle, packet!.Handle);
             // Fast path for success
             if (result == 0) return;
         
@@ -38,7 +38,7 @@ public abstract class MediaDecoder : CodecBase
         unsafe
         {
             ThrowIfDisposed();
-            var result = ffmpeg.avcodec_receive_frame(handle, frame.Handle);
+            var result = ffmpeg.avcodec_receive_frame(_handle, frame.Handle);
         
             // Fast path for success (most common case)
             if (result == 0) return true;
@@ -65,7 +65,7 @@ public abstract class MediaDecoder : CodecBase
         foreach (var packet in packets) {
             unsafe
             {
-                var sendResult = ffmpeg.avcodec_send_packet(handle, packet.Handle);
+                var sendResult = ffmpeg.avcodec_send_packet(_handle, packet.Handle);
                 if (sendResult != 0 && sendResult != ffmpeg.AVERROR_EOF) {
                     ((LavResult)sendResult).ThrowIfError("Could not send packet");
                     continue;
@@ -73,7 +73,7 @@ public abstract class MediaDecoder : CodecBase
 
                 // Try to receive multiple frames from this packet
                 for (int i = framesDecoded; i < frames.Length; i++) {
-                    var receiveResult = ffmpeg.avcodec_receive_frame(handle, frames[i].Handle);
+                    var receiveResult = ffmpeg.avcodec_receive_frame(_handle, frames[i].Handle);
                 
                     if (receiveResult == 0) {
                         framesDecoded++;

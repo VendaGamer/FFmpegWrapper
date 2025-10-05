@@ -7,39 +7,26 @@ public abstract class FormatContext : FFObject<AVFormatContext>
     public long FileSize {
         get {
             unsafe {
-                return ffmpeg.avio_size(Handle->pb);
+                return ffmpeg.avio_size(Handle.Ref.pb);
             }
         }
     }
     
-    public uint StreamCount
-    {
-        get
-        {
-            unsafe
-            {
-                return Handle->nb_streams;
-            }
-        }
-    }
+    public uint StreamCount => Handle.Ref.nb_streams;
     
     
     
     public long BitRate {
-        get {
-            unsafe {
-                return Handle->bit_rate;
-            }
-        }
+        get => Handle.Ref.bit_rate;
         set {
             unsafe {
                 ThrowIfDisposed();
                 
-                if (handle->duration > 0 &&  ffmpeg.avio_size(handle->pb) > 0) {
+                if (_handle->duration > 0 &&  ffmpeg.avio_size(_handle->pb) > 0) {
                     throw new InvalidOperationException("Do not set bitrate if duration and filesize is known");
                 }
                 
-                handle->bit_rate = value;
+                _handle->bit_rate = value;
             }
         }
     }
@@ -48,7 +35,7 @@ public abstract class FormatContext : FFObject<AVFormatContext>
         get {
             unsafe
             {
-                return new MediaDictionary(&Handle->metadata);
+                return new MediaDictionary(Handle.Ref.metadata);
             }
         }
     }
@@ -60,7 +47,7 @@ public abstract class FormatContext : FFObject<AVFormatContext>
 
     private unsafe FormatContext(AVOutputFormat* outputFormat, string? formatName, string? filename)
     {
-        fixed (AVFormatContext** ptr = &handle) {
+        fixed (AVFormatContext** ptr = &_handle) {
             ffmpeg.avformat_alloc_output_context2(ptr, outputFormat, formatName, filename);
         }
     }
@@ -68,13 +55,13 @@ public abstract class FormatContext : FFObject<AVFormatContext>
     protected FormatContext()
     {
         unsafe {
-            handle = ffmpeg.avformat_alloc_context();
+            _handle = ffmpeg.avformat_alloc_context();
         }
     }
     
     /// <inheritdoc/>
     protected override unsafe void Free()
     {
-        ffmpeg.avformat_free_context(handle);
+        ffmpeg.avformat_free_context(_handle);
     }
 }

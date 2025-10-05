@@ -3,6 +3,7 @@ namespace FFmpegWrapper.Flags;
 [Flags]
 public enum InterpolationMode
 {
+    None = 0,
     FastBilinear    = ffmpeg.SWS_FAST_BILINEAR,
     Bilinear        = ffmpeg.SWS_BILINEAR,
     Bicubic         = ffmpeg.SWS_BICUBIC,

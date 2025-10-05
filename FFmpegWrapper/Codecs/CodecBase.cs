@@ -4,7 +4,7 @@ using Hardware;
 
 public abstract class CodecBase : FFObject<AVCodecContext>
 {
-    protected bool _ownsContext = false;
+    protected readonly bool _ownsContext = false;
     private bool _hasUserExtraData = false;
     public readonly MediaCodec Codec;
     
@@ -19,34 +19,14 @@ public abstract class CodecBase : FFObject<AVCodecContext>
 
     /// <inheritdoc cref="AVCodecContext.time_base"/>
     public Rational TimeBase {
-        get {
-            unsafe
-            {
-                return Handle->time_base;
-            }
-        }
-        set {
-            unsafe
-            {
-                SetOrThrowIfOpen(ref Handle->time_base, value);
-            }
-        }
+        get => Handle.Ref.time_base;
+        set => Handle.Ref.time_base = value;
     }
 
     /// <inheritdoc cref="AVCodecContext.framerate"/>
     public Rational FrameRate {
-        get {
-            unsafe
-            {
-                return Handle->framerate;
-            }
-        }
-        set {
-            unsafe
-            {
-                SetOrThrowIfOpen(ref Handle->framerate, value);
-            }
-        }
+        get => Handle.Ref.framerate;
+        set => Handle.Ref.framerate = value;
     }
 
     /// <summary>
@@ -62,7 +42,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             unsafe
             {
                 ThrowIfDisposed();
-                return new ReadOnlySpan<byte>(handle->extradata, handle->extradata_size);
+                return new ReadOnlySpan<byte>(_handle->extradata, _handle->extradata_size);
             }
         }
         set => SetExtraData(value);
@@ -73,7 +53,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
-                return (handle->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0;
+                return (_handle->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0;
             }
         }
     }
@@ -82,7 +62,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
-                return handle->codec_type;
+                return _handle->codec_type;
             }
         }
     }
@@ -92,7 +72,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
-                return new PacketSideDataList(&handle->coded_side_data, &handle->nb_coded_side_data);
+                return new PacketSideDataList(&_handle->coded_side_data, &_handle->nb_coded_side_data);
             }
         }
     }
@@ -104,7 +84,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             
             throw new ArgumentException("Specified codec is not valid for the current media type.");
         }
-        handle = ctx;
+        _handle = ctx;
         Codec = MediaCodec.FromHandle(ctx->codec);
         _ownsContext = takeOwnership;
     }
@@ -140,18 +120,18 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             ThrowIfOpen();
             ThrowIfDisposed();
             
-            int caps = handle->codec->capabilities;
+            int caps = _handle->codec->capabilities;
 
             if ((caps & ffmpeg.AV_CODEC_CAP_SLICE_THREADS) != 0 && preferFrameSlices) {
-                handle->thread_type = ffmpeg.FF_THREAD_SLICE;
-                handle->thread_count = threadCount;
+                _handle->thread_type = ffmpeg.FF_THREAD_SLICE;
+                _handle->thread_count = threadCount;
             }
             else if ((caps & ffmpeg.AV_CODEC_CAP_FRAME_THREADS) != 0) {
-                handle->thread_type = ffmpeg.FF_THREAD_FRAME;
-                handle->thread_count = threadCount;
+                _handle->thread_type = ffmpeg.FF_THREAD_FRAME;
+                _handle->thread_count = threadCount;
             } else {
-                handle->thread_type = 0;
-                handle->thread_count = 1; //no multi-threading capability
+                _handle->thread_type = 0;
+                _handle->thread_count = 1; //no multi-threading capability
             }
         }
     }
@@ -160,12 +140,12 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     {
         unsafe
         {
-            if (config.Codec.handle != handle->codec || config.DeviceType != device.Type) {
+            if (config.Codec.handle != _handle->codec || config.DeviceType != device.Type) {
                 throw new ArgumentException("Mismatching hardware codec config.");
             }
         
-            handle->hw_device_ctx = ffmpeg.av_buffer_ref(device.Handle);
-            handle->hw_frames_ctx = framePool == null ? null : ffmpeg.av_buffer_ref(framePool.Handle);
+            _handle->hw_device_ctx = ffmpeg.av_buffer_ref(device.Handle);
+            _handle->hw_frames_ctx = framePool == null ? null : ffmpeg.av_buffer_ref(framePool.Handle);
 
             if (framePool == null && (config.Methods & ~CodecHardwareMethods.FramesContext) == 0) {
                 throw new ArgumentException("Specified hardware codec config requires a frame pool to be provided.");
@@ -193,22 +173,23 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             ThrowIfDisposed();
         
             if (buf.IsEmpty) {
-                handle->extradata = null;
-                handle->extradata_size = 0;
+                _handle->extradata = null;
+                _handle->extradata_size = 0;
                 return true;
             }
         
-            if (handle->extradata != null)
-                ffmpeg.av_freep(&handle->extradata);
-        
-            var data = (byte*)ffmpeg.av_mallocz((ulong)buf.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE);
-            if (data == null) {
+            if (_handle->extradata != null)
+                ffmpeg.av_freep(&_handle->extradata);
+            
+            ffmpeg.av_fast_padded_mallocz();
+            var data = ffmpeg.av_fast_padded_malloc();
+            if (_handle->extradata_size == null) {
                 return false;
             }
         
-            handle->extradata = data;
-            handle->extradata_size = buf.Length;
-            buf.CopyTo(new Span<byte>(handle->extradata, buf.Length));
+            _handle->extradata = data;
+            _handle->extradata_size = buf.Length;
+            buf.CopyTo(new Span<byte>(_handle->extradata, buf.Length));
             _hasUserExtraData = true;
         
             return true;
@@ -233,14 +214,14 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         unsafe
         {
             if (_hasUserExtraData) {
-                ffmpeg.av_freep(&handle->extradata);
+                ffmpeg.av_freep(&_handle->extradata);
             }
             if (_ownsContext) {
-                fixed (AVCodecContext** c = &handle) {
+                fixed (AVCodecContext** c = &_handle) {
                     ffmpeg.avcodec_free_context(c);
                 }
             } else {
-                handle = null;
+                _handle = null;
             }
         }
     }

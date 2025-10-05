@@ -6,19 +6,10 @@ public readonly struct MediaCodec : IHandle<AVCodec>
 {
     internal readonly unsafe AVCodec* handle;
     unsafe AVCodec* IHandle<AVCodec>.Handle => handle;
-    
-    public bool IsValid {
-        get {
-            unsafe {
-                return handle is not null;
-            }
-        }
-    }
 
     public AVCodecID Id {
         get {
-            unsafe
-            {
+            unsafe {
                 return handle->id;
             }
         }
@@ -38,7 +29,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                return Helpers.PtrToStringUTF8(handle->name)!;
+                return Helpers.PtrToStringUTF8(handle->name);
             }
         }
     }
@@ -91,7 +82,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
 
         SupportedChannelLayouts =
             GetSupported<AVChannelLayout>(AVCodecConfig.AV_CODEC_CONFIG_CHANNEL_LAYOUT);
-        SupportedFramerates =
+        SupportedFrameRates =
             GetSupported<Rational>(AVCodecConfig.AV_CODEC_CONFIG_FRAME_RATE);
         SupportedPixelFormats =
             GetSupported<AVPixelFormat>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
@@ -122,13 +113,13 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         return new MediaCodec(handle);
     }
 
-    /// <summary> Array of supported framerates, or empty if any. </summary>
-    public readonly ImmutableArray<Rational> SupportedFramerates;
+    /// <summary> Array of supported frame rates, or empty if any. </summary>
+    public readonly ImmutableArray<Rational> SupportedFrameRates;
 
     /// <summary> Array of supported pixel formats, or empty if any. </summary>
     public readonly ImmutableArray<AVPixelFormat> SupportedPixelFormats;
 
-    /// <summary> Array of supported audio samplerates, or empty if any. </summary>
+    /// <summary> Array of supported audio sample rates, or empty if any. </summary>
     public readonly ImmutableArray<int> SupportedSampleRates;
 
     /// <summary> Array of supported sample formats, or empty if any. </summary>
@@ -142,16 +133,15 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         unsafe
         {
             T* configs = null;
-            int     countValue = 0;
-            int*   countAddr   = &countValue;
+            int countValue = 0;
 
-            int ret = ffmpeg.avcodec_get_supported_config(
+            ffmpeg.avcodec_get_supported_config(
                 null,
                 handle,
                 config,
                 0,
                 (void**)&configs,
-                countAddr
+                &countValue
             );
 
             if (countValue > 0) {
@@ -256,7 +246,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
 
     public override string ToString() => LongName;
 
-    public static ImmutableArray<MediaCodec> AvaliableCodecs
+    public static ImmutableArray<MediaCodec> AvailableCodecs
         => Utils.GetAllAvailableCodecs();
     
      
@@ -267,16 +257,16 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     /// </summary>
     private static class Utils
     {
-        private static ImmutableArray<MediaCodec> avaliableCodecs;
+        private static ImmutableArray<MediaCodec> s_availableCodecs;
         
         public static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
         {
             
-            if (!avaliableCodecs.IsDefault) {
-                return avaliableCodecs;
+            if (!s_availableCodecs.IsDefault) {
+                return s_availableCodecs;
             }
             
-            var builder = ImmutableArray.CreateBuilder<MediaCodec>(768);
+            var builder = ImmutableArray.CreateBuilder<MediaCodec>(1024);
             
             unsafe {
                 void* iterState = null;
@@ -285,9 +275,9 @@ public readonly struct MediaCodec : IHandle<AVCodec>
                     builder.Add(new MediaCodec(codec));
                 }
             }
-
-            avaliableCodecs =  builder.ToImmutable();
-            return avaliableCodecs;
+            
+            s_availableCodecs =  builder.ToImmutable();
+            return s_availableCodecs;
         }
     }
     

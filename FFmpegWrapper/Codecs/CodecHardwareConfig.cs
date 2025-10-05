@@ -36,7 +36,7 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
             var decBuilder = ImmutableArray.CreateBuilder<CodecHardwareConfig>();
             
             unsafe {
-                foreach (var codec in MediaCodec.AvaliableCodecs) {
+                foreach (var codec in MediaCodec.AvailableCodecs) {
                     
                     var index = 0;
                     AVCodecHWConfig* res = null!;

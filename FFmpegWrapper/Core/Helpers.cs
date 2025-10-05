@@ -35,7 +35,7 @@ internal static unsafe class Helpers
         }
         return errno;
     }
-    public static Exception ThrowError(this int errno, string? msg = null)
+    public static void ThrowError(this int errno, string? msg = null)
     {
         msg ??= "Operation failed";
         
@@ -52,6 +52,7 @@ internal static unsafe class Helpers
         while (!ptr[len].Equals(terminator)) {
             len++;
         }
+        
         return new ReadOnlySpan<T>(ptr, len);
     }
 
@@ -85,9 +86,6 @@ internal static unsafe class Helpers
         }
         return true;
     }
-
-    public static long? GetPTS(long pts) => pts != ffmpeg.AV_NOPTS_VALUE ? pts : null;
-    public static void SetPTS(ref long pts, long? value) => pts = value ?? ffmpeg.AV_NOPTS_VALUE;
 
     public static TimeSpan? GetTimeSpan(long pts, Rational timeBase)
     {

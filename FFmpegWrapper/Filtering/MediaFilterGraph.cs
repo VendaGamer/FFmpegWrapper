@@ -12,9 +12,9 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
 
     public MediaFilterGraph()
     {
-        handle = ffmpeg.avfilter_graph_alloc();
+        _handle = ffmpeg.avfilter_graph_alloc();
         
-        if (handle == null) {
+        if (_handle == null) {
             throw new OutOfMemoryException();
         }
     }
@@ -24,7 +24,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
         ThrowIfConfigured();
         ThrowIfDisposed();
 
-        var node = ffmpeg.avfilter_graph_alloc_filter(handle, args.Filter.Handle, args.NodeName);
+        var node = ffmpeg.avfilter_graph_alloc_filter(_handle, args.Filter.Handle, args.NodeName);
         if (node == null) {
             throw new OutOfMemoryException();
         }
@@ -33,7 +33,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
             ContextOption.Set(node, key, val, searchChildren: true);
         }
         if (args.HardwareDevice != null) {
-            node->hw_device_ctx = ffmpeg.av_buffer_ref(((IHandle<AVBufferRef>)args.HardwareDevice).Handle);
+            node->hw_device_ctx = ffmpeg.av_buffer_ref(args.HardwareDevice.Handle);
         }
         ffmpeg.avfilter_init_str(node, null).CheckError("Failed to initialize filter node");
 
@@ -99,7 +99,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
         ThrowIfConfigured();
 
         try {
-            var node = ffmpeg.avfilter_graph_alloc_filter(handle, ffmpeg.avfilter_get_by_name(filterName), "source");
+            var node = ffmpeg.avfilter_graph_alloc_filter(_handle, ffmpeg.avfilter_get_by_name(filterName), "source");
             ffmpeg.av_buffersrc_parameters_set(node, pars).CheckError("Failed to set buffer source parameters");
             ffmpeg.avfilter_init_str(node, null).CheckError("Failed to initialize buffer source node");
             return new MediaBufferSource(node);
@@ -121,7 +121,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
     {
         ThrowIfConfigured();
 
-        var node = ffmpeg.avfilter_graph_alloc_filter(handle, ffmpeg.avfilter_get_by_name(filterName), "sink");
+        var node = ffmpeg.avfilter_graph_alloc_filter(_handle, ffmpeg.avfilter_get_by_name(filterName), "sink");
         ffmpeg.avfilter_init_str(node, null).CheckError("Failed to initialize buffer sink node");
         ffmpeg.avfilter_link(input.Node.Handle, (uint)input.Index, node, 0).CheckError("Failed to link input node to buffer sink");
         return node;
@@ -150,7 +150,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
             }
             //This function names inputs/outputs pars to the caller's perspective,
             //so output[i] is actually the input of some parsed node.
-            ffmpeg.avfilter_graph_parse_ptr(handle, str, &outputLinks, &inputLinks, null).CheckError("Failed to parse filter graph");
+            ffmpeg.avfilter_graph_parse_ptr(_handle, str, &outputLinks, &inputLinks, null).CheckError("Failed to parse filter graph");
 
             if (outputLinks != null) {
                 throw new InvalidOperationException("Parsed filter graph cannot have open inputs");
@@ -174,7 +174,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
         ThrowIfDisposed();
         ThrowIfConfigured();
         
-        ffmpeg.av_opt_set(handle, name, value, 0).CheckError();
+        ffmpeg.av_opt_set(_handle, name, value, 0).CheckError();
     }
 
     public void Configure()
@@ -182,7 +182,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
         ThrowIfDisposed();
         ThrowIfConfigured();
 
-        ffmpeg.avfilter_graph_config(handle, null).CheckError();
+        ffmpeg.avfilter_graph_config(_handle, null).CheckError();
         IsConfigured = true;
     }
 
@@ -191,10 +191,10 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
         ThrowIfDisposed();
 
         var sb = new StringBuilder();
-        for (int i = 0; i < handle->nb_filters; i++) {
+        for (int i = 0; i < _handle->nb_filters; i++) {
             if (i != 0) sb.Append(",");
 
-            var node = handle->filters[i];
+            var node = _handle->filters[i];
 
             //Input ports
             for (int j = 0; j < node->nb_inputs; j++) {
@@ -203,7 +203,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
                 int srcNodeIdx = 0;
                 int srcPortIdx = (int)(link->srcpad - link->src->output_pads);
 
-                while (srcNodeIdx < handle->nb_filters && handle->filters[srcNodeIdx] != link->src) {
+                while (srcNodeIdx < _handle->nb_filters && _handle->filters[srcNodeIdx] != link->src) {
                     srcNodeIdx++;
                 }
                 PrintPort(srcNodeIdx, srcPortIdx);
@@ -246,7 +246,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
 
     protected override void Free()
     {
-        fixed (AVFilterGraph** c = &handle) {
+        fixed (AVFilterGraph** c = &_handle) {
             ffmpeg.avfilter_graph_free(c);
         }
     }

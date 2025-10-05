@@ -24,7 +24,7 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// The total number of sample values in the buffer is Size × NumChannels for interleaved formats.
     /// This property queries the underlying FFmpeg audio FIFO for real-time buffer status.
     /// </remarks>
-    public int Size => ffmpeg.av_audio_fifo_size(handle);
+    public int Size => ffmpeg.av_audio_fifo_size(_handle);
     /// <summary>
     /// Gets the available space in the FIFO buffer for additional audio samples per channel.
     /// This represents how many more samples can be written before the buffer becomes full.
@@ -34,7 +34,7 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// A return value of 0 indicates the buffer is full and cannot accept more data.
     /// This property queries the underlying FFmpeg audio FIFO for real-time space availability.
     /// </remarks>
-    public int Space => ffmpeg.av_audio_fifo_space(handle);
+    public int Space => ffmpeg.av_audio_fifo_space(_handle);
     
     /// <summary>
     /// Gets the total capacity of the FIFO buffer in samples per channel.
@@ -56,8 +56,8 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
         Format = fmt;
         NumChannels = numChannels;
 
-        handle = ffmpeg.av_audio_fifo_alloc(fmt, numChannels, initialCapacity);
-        if (handle == null) {
+        _handle = ffmpeg.av_audio_fifo_alloc(fmt, numChannels, initialCapacity);
+        if (_handle == null) {
             throw new OutOfMemoryException("Could not allocate the audio FIFO.");
         }
     }
@@ -80,7 +80,7 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     public void Write(byte** channels, int count)
     {
         ThrowIfDisposed();
-        ffmpeg.av_audio_fifo_write(handle, (void**)channels, count);
+        ffmpeg.av_audio_fifo_write(_handle, (void**)channels, count);
     }
     /// <summary>
     /// 
@@ -142,7 +142,7 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     public int Read(byte** dest, int count)
     {
         ThrowIfDisposed();
-        return ffmpeg.av_audio_fifo_read(handle, (void**)dest, count);
+        return ffmpeg.av_audio_fifo_read(_handle, (void**)dest, count);
     }
 
     /// <summary>
@@ -157,7 +157,7 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     public void Clear()
     {
         ThrowIfDisposed();
-        ffmpeg.av_audio_fifo_reset(handle);
+        ffmpeg.av_audio_fifo_reset(_handle);
     }
     
     /// <summary>
@@ -179,13 +179,13 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     public void Drain(int count)
     {
         ThrowIfDisposed();
-        ffmpeg.av_audio_fifo_drain(handle, count).CheckError();
+        ffmpeg.av_audio_fifo_drain(_handle, count).CheckError();
     }
 
     /// <inheritdoc />
     protected override void Free()
     {
-        ffmpeg.av_audio_fifo_free(handle);
+        ffmpeg.av_audio_fifo_free(_handle);
     }
 
     private void CheckFormatForInterleavedBuffer(int length, int sampleSize)

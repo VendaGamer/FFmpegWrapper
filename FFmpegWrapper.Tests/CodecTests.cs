@@ -1,5 +1,8 @@
 namespace FFmpegWrapper.Tests;
-using FFmpeg.Wrapper;
+
+using Codecs;
+
+using Core;
 
 public class CodecTests : TestBase
 {
@@ -14,10 +17,10 @@ public class CodecTests : TestBase
         Assert.Equal(AVCodecID.AV_CODEC_ID_MPEG2VIDEO, codec1.Id);
         Assert.True(codec1.IsEncoder);
         Assert.False(codec1.IsDecoder);
-        Assert.Equal(0, codec1.SupportedChannelLayouts.Length);
-        Assert.Equal(0, codec1.SupportedSampleFormats.Length);
+        Assert.Empty(codec1.SupportedChannelLayouts);
+        Assert.Empty(codec1.SupportedSampleFormats);
         Assert.Equal(PixelFormats.YUV420P, codec1.SupportedPixelFormats[0]);
-        Assert.True(codec1.SupportedFramerates.Length is > 10 and < 100);
+        Assert.True(codec1.SupportedFrameRates.Length is > 10 and < 100);
 
         Assert.Equal("libmp3lame", codec2.Name);
         Assert.Equal(MediaTypes.Audio, codec2.Type);
@@ -27,14 +30,14 @@ public class CodecTests : TestBase
         Assert.Equal(2, codec2.SupportedChannelLayouts[1].nb_channels);
         Assert.Equal(SampleFormats.FloatPlanar, codec2.SupportedSampleFormats[1]);
         Assert.Equal(44100, codec2.SupportedSampleRates[0]);
-        Assert.Equal(0, codec2.SupportedPixelFormats.Length);
-        Assert.Equal(0, codec2.SupportedFramerates.Length);
+        Assert.Empty(codec2.SupportedPixelFormats);
+        Assert.Empty(codec2.SupportedFrameRates);
     }
 
     [Fact]
     public void AVCodec_GetRegistered()
     {
-        var codecs = MediaCodec.GetRegisteredCodecs().ToList();
+        var codecs = MediaCodec.AvailableCodecs;
 
         Assert.NotEmpty(codecs);
         Assert.Contains(codecs, c => c.Id == CodecIds.H264);

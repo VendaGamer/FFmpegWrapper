@@ -16,4 +16,12 @@ public static class IHandleExtensions
             return ptr.Handle is null;
         }
     }
+    
+    public static ref T AsRef<T>(this IHandle<T> ptr) where T : unmanaged
+    {
+        unsafe
+        {
+            return ref Unsafe.AsRef<T>(ptr.Handle);
+        }
+    }
 }

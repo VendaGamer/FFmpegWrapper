@@ -2,20 +2,24 @@ namespace FFmpegWrapper.Media;
 
 using System.Collections;
 
+using CommunityToolkit.HighPerformance.Buffers;
+
+using Flags;
+
 using Entry = KeyValuePair<string, string>;
 
 /// <summary> Wrapper for an existing <see cref="AVDictionaryEntry"/>. </summary>
 
 public readonly ref struct MediaDictionaryEntry : IHandle<AVDictionaryEntry>
 {
-    private readonly unsafe AVDictionaryEntry* handle;
-    unsafe AVDictionaryEntry* IHandle<AVDictionaryEntry>.Handle => handle;
+    private readonly unsafe AVDictionaryEntry* _handle;
+    unsafe AVDictionaryEntry* IHandle<AVDictionaryEntry>.Handle => _handle;
 
     public string Key {
         get {
             unsafe
             {
-                return Helpers.PtrToStringUTF8(handle->key);
+                return Helpers.PtrToStringUTF8(_handle->key);
             }
         }
     }
@@ -23,7 +27,7 @@ public readonly ref struct MediaDictionaryEntry : IHandle<AVDictionaryEntry>
     public string Value {
         get {
             unsafe {
-                return Helpers.PtrToStringUTF8(handle->value);
+                return Helpers.PtrToStringUTF8(_handle->value);
             }
         }
     }
@@ -31,7 +35,7 @@ public readonly ref struct MediaDictionaryEntry : IHandle<AVDictionaryEntry>
     public Entry ToEntry() => new(Key, Value);
     public unsafe MediaDictionaryEntry(AVDictionaryEntry* handle)
     {
-        this.handle = handle;
+        this._handle = handle;
     }
 }
 /// <summary>
@@ -39,7 +43,6 @@ public readonly ref struct MediaDictionaryEntry : IHandle<AVDictionaryEntry>
 /// </summary>
 public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
 {
-    private readonly AVDictionary** _target;
     private readonly bool _ownsTarget;
 
     /// <summary>
@@ -48,21 +51,20 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
     public MediaDictionary()
     {
         // Allocate a pointer that we own
-        _target = (AVDictionary**)ffmpeg.av_mallocz((ulong)sizeof(AVDictionary*));
-        if (_target == null) 
+        _handle = (AVDictionary*)ffmpeg.av_mallocz((ulong)sizeof(AVDictionary));
+        if (_handle == null) 
             throw new OutOfMemoryException("Failed to allocate AVDictionary pointer");
         
-        handle = *_target; // handle is initially null
+        base._handle = _handle; // handle is initially null
         _ownsTarget = true;
     }
 
     /// <summary>
     /// Wraps an existing AVDictionary pointer (does not take ownership of the pointer itself)
     /// </summary>
-    public MediaDictionary(AVDictionary** target)
+    public MediaDictionary(FFHandle<AVDictionary> target)
     {
-        _target = target;
-        handle = *target;
+        base._handle = target;
         _ownsTarget = false;
     }
 
@@ -121,9 +123,11 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
         int flags = allowMultiple ? ffmpeg.AV_DICT_MULTIKEY : 0;
         
         // Update our handle after the operation since av_dict_set can reallocate
-        int result = ffmpeg.av_dict_set(_target, key, value, flags);
-        result.CheckError();
-        handle = *_target;
+        fixed (AVDictionary** ptr = &_handle) {
+            ffmpeg.av_dict_set(ptr, key, value, flags).CheckError();
+        }
+        
+        base._handle = _handle;
     }
 
     /// <summary>
@@ -134,9 +138,11 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
         bool existed = ContainsKey(key);
         if (existed)
         {
-            int result = ffmpeg.av_dict_set(_target, key, null, 0);
-            result.CheckError();
-            handle = *_target;
+            fixed(AVDictionary** ptr = &_handle)
+            {
+                ffmpeg.av_dict_set(ptr, key, null, 0).CheckError();
+            }
+            base._handle = _handle;
         }
         return existed;
     }
@@ -146,8 +152,10 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
     /// </summary>
     public void Clear()
     {
-        ffmpeg.av_dict_free(_target);
-        handle = *_target; // Should be null after free
+        fixed (AVDictionary** ptr = &_handle) {
+            ffmpeg.av_dict_free(ptr);
+        }
+        base._handle = _handle; // Should be null after free
     }
 
     /// <summary>
@@ -166,12 +174,11 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
     /// <summary>
     /// Copies entries from another dictionary
     /// </summary>
-    public void CopyFrom(MediaDictionary other, bool overwrite = true)
+    public void CopyFrom(MediaDictionary other, DictionaryFlags flags = 0)
     {
-
-        int flags = overwrite ? 0 : ffmpeg.AV_DICT_DONT_OVERWRITE;
-        ffmpeg.av_dict_copy(_target, other.Handle, flags).CheckError();
-        handle = *_target;
+        fixed (AVDictionary** prt = &_handle) {
+            ffmpeg.av_dict_copy(prt, other.Handle, (int)flags).CheckError();
+        }
     }
 
     /// <summary>
@@ -183,15 +190,33 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    public override string ToString()
+    {
+        return ToString((byte)':', (byte)'|');
+    }
+
+    public string ToString(byte utf8KeyValueSeparatorChar, byte utf8PairsSeparator)
+    {
+        byte* buffer = null!;
+
+        ffmpeg.av_dict_get_string(_handle, &buffer, utf8KeyValueSeparatorChar, utf8PairsSeparator).CheckError();
+        
+        string str = Helpers.PtrToStringUTF8(buffer);
+        ffmpeg.av_free(buffer);
+        
+        return str;
+    }
+
     protected override void Free()
     {
-        if (_target != null)
+        if (_handle != null)
         {
-            ffmpeg.av_dict_free(_target);
-            
+            fixed (AVDictionary** handle = &_handle) {
+                ffmpeg.av_dict_free(handle);
+            }
             if (_ownsTarget)
             {
-                ffmpeg.av_free(_target);
+                ffmpeg.av_free(_handle);
             }
         }
     }

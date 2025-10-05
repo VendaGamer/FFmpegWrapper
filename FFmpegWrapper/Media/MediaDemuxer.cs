@@ -7,37 +7,29 @@ using Streams;
 
 public class MediaDemuxer : FFObject<AVFormatContext>
 {
-    public IOContext? IOC { get; }
-    readonly bool _iocLeaveOpen;
-    private bool _ownsCtx;
+    public readonly IOContext? IOContext;
+    private readonly Action? _disposeOwned;
 
     public TimeSpan? Duration {
         get {
             unsafe
             {
-                return Helpers.GetTimeSpan(Handle->duration, new Rational(1, ffmpeg.AV_TIME_BASE));
+                return Helpers.GetTimeSpan(Handle.Ref.duration, new Rational(1, ffmpeg.AV_TIME_BASE));
             }
         }
     }
 
     /// <summary> An array of all streams in the file. </summary>
-    public ImmutableArray<MediaStream> Streams { get; }
+    public readonly ImmutableArray<MediaStream> Streams;
 
     /// <inheritdoc cref="AVFormatContext.metadata" />
-    public MediaDictionary Metadata {
-        get {
-            unsafe
-            {
-                return new(&Handle->metadata);
-            }
-        }
-    }
+    public readonly MediaDictionary Metadata;
 
     public bool CanSeek {
         get {
             unsafe
             {
-                return Handle->pb->seek.Pointer != IntPtr.Zero;
+                return Handle.Ref.pb->seekable is not 0;
             }
         }
     }
@@ -50,14 +42,19 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <c>protocol_whitelist=file</c> option.
     /// </remarks>
     public unsafe MediaDemuxer(string url)
-        : this(CreateContext(url, null, null), takeOwnership: true) { }
+        : this(CreateContext(url, null, null)) { }
 
     /// <inheritdoc />
-    public unsafe MediaDemuxer(IOContext ioc, bool leaveOpen = false)
-        : this(CreateContext(null, ioc.Handle, null), takeOwnership: true)
+    public MediaDemuxer(IFFHandleOwner<AVIOContext> inputOutputContextOwner)
+        : this(CreateContext(null, inputOutputContextOwner.Handle, null))
     {
-        IOC = ioc;
-        _iocLeaveOpen = leaveOpen;
+        _disposeOwned += inputOutputContextOwner.Dispose;
+    }
+    
+    public MediaDemuxer(FFHandle<AVIOContext> inputOutputContext)
+        : this(CreateContext(null, inputOutputContext, null))
+    {
+        
     }
 
     /// <summary> Opens an existing resource URL for demuxing. </summary>
@@ -65,23 +62,31 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <param name="url">URL to be opened for demuxing</param>
     /// <param name="options"> A dictionary filled with AVFormatContext and demuxer-private options. </param>
     public unsafe MediaDemuxer(string url, IEnumerable<KeyValuePair<string, string>> options)
-        : this(CreateContext(url, null, options), takeOwnership: true) { }
+        : this(CreateContext(url, null, options)) { }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
     /// <param name="ctx"></param>
-    /// <param name="takeOwnership">True if <paramref name="ctx"/> should be freed when Dispose() is called.</param>
-    internal unsafe MediaDemuxer(AVFormatContext* ctx, bool takeOwnership)
+    public MediaDemuxer(FFHandle<AVFormatContext> ctx)
     {
-        handle = ctx;
-        _ownsCtx = takeOwnership;
-        var streams = ImmutableArray.CreateBuilder<MediaStream>((int)Handle->nb_streams);
-        for (int i = 0; i < handle->nb_streams; i++) {
-            streams.Add(new MediaStream(handle->streams[i]));
+        unsafe
+        {
+            _handle = ctx;
+            
+            var streams = ImmutableArray.CreateBuilder<MediaStream>((int)Handle.Ref.nb_streams);
+            for (int i = 0; i < _handle->nb_streams; i++) {
+                streams.Add(new MediaStream(_handle->streams[i]));
+            }
+            Metadata = new MediaDictionary(_handle->metadata);
+            Streams = streams.MoveToImmutable();
         }
-        Streams = streams.MoveToImmutable();
+    }
+
+    public MediaDemuxer(IFFHandleOwner<AVFormatContext> owner) : this(owner.Handle)
+    {
+        _disposeOwned += owner.Dispose;
     }
     
-    private static unsafe AVFormatContext* CreateContext(string? url, AVIOContext* pb, IEnumerable<KeyValuePair<string, string>>? options)
+    private static unsafe FFHandle<AVFormatContext> CreateContext(string? url, FFHandle<AVIOContext> pb, IEnumerable<KeyValuePair<string, string>>? options)
     {
         AVFormatContext* ctx = ffmpeg.avformat_alloc_context();
         if (ctx == null) {
@@ -97,7 +102,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
 
         try {
             if (ffmpeg.av_dict_count(rawOpts) > 0) {
-                string invalidKeys = string.Join("', '", new MediaDictionary(&rawOpts).Select(e => e.Key));
+                string invalidKeys = string.Join("', '", new MediaDictionary(rawOpts).Select(e => e.Key));
                 throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '{invalidKeys}')");
             }
         } finally {
@@ -114,7 +119,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         unsafe
         {
             ThrowIfDisposed();
-            var index = ffmpeg.av_find_best_stream(handle, type, -1, -1, null, 0);
+            var index = ffmpeg.av_find_best_stream(_handle, type, -1, -1, null, 0);
         
             if (index < 0) {
                 stream = null!;
@@ -143,8 +148,8 @@ public class MediaDemuxer : FFObject<AVFormatContext>
             }
         
             var codecPar = stream.Handle->codecpar;
-            var decoder = stream.Type switch {
-                MediaTypes.Audio => new AudioDecoder(codecPar->codec_id) as MediaDecoder,
+            MediaDecoder decoder = stream.Type switch {
+                MediaTypes.Audio => new AudioDecoder(codecPar->codec_id),
                 MediaTypes.Video => new VideoDecoder(codecPar->codec_id),
                 _ => throw new NotSupportedException($"Stream type {stream.Type} is not supported."),
             };
@@ -170,7 +175,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         {
             ThrowIfDisposed();
 
-            int result = ffmpeg.av_read_frame(handle, packet.UnrefAndGetHandle().Handle);
+            int result = ffmpeg.av_read_frame(_handle, packet.UnrefAndGetHandle().Handle);
 
             if (result < 0 && result != ffmpeg.AVERROR_EOF) {
                 result.ThrowError(msg: "Failed to read packet");
@@ -209,7 +214,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
 
         unsafe {
-            return ffmpeg.av_seek_frame(handle, streamIndex, ts, (int)options) >= 0;
+            return ffmpeg.av_seek_frame(_handle, streamIndex, ts, (int)options) >= 0;
         }
     }
 
@@ -224,7 +229,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
             }
     
-            var guessedRate = ffmpeg.av_guess_frame_rate(handle, stream.Handle, null);
+            var guessedRate = ffmpeg.av_guess_frame_rate(_handle, stream.Handle, null);
     
             // Return the guessed rate (caller needs to validate)
             return guessedRate;
@@ -234,11 +239,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <inheritdoc />
     protected override unsafe void Free()
     {
-        if (handle != null && _ownsCtx) {
-            fixed (AVFormatContext** c = &handle) ffmpeg.avformat_close_input(c);
-        }
-        if (!_iocLeaveOpen) {
-            IOC?.Dispose();
-        }
+        fixed (AVFormatContext** ptr = &_handle) ffmpeg.avformat_close_input(ptr);
+        _disposeOwned?.Invoke();
     }
 }

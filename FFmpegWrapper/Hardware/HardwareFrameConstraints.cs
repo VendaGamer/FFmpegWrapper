@@ -9,7 +9,7 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
         get {
             unsafe {
                 ThrowIfDisposed();
-                return handle->min_width;
+                return _handle->min_width;
             }
         }
     }
@@ -18,7 +18,7 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
         get {
             unsafe {
                 ThrowIfDisposed();
-                return handle->min_height;
+                return _handle->min_height;
             }
         }
     }
@@ -27,7 +27,7 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
         get {
             unsafe {
                 ThrowIfDisposed();
-                return handle->max_width;
+                return _handle->max_width;
             }
         }
     }
@@ -36,14 +36,14 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
         get {
             unsafe {
                 ThrowIfDisposed();
-                return handle->max_height;
+                return _handle->max_height;
             }
         }
     }
 
     public unsafe HardwareFrameConstraints(AVHWFramesConstraints* desc)
     {
-        handle = desc;
+        _handle = desc;
         
         ValidHardwareFormats = ImmutableArray.Create(
             Helpers.GetSpanFromSentinelTerminatedPtr(desc->valid_hw_formats, PixelFormats.None));
@@ -74,7 +74,7 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
     protected override void Free()
     {
         unsafe {
-            fixed (AVHWFramesConstraints** desc = &handle) {
+            fixed (AVHWFramesConstraints** desc = &_handle) {
                 ffmpeg.av_hwframe_constraints_free(desc);
             }
         }

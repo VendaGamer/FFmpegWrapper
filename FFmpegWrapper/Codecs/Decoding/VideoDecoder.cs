@@ -13,8 +13,8 @@ public unsafe class VideoDecoder : MediaDecoder
         get {
             ThrowIfDisposed();
             
-            return new PictureColorspace(handle->colorspace, handle->color_primaries,
-                handle->color_trc, handle->color_range);
+            return new PictureColorspace(_handle->colorspace, _handle->color_primaries,
+                _handle->color_trc, _handle->color_range);
         }
     }
 
@@ -42,7 +42,7 @@ public unsafe class VideoDecoder : MediaDecoder
         SetHardwareContext(config, device, null);
         //TODO: support custom decoder negotiation and hw_frames_ctx
 
-        handle->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) => {
+        _handle->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) => {
             for (var pFmt = pAvailFmts; *pFmt != PixelFormats.None; pFmt++) {
                 if (*pFmt == config.PixelFormat) {
                     return *pFmt;
