@@ -1,13 +1,24 @@
 namespace FFmpegWrapper.Core;
 
+using System.Buffers;
 using System.Runtime.InteropServices;
 
-public sealed class BufferPool : FFObject<AVBufferPool>
+public class BufferPool : FFObject<AVBufferPool>
 {
-    public BufferPool(ulong size, av_buffer_pool_init_alloc? allocFunc = null)
+    public BufferPool(ulong size, AllocateBuffer? allocFunc = null)
     {
         unsafe {
-            _handle = ffmpeg.av_buffer_pool_init(size, allocFunc);
+            _handle = ffmpeg.av_buffer_pool_init(size, new av_buffer_pool_init_alloc_func{
+                Pointer = Marshal.GetFunctionPointerForDelegate(allocFunc)
+            });
+        }
+    }
+
+    protected BufferPool(FFHandle<AVBufferPool> handle)
+    {
+        unsafe
+        {
+            _handle = handle;
         }
     }
     
@@ -17,4 +28,6 @@ public sealed class BufferPool : FFObject<AVBufferPool>
             ffmpeg.av_buffer_pool_uninit(ptr);
         }
     }
+    
+    public delegate FFHandle<AVBufferRef> AllocateBuffer(ulong size);
 }

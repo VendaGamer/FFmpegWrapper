@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Codecs;
 
-public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
+public readonly struct CodecHardwareConfig : IFFHandle<AVCodecHWConfig>
 {
 
     #region Static Methods
@@ -41,7 +41,7 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
                     var index = 0;
                     AVCodecHWConfig* res = null!;
                     
-                    while((res = ffmpeg.avcodec_get_hw_config(codec.handle, index)) != null)
+                    while((res = ffmpeg.avcodec_get_hw_config(codec._handle, index)) != null)
                     {
                         if (codec.IsDecoder) {
                             decBuilder.Add(new CodecHardwareConfig(codec, res));
@@ -106,7 +106,7 @@ public readonly struct CodecHardwareConfig : IHandle<AVCodecHWConfig>
     #endregion
 
     private readonly unsafe AVCodecHWConfig* handle;
-    unsafe AVCodecHWConfig* IHandle<AVCodecHWConfig>.Handle => handle;
+    unsafe AVCodecHWConfig* IFFHandle<AVCodecHWConfig>.Handle => handle;
 
     public readonly MediaCodec Codec;
     public AVHWDeviceType DeviceType {

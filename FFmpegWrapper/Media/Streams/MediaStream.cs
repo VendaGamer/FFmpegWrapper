@@ -1,18 +1,30 @@
 ﻿namespace FFmpegWrapper.Media.Streams;
 
-public unsafe class MediaStream
+public readonly struct MediaStream
 {
-    public AVStream* Handle { get; }
+    public readonly FFHandle<AVStream> Handle {
+        get {
+            unsafe
+            {
+                return _handle;
+            }
+        }
+    }
 
-    public int Index => Handle->index;
+    private unsafe readonly AVStream* _handle;
+    public int Index => Handle.Ref.index;
 
-    public AVMediaType Type => Handle->codecpar->codec_type;
+    public MediaCodecParameters Type => Handle.Ref.codecpar;
 
     /// <inheritdoc cref="AVStream.time_base" />
     public Rational TimeBase => Handle->time_base;
 
     /// <summary> Pts of the first frame of the stream in presentation order, in stream time base. </summary>
-    public long? StartTime => Helpers.GetPTS(Handle->start_time);
+    public long? StartTime {
+        get {
+            Handle->start_time
+        }
+    }
 
     /// <inheritdoc cref="AVStream.duration" />
     public TimeSpan? Duration => Helpers.GetTimeSpan(Handle->duration, TimeBase);
@@ -31,9 +43,12 @@ public unsafe class MediaStream
     /// <inheritdoc cref="AVStream.codecpar" />
     public MediaCodecParameters CodecPars => new(Handle->codecpar);
 
-    public MediaStream(AVStream* stream)
+    public MediaStream(FFHandle<AVStream> stream)
     {
-        Handle = stream;
+        unsafe
+        {
+            _handle = stream;
+        }
     }
 
     /// <summary> Returns the corresponding <see cref="TimeSpan"/> for the given timestamp based on <see cref="TimeBase"/> units. </summary>

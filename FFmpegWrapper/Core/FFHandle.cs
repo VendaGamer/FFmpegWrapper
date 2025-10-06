@@ -57,6 +57,10 @@ public readonly struct FFHandle<T> : IEquatable<FFHandle<T>>
     /// <returns></returns>
     public static unsafe implicit operator T*(FFHandle<T> handle)
     {
+        if (handle.Raw is null) {
+            throw new ArgumentNullException(nameof(handle.Raw));
+        }
+        
         return handle.Raw;
     }
 

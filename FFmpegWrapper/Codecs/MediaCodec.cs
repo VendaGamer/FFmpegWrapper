@@ -2,15 +2,20 @@ namespace FFmpegWrapper.Codecs;
 
 using Configuration;
 
-public readonly struct MediaCodec : IHandle<AVCodec>
+public readonly struct MediaCodec : IFFHandle<AVCodec>
 {
-    internal readonly unsafe AVCodec* handle;
-    unsafe AVCodec* IHandle<AVCodec>.Handle => handle;
-
+    public FFHandle<AVCodec> Handle {
+        get {
+            unsafe {
+                return Raw;
+            }
+        }
+    }
+    
     public AVCodecID Id {
         get {
             unsafe {
-                return handle->id;
+                return Raw->id;
             }
         }
     }
@@ -19,17 +24,18 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                return handle->type;
+                return Raw->type;
             }
         }
     }
-
+    
+    
     /// <inheritdoc cref="AVCodec.name" />
     public string Name {
         get {
             unsafe
             {
-                return Helpers.PtrToStringUTF8(handle->name);
+                return Helpers.PtrToStringUTF8(Raw->name);
             }
         }
     }
@@ -39,7 +45,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                return Helpers.PtrToStringUTF8(handle->long_name)!;
+                return Helpers.PtrToStringUTF8(Raw->long_name)!;
             }
         }
     }
@@ -49,10 +55,10 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                if (handle->wrapper_name is null) {
+                if (Raw->wrapper_name is null) {
                     return Helpers.SpanToStringUTF8("builtin"u8);
                 }
-                return Helpers.PtrToStringUTF8(handle->wrapper_name);
+                return Helpers.PtrToStringUTF8(Raw->wrapper_name);
             }
         }
     }
@@ -61,7 +67,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                return (MediaCodecCaps)handle->capabilities;
+                return (MediaCodecCaps)Raw->capabilities;
             }
         }
     }
@@ -71,39 +77,17 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                return handle->max_lowres;
+                return Raw->max_lowres;
             }
         }
     }
     
-    private unsafe MediaCodec(AVCodec* handle)
+    internal readonly unsafe AVCodec* Raw;
+    
+    public unsafe MediaCodec(FFHandle<AVCodec> raw)
     {
-        this.handle = handle;
-
-        SupportedChannelLayouts =
-            GetSupported<AVChannelLayout>(AVCodecConfig.AV_CODEC_CONFIG_CHANNEL_LAYOUT);
-        SupportedFrameRates =
-            GetSupported<Rational>(AVCodecConfig.AV_CODEC_CONFIG_FRAME_RATE);
-        SupportedPixelFormats =
-            GetSupported<AVPixelFormat>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
-        SupportedSampleRates =
-            GetSupported<int>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_RATE);
-        SupportedSampleFormats = 
-            GetSupported<AVSampleFormat>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_FORMAT);
+        Raw = raw;
     }
-
-    public static MediaCodec FromHandle(IHandle<AVCodec> handle)
-    {
-        unsafe
-        {
-            if (handle is null) {
-                throw new ArgumentNullException();
-            }
-
-            return new MediaCodec(handle.Handle);
-        }
-    }
-
     public static unsafe MediaCodec FromHandle(AVCodec* handle)
     {
         if (handle is null) {
@@ -114,21 +98,26 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     }
 
     /// <summary> Array of supported frame rates, or empty if any. </summary>
-    public readonly ImmutableArray<Rational> SupportedFrameRates;
+    public ReadOnlySpan<Rational> SupportedFrameRates
+        => GetSupported<Rational>(AVCodecConfig.AV_CODEC_CONFIG_CHANNEL_LAYOUT);
 
     /// <summary> Array of supported pixel formats, or empty if any. </summary>
-    public readonly ImmutableArray<AVPixelFormat> SupportedPixelFormats;
+    public readonly ReadOnlySpan<AVPixelFormat> SupportedPixelFormats
+        => GetSupported<AVPixelFormat>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
 
     /// <summary> Array of supported audio sample rates, or empty if any. </summary>
-    public readonly ImmutableArray<int> SupportedSampleRates;
+    public readonly ReadOnlySpan<int> SupportedSampleRates
+        => GetSupported<int>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_RATE);
 
     /// <summary> Array of supported sample formats, or empty if any. </summary>
-    public readonly ImmutableArray<AVSampleFormat> SupportedSampleFormats;
+    public readonly ReadOnlySpan<AVSampleFormat> SupportedSampleFormats
+        => GetSupported<AVSampleFormat>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_FORMAT);
 
     /// <summary> Array of supported channel layouts, or empty if any. </summary>
-    public readonly ImmutableArray<AVChannelLayout> SupportedChannelLayouts;
+    public readonly ReadOnlySpan<AVChannelLayout> SupportedChannelLayouts
+        => GetSupported<AVChannelLayout>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
 
-    private ImmutableArray<T> GetSupported<T>(AVCodecConfig config) where T : unmanaged
+    private ReadOnlySpan<T> GetSupported<T>(AVCodecConfig config) where T : unmanaged
     {
         unsafe
         {
@@ -137,7 +126,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
 
             ffmpeg.avcodec_get_supported_config(
                 null,
-                handle,
+                Raw,
                 config,
                 0,
                 (void**)&configs,
@@ -152,10 +141,10 @@ public readonly struct MediaCodec : IHandle<AVCodec>
                     countValue
                 );
                 
-                return ImmutableArray.Create(layoutSpan);
+                return layoutSpan;
             }
             
-            return ImmutableArray<T>.Empty;
+            return ReadOnlySpan<T>.Empty;
         }
     }
     
@@ -163,7 +152,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                return ffmpeg.av_codec_is_encoder(handle) != 0;
+                return ffmpeg.av_codec_is_encoder(Raw) != 0;
             }
         }
     }
@@ -172,7 +161,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
         get {
             unsafe
             {
-                return ffmpeg.av_codec_is_decoder(handle) != 0;
+                return ffmpeg.av_codec_is_decoder(Raw) != 0;
             }
         }
     }
@@ -182,7 +171,7 @@ public readonly struct MediaCodec : IHandle<AVCodec>
     {
         unsafe
         {
-            return ContextOption.GetOptions(&handle->priv_class, removeAliases);
+            return ContextOption.GetOptions(&Raw->priv_class, removeAliases);
         }
     }
 

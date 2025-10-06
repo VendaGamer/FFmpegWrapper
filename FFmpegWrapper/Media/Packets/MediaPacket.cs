@@ -1,4 +1,7 @@
 ﻿namespace FFmpegWrapper.Media.Packets;
+
+using AngleSharp.Html.Dom;
+
 using Streams;
 
 public class MediaPacket : FFObject<AVPacket>
@@ -143,11 +146,13 @@ public class MediaPacket : FFObject<AVPacket>
         }
     }
     
-    public void Clear()
+    public FFHandle<AVPacket> Clear()
     {
+        ThrowIfDisposed();
         unsafe
         {
             ffmpeg.av_packet_unref(_handle);
+            return _handle;
         }
     }
 

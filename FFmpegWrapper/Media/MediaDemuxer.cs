@@ -174,8 +174,8 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         unsafe
         {
             ThrowIfDisposed();
-
-            int result = ffmpeg.av_read_frame(_handle, packet.UnrefAndGetHandle().Handle);
+            
+            int result = ffmpeg.av_read_frame(_handle, packet.Clear());
 
             if (result < 0 && result != ffmpeg.AVERROR_EOF) {
                 result.ThrowError(msg: "Failed to read packet");

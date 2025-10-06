@@ -6,7 +6,7 @@ using System.Security;
 /// <summary>
 /// Provides a base implementation for managed wrapper classes that encapsulate unmanaged FFmpeg objects.
 /// This abstract class handles the common patterns of resource management, disposal, and safe access
-/// to underlying FFmpeg structures while implementing the <see cref="IHandle{T}"/> interface.
+/// to underlying FFmpeg structures while implementing the <see cref="IFFHandle{T}"/> interface.
 /// </summary>
 /// <typeparam name="TRaw">
 /// The FFmpeg.AutoGen unmanaged structure type that this wrapper encapsulates.
@@ -37,29 +37,6 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
                 return _handle;
             }
         }
-    }
-
-    /// <summary>
-    /// Releases all resources used by the FFmpeg object and suppresses finalization.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This method implements the standard Dispose pattern by calling <see cref="Free"/>
-    /// and then suppressing finalization to prevent the finalizer from running.
-    /// </para>
-    /// <para>
-    /// After calling Dispose, the object should not be used again. Subsequent calls
-    /// to methods that access the <see cref="Handle"/> will throw <see cref="ObjectDisposedException"/>.
-    /// </para>
-    /// <para>
-    /// This method is safe to call multiple times. Subsequent calls after the first
-    /// will have no effect.
-    /// </para>
-    /// </remarks>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     private void Dispose(bool disposing)
@@ -144,5 +121,28 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
         if (_disposed) {
             throw new ObjectDisposedException($"The underlying unmanaged {typeof(TRaw).Name} has been disposed.");
         }
+    }
+    
+    /// <summary>
+    /// Releases all resources used by the FFmpeg object and suppresses finalization.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This method implements the standard Dispose pattern by calling <see cref="Free"/>
+    /// and then suppressing finalization to prevent the finalizer from running.
+    /// </para>
+    /// <para>
+    /// After calling Dispose, the object should not be used again. Subsequent calls
+    /// to methods that access the <see cref="Handle"/> will throw <see cref="ObjectDisposedException"/>.
+    /// </para>
+    /// <para>
+    /// This method is safe to call multiple times. Subsequent calls after the first
+    /// will have no effect.
+    /// </para>
+    /// </remarks>
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        Dispose(true);
     }
 }

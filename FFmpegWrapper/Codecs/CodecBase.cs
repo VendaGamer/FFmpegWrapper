@@ -1,13 +1,14 @@
 ﻿namespace FFmpegWrapper.Codecs;
 
+using System.Buffers;
+using System.Runtime.InteropServices;
+
+using CommunityToolkit.HighPerformance.Buffers;
+
 using Hardware;
 
 public abstract class CodecBase : FFObject<AVCodecContext>
 {
-    protected readonly bool _ownsContext = false;
-    private bool _hasUserExtraData = false;
-    public readonly MediaCodec Codec;
-    
     public bool IsOpen {
         get {
             unsafe
@@ -42,10 +43,14 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             unsafe
             {
                 ThrowIfDisposed();
+
+                if (_handle->extradata is null) {
+                    return ReadOnlySpan<byte>.Empty;
+                }
+
                 return new ReadOnlySpan<byte>(_handle->extradata, _handle->extradata_size);
             }
         }
-        set => SetExtraData(value);
     }
 
     /// <summary> Indicates if the codec requires flushing with NULL input at the end in order to give the complete and correct output. </summary>
@@ -53,6 +58,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
+                ThrowIfDisposed();
                 return (_handle->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0;
             }
         }
@@ -76,28 +82,18 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             }
         }
     }
+    
+    protected readonly bool _ownsContext = false;
+    
+    private IMemoryOwner<byte>? _extraData;
 
-    internal unsafe CodecBase(AVCodecContext* ctx, AVMediaType expectedType, bool takeOwnership)
+    protected unsafe CodecBase(FFHandle<AVCodecContext> ctx)
     {
-        if (ctx->codec->type != expectedType) {
-            if (takeOwnership) ffmpeg.avcodec_free_context(&ctx);
-            
-            throw new ArgumentException("Specified codec is not valid for the current media type.");
-        }
         _handle = ctx;
-        Codec = MediaCodec.FromHandle(ctx->codec);
-        _ownsContext = takeOwnership;
     }
 
-    protected unsafe static AVCodecContext* AllocContext(MediaCodec codec)
-    {
-        var ctx = ffmpeg.avcodec_alloc_context3(codec.handle);
-
-        if (ctx == null) {
-            throw new OutOfMemoryException("Failed to allocate codec context.");
-        }
-        return ctx;
-    }
+    protected unsafe static FFHandle<AVCodecContext> AllocContext(MediaCodec? codec)
+        => ffmpeg.avcodec_alloc_context3(codec is not null ? codec.Value.Raw : null);
 
     /// <summary> Initializes the codec if not already. </summary>
     public void Open()
@@ -140,7 +136,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     {
         unsafe
         {
-            if (config.Codec.handle != _handle->codec || config.DeviceType != device.Type) {
+            if (config.Codec.Raw != _handle->codec || config.DeviceType != device.Type) {
                 throw new ArgumentException("Mismatching hardware codec config.");
             }
         
@@ -165,34 +161,37 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         }
     }
 
-    private bool SetExtraData(ReadOnlySpan<byte> buf)
+    public void ClearExtraData()
     {
         unsafe
         {
             ThrowIfOpen();
             ThrowIfDisposed();
-        
-            if (buf.IsEmpty) {
+            
+            _handle->extradata = null;
+            _handle->extradata_size = 0;
+        }
+    }
+
+    private void SetExtraData(IMemoryOwner<byte> owner)
+    {
+        unsafe
+        {
+            ThrowIfOpen();
+            ThrowIfDisposed();
+            
+            _extraData?.Dispose();
+            var span = owner.Memory.Span;
+            
+            if (span.IsEmpty) {
                 _handle->extradata = null;
                 _handle->extradata_size = 0;
-                return true;
+                return;
             }
-        
-            if (_handle->extradata != null)
-                ffmpeg.av_freep(&_handle->extradata);
-            
-            ffmpeg.av_fast_padded_mallocz();
-            var data = ffmpeg.av_fast_padded_malloc();
-            if (_handle->extradata_size == null) {
-                return false;
-            }
-        
-            _handle->extradata = data;
-            _handle->extradata_size = buf.Length;
-            buf.CopyTo(new Span<byte>(_handle->extradata, buf.Length));
-            _hasUserExtraData = true;
-        
-            return true;
+
+            _extraData = owner;
+            _handle->extradata = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            _handle->extradata_size = span.Length;
         }
     }
 
@@ -213,15 +212,10 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     {
         unsafe
         {
-            if (_hasUserExtraData) {
-                ffmpeg.av_freep(&_handle->extradata);
-            }
-            if (_ownsContext) {
-                fixed (AVCodecContext** c = &_handle) {
-                    ffmpeg.avcodec_free_context(c);
-                }
-            } else {
-                _handle = null;
+            _extraData?.Dispose();
+            
+            fixed (AVCodecContext** c = &_handle) {
+                ffmpeg.avcodec_free_context(c);
             }
         }
     }

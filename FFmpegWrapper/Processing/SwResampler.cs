@@ -147,7 +147,7 @@ public sealed class SwResampler : FFObject<SwrContext>
         unsafe
         {
             ThrowIfDisposed();
-            return ffmpeg.swr_convert_frame(_handle, ((IHandle<AVFrame>)dst).Handle, ((IHandle<AVFrame>)src).Handle).CheckError();
+            return ffmpeg.swr_convert_frame(_handle, ((IFFHandle<AVFrame>)dst).Handle, ((IFFHandle<AVFrame>)src).Handle).CheckError();
         }
     }
 

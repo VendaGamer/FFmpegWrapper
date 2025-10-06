@@ -1,16 +1,23 @@
 namespace FFmpegWrapper.Containers;
 
-public readonly struct InputFormat : IHandle<AVInputFormat>
+public readonly struct InputFormat : IFFHandle<AVInputFormat>
 {
-    unsafe AVInputFormat* IHandle<AVInputFormat>.Handle => handle;
-    
-    
-    
-    private readonly unsafe AVInputFormat* handle;
+    public FFHandle<AVInputFormat> Handle {
+        get {
+            unsafe
+            {
+                return _handle;
+            }
+        }
+    }
+
+
+    private readonly unsafe AVInputFormat* _handle;
     
     private unsafe InputFormat(AVInputFormat* handle)
     {
-        this.handle = handle;
+        Handle.Ref.
+        _handle = handle;
     }
 
     // Factory method to create from handle

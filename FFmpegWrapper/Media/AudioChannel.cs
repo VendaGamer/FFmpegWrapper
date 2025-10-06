@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Media.Formats;
+namespace FFmpegWrapper.Media;
 
 public enum AudioChannel
 {

@@ -2,48 +2,55 @@ namespace FFmpegWrapper.Containers;
 
 using System;
 
-public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<OutputFormat>
+public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<OutputFormat>
 {
-    public unsafe AVOutputFormat* Handle => handle;
+    public FFHandle<AVOutputFormat> Handle {
+        get {
+            unsafe
+            {
+                return _handle;
+            }
+        }
+    }
 
-    private readonly unsafe AVOutputFormat* handle;
+    private readonly unsafe AVOutputFormat* _handle;
 
     // Private constructor to ensure only valid instances are created
-    private unsafe OutputFormat(AVOutputFormat* handle)
+    public OutputFormat(FFHandle<AVOutputFormat> handle)
     {
-        this.handle = handle;
-    }
-    
-    /// <summary>
-    /// Factory method to create from handle
-    /// </summary>
-    /// <param name="handle"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static unsafe OutputFormat FromHandle(AVOutputFormat* handle)
-    {
-        if (handle == null)
-            throw new ArgumentNullException(nameof(handle));
-        
-        return new OutputFormat(handle);
+        unsafe
+        {
+            _handle = handle;
+            Name = Helpers.PtrToStringUTF8(Handle.Ref.name);
+            LongName = Helpers.PtrToStringUTF8(Handle.Ref.long_name);
+            MimeType = Helpers.PtrToStringUTF8(Handle.Ref.mime_type);
+            Extensions = Helpers.PtrToStringUTF8(Handle.Ref.extensions);
+        }
     }
 
     // Properties wrapping AVOutputFormat fields
-    public unsafe string Name => Helpers.PtrToStringUTF8(Handle->name);
-
-    public unsafe string LongName => Helpers.PtrToStringUTF8(Handle->long_name);
+    public readonly string Name;
+    public readonly string LongName;
     
-    public unsafe string MimeType => Helpers.PtrToStringUTF8(Handle->mime_type);
+    public readonly string MimeType;
     
-    public unsafe string Extensions => Helpers.PtrToStringUTF8(Handle->extensions);
+    /// <summary>
+    /// Comma seperated extensions
+    /// </summary>
+    public readonly string Extensions;
     
-    public unsafe AVCodecID AudioCodec => Handle->audio_codec;
+    public AVCodecID AudioCodec => Handle.Ref.audio_codec;
     
-    public unsafe AVCodecID VideoCodec => Handle->video_codec;
+    public AVCodecID VideoCodec => Handle.Ref.video_codec;
     
-    public unsafe AVCodecID SubtitleCodec => Handle->subtitle_codec;
+    public AVCodecID SubtitleCodec => Handle.Ref.subtitle_codec;
     
-    public unsafe int Flags => Handle->flags;
+    public int Flags => Handle.Ref.flags;
+    
+    public readonly ReadOnlySpan<string> GetExtensions()
+    {
+        
+    }
 
     // Check if this format supports a specific codec
     public unsafe bool SupportsCodec(AVCodecID codecId)
@@ -55,13 +62,14 @@ public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<Output
     public static unsafe OutputFormat? GuessFormat(string? shortName = null, string? filename = null, string? mimeType = null)
     {
         var format = ffmpeg.av_guess_format(shortName, filename, mimeType);
-        return format != null ? FromHandle(format) : null;
+        
     }
 
     // Get all available output formats
 
     public static ImmutableArray<OutputFormat> AvaliableOutputFormats 
         => Utils.GetAllAvailableOutputFormats();
+    
     
     
     /// <summary>
@@ -86,7 +94,7 @@ public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<Output
                 AVOutputFormat* outputFormat;
                 
                 while ((outputFormat = ffmpeg.av_muxer_iterate(&iterState)) != null) {
-                    builder.Add(FromHandle(outputFormat));
+                    builder.Add(new OutputFormat(outputFormat));
                 }
             }
 
@@ -96,13 +104,24 @@ public readonly struct OutputFormat : IHandle<AVOutputFormat>, IEquatable<Output
     }
 
     // Find format by name
-    public static unsafe OutputFormat? FindByName(string name)
+    public static bool TryFindByShortName(string shortName, out OutputFormat format)
+    {
+        if (string.IsNullOrEmpty(shortName))
+            return false;
+            
+        var res = ffmpeg.av_guess_format(shortName, null, null);
+        
+        format = format is not null ? new OutputFormat(format) : null;
+    }
+    
+    public static unsafe OutputFormat? FindByLongName(string name)
     {
         if (string.IsNullOrEmpty(name))
             return null;
             
         var format = ffmpeg.av_guess_format(name, null, null);
-        return format != null ? FromHandle(format) : null;
+        
+        return format is not null ? new OutputFormat(format) : null;
     }
 
     // Check if format supports specific features

@@ -2,9 +2,9 @@ namespace FFmpegWrapper.Media.Formats;
 
 using System.Runtime.ConstrainedExecution;
 
-public readonly struct ChannelLayout : IHandle<AVChannelLayout>, IEquatable<ChannelLayout>
+public readonly struct ChannelLayout : IEquatable<ChannelLayout>
 {
-    internal unsafe AVChannelLayout* handle {
+    internal unsafe AVChannelLayout* Handle {
         get {
             fixed (AVChannelLayout* layout = &Native) {
                 return layout;
@@ -12,44 +12,34 @@ public readonly struct ChannelLayout : IHandle<AVChannelLayout>, IEquatable<Chan
         }
     }
     
-    unsafe AVChannelLayout* IHandle<AVChannelLayout>.Handle => handle;
     public readonly AVChannelLayout Native;
-    internal readonly HeapStorage? _heap;
-    public ChannelOrder Order {
-        get {
-            unsafe
-            {
-                return (ChannelOrder)handle->order;
-            }
-        }
-    }
+    public ChannelOrder Order => (ChannelOrder)Native.order;
 
     /// <summary>number of channels</summary>
-    public int NumChannels {
-        get {
-            unsafe
-            {
-                return handle->nb_channels;
-            }
-        }
-    }
+    public int NumChannels => Native.nb_channels;
 
     /// <inheritdoc cref="ffmpeg.av_channel_layout_channel_from_index"/>
     public AudioChannel GetChannel(uint index)
     {
         unsafe
         {
-            return (AudioChannel)ffmpeg.av_channel_layout_channel_from_index(handle, index);
+            return (AudioChannel)ffmpeg.av_channel_layout_channel_from_index(Handle, index);
         }
     }
 
+    public ChannelLayout(AVChannelLayout native)
+    {
+        Native = native;
+    }
+    
+
     /// <summary> Get the default channel layout for a given number of channels. </summary>
-    public static ChannelLayout GetDefault(int numChannels)
+    internal static ChannelLayout GetDefault(int numChannels)
     {
         unsafe
         {
             ChannelLayout layout = default;
-            ffmpeg.av_channel_layout_default(layout.handle, numChannels);
+            ffmpeg.av_channel_layout_default(layout.Handle, numChannels);
             return layout;
         }
     }
@@ -61,65 +51,44 @@ public readonly struct ChannelLayout : IHandle<AVChannelLayout>, IEquatable<Chan
         unsafe
         {
             ChannelLayout layout = default;
-            if (ffmpeg.av_channel_layout_from_mask(layout.handle, mask) < 0) {
+            if (ffmpeg.av_channel_layout_from_mask(layout.Handle, mask) < 0) {
                 throw new ArgumentException();
             }
             return layout;
         }
     }
-
-    /// <summary> Initialize a channel layout from a given string description. </summary>
-    /// <remarks>
-    /// The input string can be represented by:  <br/>
-    ///  - the formal channel layout name (returned by ToString()/av_channel_layout_describe()) <br/>
-    ///  - single or multiple channel names (returned by av_channel_name(), eg. "FL",
-    ///    or concatenated with "+", each optionally containing a custom name after
-    ///    a "@", eg. "FL@Left+FR@Right+LFE") <br/>
-    ///  - a decimal or hexadecimal value of a native channel layout (eg. "4" or "0x4")  <br/>
-    ///  - the number of channels with default layout (eg. "4c")  <br/>
-    ///  - the number of unordered channels (eg. "4C" or "4 channels")  <br/>
-    ///  - the ambisonic order followed by optional non-diegetic channels (eg. "ambisonic 2+stereo")  <br/>
-    /// </remarks>
-    public static ChannelLayout FromString(string str)
+    
+    
+    internal static ChannelLayout FromString(string str)
     {
         unsafe
         {
             ChannelLayout layout = default;
-            if (ffmpeg.av_channel_layout_from_string(layout.handle, str) < 0) {
+            if (ffmpeg.av_channel_layout_from_string(layout.Handle, str) < 0) {
                 throw new ArgumentException();
-            }
-            if (layout.Order == ChannelOrder.Custom) {
-                Unsafe.AsRef(in layout._heap) = new HeapStorage() { Data = layout.Native.u.map };
             }
             return layout;
         }
     }
 
-    public unsafe static ChannelLayout FromHandle(AVChannelLayout* layout)
+    public unsafe void CopyTo(FFHandle<AVChannelLayout> dest)
     {
-        ChannelLayout dest = default;
-
-        if (layout->order == AVChannelOrder.AV_CHANNEL_ORDER_CUSTOM) {
-            ffmpeg.av_channel_layout_copy(dest.handle, layout);
-            Unsafe.AsRef(in dest._heap) = new HeapStorage{ Data = dest.Native.u.map };
-        } else {
-            Unsafe.AsRef(in dest.Native) = *layout;
-        }
-        return dest;
-    }
-
-    public unsafe void CopyTo(AVChannelLayout* dest)
-    {
-        ffmpeg.av_channel_layout_copy(dest, handle).CheckError();
-        GC.KeepAlive(_heap);
+        ffmpeg.av_channel_layout_copy(dest, Handle).CheckError();
     }
     
-    public void CopyTo(IHandle<AVChannelLayout> dest)
+    public void CopyTo(IFFHandle<AVChannelLayout> dest)
     {
         unsafe
         {
-            ffmpeg.av_channel_layout_copy(dest.Handle, handle).CheckError();
-            GC.KeepAlive(_heap);
+            ffmpeg.av_channel_layout_copy(dest.Handle, Handle).CheckError();
+        }
+    }
+
+    public void CopyFrom(IFFHandle<AVChannelLayout> source)
+    {
+        unsafe
+        {
+            ffmpeg.av_channel_layout_copy(Handle, source.Handle).CheckError();
         }
     }
 
@@ -128,14 +97,14 @@ public readonly struct ChannelLayout : IHandle<AVChannelLayout>, IEquatable<Chan
     {
         unsafe
         {
-            int requiredSize = ffmpeg.av_channel_layout_describe(handle, null, 0).CheckError();
+            int requiredSize = ffmpeg.av_channel_layout_describe(Handle, null, 0).CheckError();
         
             Span<byte> buf = stackalloc byte[requiredSize];
             
             fixed (byte* ptr = buf) {
-                ffmpeg.av_channel_layout_describe(handle, ptr, (ulong)requiredSize).CheckError();
+                ffmpeg.av_channel_layout_describe(Handle, ptr, (ulong)requiredSize).CheckError();
             }
-
+            
             return Helpers.SpanToStringUTF8(buf);
         }
     }
@@ -147,20 +116,8 @@ public readonly struct ChannelLayout : IHandle<AVChannelLayout>, IEquatable<Chan
         {
             fixed (AVChannelLayout* a = &Native) {
                 int c = ffmpeg.av_channel_layout_compare(a, &other.Native);
-                GC.KeepAlive(_heap);
-                GC.KeepAlive(other._heap);
                 return c == 0;
             }
-        }
-    }
-    
-    internal unsafe sealed class HeapStorage : CriticalFinalizerObject
-    {
-        public AVChannelCustom* Data;
-
-        ~HeapStorage()
-        {
-            ffmpeg.av_freep(Data);
         }
     }
 

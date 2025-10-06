@@ -10,10 +10,10 @@ using Entry = KeyValuePair<string, string>;
 
 /// <summary> Wrapper for an existing <see cref="AVDictionaryEntry"/>. </summary>
 
-public readonly ref struct MediaDictionaryEntry : IHandle<AVDictionaryEntry>
+public readonly ref struct MediaDictionaryEntry : IFFHandle<AVDictionaryEntry>
 {
     private readonly unsafe AVDictionaryEntry* _handle;
-    unsafe AVDictionaryEntry* IHandle<AVDictionaryEntry>.Handle => _handle;
+    unsafe AVDictionaryEntry* IFFHandle<AVDictionaryEntry>.Handle => _handle;
 
     public string Key {
         get {
