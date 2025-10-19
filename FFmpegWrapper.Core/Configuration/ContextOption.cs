@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using static AVOptionType;
 
 /// <summary> Represents an option accepted by a ffmpeg object. </summary>
-public unsafe readonly struct ContextOption
+public readonly struct ContextOption
 {
     public readonly AVOption* Handle;
 
-    public string Name => Helpers.PtrToStringUTF8(Handle->name)!;
-    public string Description => Helpers.PtrToStringUTF8(Handle->help)!;
+    public string Name => FFHelper.PtrToStringUTF8(Handle->name)!;
+    public string Description => FFHelper.PtrToStringUTF8(Handle->help)!;
     public AVOptionType Type => Handle->type;
     public double MinValue => Handle->min;
     public double MaxValue => Handle->max;
@@ -70,7 +70,7 @@ public unsafe readonly struct ContextOption
             byte[] v        => SetBinary(v)
         };
         if (ret < 0) {
-            string className = Helpers.PtrToStringUTF8((*(AVClass**)obj)->class_name)!;
+            string className = FFHelper.PtrToStringUTF8((*(AVClass**)obj)->class_name)!;
             ret.ThrowError($"Invalid option for {className} (trying to set {name} to {value.Type})");
         }
 
@@ -90,7 +90,7 @@ public unsafe readonly struct ContextOption
         byte* value;
         ffmpeg.av_opt_get(obj, name, flags, &value);
 
-        string? str = Helpers.PtrToStringUTF8(value);
+        string? str = FFHelper.PtrToStringUTF8(value);
         ffmpeg.av_free(value);
         return str;
     }

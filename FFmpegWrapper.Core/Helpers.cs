@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.HighPerformance.Buffers;
 
-internal static unsafe class Helpers
+internal static unsafe class FFHelper
 {
     public static string ErrorString(int errno)
     {

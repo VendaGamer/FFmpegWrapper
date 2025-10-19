@@ -2,7 +2,7 @@ namespace FFmpegWrapper.Codecs;
 
 using Configuration;
 
-public readonly struct MediaCodec : IFFHandle<AVCodec>
+public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
 {
     public FFHandle<AVCodec> Handle {
         get {
@@ -35,7 +35,7 @@ public readonly struct MediaCodec : IFFHandle<AVCodec>
         get {
             unsafe
             {
-                return Helpers.PtrToStringUTF8(Raw->name);
+                return FFHelper.PtrToStringUTF8(Raw->name);
             }
         }
     }
@@ -45,7 +45,7 @@ public readonly struct MediaCodec : IFFHandle<AVCodec>
         get {
             unsafe
             {
-                return Helpers.PtrToStringUTF8(Raw->long_name)!;
+                return FFHelper.PtrToStringUTF8(Raw->long_name)!;
             }
         }
     }
@@ -56,9 +56,9 @@ public readonly struct MediaCodec : IFFHandle<AVCodec>
             unsafe
             {
                 if (Raw->wrapper_name is null) {
-                    return Helpers.SpanToStringUTF8("builtin"u8);
+                    return FFHelper.SpanToStringUTF8("builtin"u8);
                 }
-                return Helpers.PtrToStringUTF8(Raw->wrapper_name);
+                return FFHelper.PtrToStringUTF8(Raw->wrapper_name);
             }
         }
     }

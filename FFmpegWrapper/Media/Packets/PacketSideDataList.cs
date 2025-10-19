@@ -2,69 +2,110 @@ namespace FFmpegWrapper.Media.Packets;
 
 using System.Text;
 
-using AVPacketSideData = FFmpeg.AutoGen.Abstractions.AVPacketSideData;
-using AVPacketSideDataType = FFmpeg.AutoGen.Abstractions.AVPacketSideDataType;
-using ffmpeg = FFmpeg.AutoGen.Abstractions.ffmpeg;
+using CommunityToolkit.HighPerformance;
 
-public unsafe struct PacketSideDataList
+public readonly struct PacketSideDataList
 {
-    readonly AVPacketSideData** _entries;
-    readonly int* _count;
+    public FFHandleSource<AVPacketSideData> Handle {
+        get {
+            unsafe
+            {
+                return _handle;
+            }
+        }
+    }
+    
 
-    public AVPacketSideData* EntriesPtr => *_entries;
-    public int Count => *_count;
+    public int Count {
+        get {
+            unsafe
+            {
+                return (*_count);
+            }
+        }
+    }
 
     public PacketSideData this[int index] {
         get {
-            if ((uint)index > (uint)Count) {
-                throw new ArgumentOutOfRangeException();
+            unsafe
+            {
+                if ((uint)index > (uint)_count) {
+                    throw new ArgumentOutOfRangeException();
+                }
+
+                return new PacketSideData(_handle[index]);
             }
-            return new(&EntriesPtr[index]);
         }
     }
+    
+    private readonly unsafe AVPacketSideData** _handle;
+    private readonly unsafe int* _count;
 
-    public PacketSideDataList(AVPacketSideData** entries, int* count)
+    public PacketSideDataList(FFHandleSource<AVPacketSideData> entries, FFHandle<int> count)
     {
-        _entries = entries;
-        _count = count;
+        unsafe
+        {
+            _handle = entries;
+            _count = count;
+        }
     }
 
     /// <summary> Returns the side data entry for the given type, or null if not present. </summary>
-    public PacketSideData? Get(AVPacketSideDataType type)
+    public bool TryGet(AVPacketSideDataType type, out PacketSideData sideData)
     {
-        AVPacketSideData* entry = ffmpeg.av_packet_side_data_get(*_entries, *_count, type);
-        return entry != null ? new PacketSideData(entry) : null;
+        unsafe
+        {
+            var entry = ffmpeg.av_packet_side_data_get(*_handle, *_count, type);
+            if (entry is null) {
+                sideData = default;
+                return false;
+            }
+
+            sideData = new PacketSideData(entry);
+            return true;
+        }
     }
 
     /// <summary> Allocates or overwrites a side data entry. </summary>
-    public PacketSideData Add(AVPacketSideDataType type, int size)
+    public PacketSideData Add(AVPacketSideDataType type, ulong size)
     {
-        var entry = ffmpeg.av_packet_side_data_new(_entries, _count, type, (ulong)size, 0);
-        if (entry == null) {
-            throw new OutOfMemoryException();
+        unsafe
+        {
+            var entry = ffmpeg.av_packet_side_data_new(_handle, _count, type, size, 0);
+            if (entry == null) {
+                throw new OutOfMemoryException();
+            }
+            return new PacketSideData(entry);
         }
-        return new PacketSideData(entry);
     }
 
     public bool Remove(AVPacketSideDataType type)
     {
-        int prevCount = Count;
-        ffmpeg.av_packet_side_data_remove(*_entries, _count, type);
-        return Count != prevCount;
+        unsafe
+        {
+            int prevCount = Count;
+            ffmpeg.av_packet_side_data_remove(*_handle, _count, type);
+            return Count != prevCount;
+        }
     }
 
     public void Clear()
     {
         // https://github.com/FFmpeg/FFmpeg/blob/4e120fbbbd087c3acbad6ce2e8c7b1262a5c8632/libavfilter/f_sidedata.c#L117
         while (Count != 0) {
-            ffmpeg.av_packet_side_data_remove(*_entries, _count, _entries[0]->type);
+            unsafe
+            {
+                ffmpeg.av_packet_side_data_remove(*_handle, _count, _handle[0]->type);
+            }
         }
     }
 
     /// <summary> Returns the value of an <see cref="AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX"/> entry. </summary>
-    public int[]? GetDisplayMatrix()
+    public bool TryGetDisplayMatrix(out ReadOnlySpan2D<byte> entry)
     {
-        var entry = Get(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX);
+        if (TryGet(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, out var sideData)) {
+            sideData.
+        }
         return entry?.GetDataRef<int9>().ToArray();
     }
 
@@ -78,35 +119,4 @@ public unsafe struct PacketSideDataList
         }
         return sb.Append(']').ToString();
     }
-}
-
-public unsafe struct PacketSideData(AVPacketSideData* handle)
-{
-    public AVPacketSideData* Handle { get; } = handle;
-
-    public Span<byte> Data => new Span<byte>(Handle->data, checked((int)Handle->size));
-    public AVPacketSideDataType Type => Handle->type;
-
-    /// <summary>
-    /// Returns the side data payload reinterpreted as a <typeparamref name="T"/> pointer, 
-    /// or null if the payload is smaller than <c>sizeof(T)</c>.
-    /// </summary>
-    public T* GetDataPtr<T>() where T : unmanaged
-    {
-        return Handle->size < (ulong)sizeof(T) ? null : (T*)Handle->data;
-    }
-
-    /// <summary>
-    /// Returns the side data payload reinterpreted as a <typeparamref name="T"/> reference, 
-    /// or throws <see cref="InvalidCastException"/> if the payload is smaller than <c>sizeof(T)</c>.
-    /// </summary>
-    public ref T GetDataRef<T>() where T : unmanaged
-    {
-        if (Handle->size < (ulong)sizeof(T)) {
-            throw new InvalidCastException();
-        }
-        return ref *(T*)Handle->data;
-    }
-
-    public override string ToString() => $"{ffmpeg.av_packet_side_data_name(Type)}: {Handle->size} bytes";
 }

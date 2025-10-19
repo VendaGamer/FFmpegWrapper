@@ -8,8 +8,8 @@ public unsafe readonly struct MediaFilter
 {
     public AVFilter* Handle { get; }
 
-    public string Name => Helpers.PtrToStringUTF8(Handle->name)!;
-    public string? Description => Helpers.PtrToStringUTF8(Handle->description)!;
+    public string Name => FFHelper.PtrToStringUTF8(Handle->name)!;
+    public string? Description => FFHelper.PtrToStringUTF8(Handle->description)!;
     public MediaFilterFlags Flags => (MediaFilterFlags)Handle->flags;
 
     public int NumInputs => (int)ffmpeg.avfilter_filter_pad_count(Handle, 0);

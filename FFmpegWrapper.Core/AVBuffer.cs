@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Core;
 
-public readonly struct AVBuffer : IFFHandle<AVBufferRef>
+public readonly struct AVBuffer : IFFHandleObserver<AVBufferRef>
 {
     public FFHandle<AVBufferRef> Handle {
         get {

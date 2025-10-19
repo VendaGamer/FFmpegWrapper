@@ -14,7 +14,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         get {
             unsafe
             {
-                return Helpers.GetTimeSpan(Handle.Ref.duration, new Rational(1, ffmpeg.AV_TIME_BASE));
+                return FFHelper.GetTimeSpan(Handle.Ref.duration, new Rational(1, ffmpeg.AV_TIME_BASE));
             }
         }
     }

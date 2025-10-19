@@ -94,7 +94,7 @@ public readonly struct FFHandle<T> : IEquatable<FFHandle<T>>
     public override int GetHashCode()
     {
         unsafe {
-            return Raw->GetHashCode();
+            return ((nint)Raw).GetHashCode();
         }
     }
 }

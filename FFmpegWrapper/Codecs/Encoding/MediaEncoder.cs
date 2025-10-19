@@ -1,27 +1,36 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
-public abstract unsafe class MediaEncoder : CodecBase
+public abstract class MediaEncoder : CodecBase
 {
 
     /// <inheritdoc cref="AVCodecContext.bit_rate" />
-    public int BitRate {
-        get => (int)_handle->bit_rate;
-        set => SetOrThrowIfOpen(ref _handle->bit_rate, value);
+    public long BitRate {
+        get => Handle.Ref.bit_rate;
+        set {
+            ThrowIfOpen();
+            Handle.Ref.bit_rate = value;
+        }
     }
 
     /// <inheritdoc cref="AVCodecContext.global_quality" />
     public int GlobalQuality {
-        get => _handle->global_quality;
-        set => SetOrThrowIfOpen(ref _handle->global_quality, value);
+        get => Handle.Ref.global_quality;
+        set {
+            ThrowIfOpen();
+            Handle.Ref.global_quality = value;
+        }
     }
 
     /// <inheritdoc cref="AVCodecContext.compression_level" />
     public int CompressionLevel {
-        get => _handle->compression_level;
-        set => SetOrThrowIfOpen(ref _handle->compression_level, value);
+        get => Handle.Ref.compression_level;
+        set {
+            ThrowIfOpen();
+            Handle.Ref.compression_level = value;
+        }
     }
 
-    public MediaEncoder(AVCodecContext* ctx, AVMediaType expectedType, bool takeOwnership)
+    public MediaEncoder(AVCodecContext ctx, AVMediaType expectedType, bool takeOwnership)
         : base(ctx, expectedType, takeOwnership) { }
 
     /// <summary> Sets a codec specific option. If it doesn't exist, throws <see cref="InvalidOperationException"/>. </summary>
@@ -48,7 +57,7 @@ public abstract unsafe class MediaEncoder : CodecBase
     }
     public bool SendFrame(MediaFrame? frame)
     {
-        var result = (LavResult)ffmpeg.avcodec_send_frame(Handle, frame == null ? null : frame.Handle);
+        var result = (LavResult)ffmpeg.avcodec_send_frame(Handle, frame?.r!);
 
         if (result != LavResult.Success && !(result == LavResult.EndOfFile && frame == null)) {
             result.ThrowIfError("Could not encode frame");

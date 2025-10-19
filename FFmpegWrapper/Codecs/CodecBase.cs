@@ -3,8 +3,6 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 
-using CommunityToolkit.HighPerformance.Buffers;
-
 using Hardware;
 
 public abstract class CodecBase : FFObject<AVCodecContext>
@@ -76,39 +74,44 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     /// <inheritdoc cref="AVCodecContext.coded_side_data"/>
     public PacketSideDataList CodedSideData {
         get {
-            unsafe
-            {
-                return new PacketSideDataList(&_handle->coded_side_data, &_handle->nb_coded_side_data);
+            unsafe {
+                var raw = Handle.Raw;
+                
+                return new PacketSideDataList(&_handle->coded_side_data, &raw->nb_coded_side_data);
             }
         }
     }
     
-    protected readonly bool _ownsContext = false;
-    
     private IMemoryOwner<byte>? _extraData;
-
-    protected unsafe CodecBase(FFHandle<AVCodecContext> ctx)
+    protected CodecBase(FFHandle<AVCodecContext> ctx)
     {
-        _handle = ctx;
+        unsafe
+        {
+            _handle = ctx;
+        }
     }
 
     protected unsafe static FFHandle<AVCodecContext> AllocContext(MediaCodec? codec)
         => ffmpeg.avcodec_alloc_context3(codec is not null ? codec.Value.Raw : null);
 
     /// <summary> Initializes the codec if not already. </summary>
-    public void Open()
+    /// <returns>false if already open</returns>
+    public bool Open()
     {
-        if (!IsOpen) {
-            unsafe
-            {
-                ffmpeg.avcodec_open2(Handle, null, null).CheckError("Could not open codec");
-            }
+        if (IsOpen)
+            return false;
+        
+        unsafe
+        {
+            ffmpeg.avcodec_open2(Handle, null, null).CheckError("Could not open codec");
         }
+
+        return true;
     }
 
     /// <summary> Enables or disables multi-threading if supported by the codec implementation. </summary>
     /// <param name="threadCount">Number of threads to use. 1 to disable multi-threading, 0 to automatically pick a value.</param>
-    /// <param name="preferFrameSlices">Allow only multi-threaded processing of frame slices rather than individual frames. Setting to true may reduce delay. </param>
+    /// <param name="preferFrameSlices">Allow only multithreaded processing of frame slices rather than individual frames. Setting to true may reduce delay. </param>
     public void SetThreadCount(int threadCount, bool preferFrameSlices = false)
     {
         unsafe
@@ -193,12 +196,6 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             _handle->extradata = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
             _handle->extradata_size = span.Length;
         }
-    }
-
-    protected void SetOrThrowIfOpen<T>(ref T loc, T value)
-    {
-        ThrowIfOpen();
-        loc = value;
     }
 
     protected void ThrowIfOpen()

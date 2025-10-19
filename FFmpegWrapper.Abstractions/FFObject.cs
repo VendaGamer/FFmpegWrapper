@@ -6,7 +6,7 @@ using System.Security;
 /// <summary>
 /// Provides a base implementation for managed wrapper classes that encapsulate unmanaged FFmpeg objects.
 /// This abstract class handles the common patterns of resource management, disposal, and safe access
-/// to underlying FFmpeg structures while implementing the <see cref="IFFHandle{T}"/> interface.
+/// to underlying FFmpeg structures while implementing the <see cref="IFFHandleObserver{T}"/> interface.
 /// </summary>
 /// <typeparam name="TRaw">
 /// The FFmpeg.AutoGen unmanaged structure type that this wrapper encapsulates.

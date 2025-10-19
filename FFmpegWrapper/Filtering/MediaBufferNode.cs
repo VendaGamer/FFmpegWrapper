@@ -8,7 +8,7 @@ public unsafe class MediaBufferSource : MediaFilterNode
     public void SendFrame(MediaFrame? frame)
     {
         ThrowIfDisposed();
-        ffmpeg.av_buffersrc_write_frame(Handle, frame == null ? null : frame.Handle).CheckError();
+        ffmpeg.av_buffersrc_write_frame(Handle, frame?.Handle ?? null).CheckError();
     }
 }
 
@@ -31,7 +31,7 @@ public abstract unsafe class MediaBufferSink : MediaFilterNode
             ffmpeg.av_frame_free(&frame);
         }
         if (result is not (LavResult.Success or LavResult.TryAgain or LavResult.EndOfFile)) {
-            Helpers.ThrowError((int)result, "Could not get output frame from filter graph");
+            FFHelper.ThrowError((int)result, "Could not get output frame from filter graph");
         }
         return result < 0 ? null : frame;
     }
@@ -61,8 +61,7 @@ public unsafe class AudioBufferSink : MediaBufferSink
 
             AVChannelLayout nativeLayout;
             ffmpeg.av_buffersink_get_ch_layout(Handle, &nativeLayout);
-            var layout = ChannelLayout.FromHandle(&nativeLayout);
-            ffmpeg.av_channel_layout_uninit(&nativeLayout);
+            var layout = new ChannelLayout(nativeLayout);
             
             return new AudioFormat((AVSampleFormat)fmt, rate, layout);
         }

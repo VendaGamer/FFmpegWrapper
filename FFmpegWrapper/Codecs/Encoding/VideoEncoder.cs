@@ -8,11 +8,17 @@ public unsafe class VideoEncoder : MediaEncoder
 {
     public int Width {
         get => _handle->width;
-        set => SetOrThrowIfOpen(ref _handle->width, value);
+        set {
+            ThrowIfDisposed();
+            _handle->width = value;
+        }
     }
     public int Height {
         get => _handle->height;
-        set => SetOrThrowIfOpen(ref _handle->height, value);
+        set {
+            ThrowIfOpen();
+            _handle->height = value;
+        }
     }
     public AVPixelFormat PixelFormat {
         get => _handle->pix_fmt;

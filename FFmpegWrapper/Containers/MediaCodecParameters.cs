@@ -120,13 +120,23 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
     /// <inheritdoc cref="AVCodecParameters.ch_layout" />
     public ChannelLayout ChannelLayout => new(Handle.Ref.ch_layout);
 
-    public int NumChannels => Handle->ch_layout.nb_channels;
-    public AVSampleFormat SampleFormat => (AVSampleFormat)Handle->format;
+    public int NumChannels => Handle.Ref.ch_layout.nb_channels;
+    public AVSampleFormat SampleFormat => (AVSampleFormat)Handle.Ref.format;
 
     public AudioFormat AudioFormat => new(SampleFormat, SampleRate, ChannelLayout);
 
     /// <inheritdoc cref="AVCodecParameters.coded_side_data"/>
-    public PacketSideDataList CodedSideData => new(&Handle->coded_side_data, &Handle->nb_coded_side_data);
+    public PacketSideDataList CodedSideData {
+        get {
+            unsafe {
+                var raw = Handle.Raw;
+                
+                return new PacketSideDataList(
+                    &raw->coded_side_data,
+                    &raw->nb_coded_side_data);
+            }
+        }
+    }
 
     public bool Equals(MediaCodecParameters other)
     {

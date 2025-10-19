@@ -182,7 +182,7 @@ public unsafe class VideoFrame : MediaFrame
         if (ffmpeg.av_hwframe_transfer_get_formats(_handle->hw_frames_ctx, (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
             return [];
         }
-        var formats = Helpers.GetSpanFromSentinelTerminatedPtr(pFormats, PixelFormats.None).ToArray();
+        var formats = FFHelper.GetSpanFromSentinelTerminatedPtr(pFormats, PixelFormats.None).ToArray();
         ffmpeg.av_freep(&pFormats);
 
         return formats;

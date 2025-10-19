@@ -5,7 +5,7 @@ namespace FFmpegWrapper.Core;
 /// TODO: comment
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public interface IFFHandle<T>
+public interface IFFHandleObserver<T>
     where T : unmanaged
 {
     FFHandle<T> Handle { get; }

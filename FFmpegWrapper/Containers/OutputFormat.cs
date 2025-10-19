@@ -2,7 +2,10 @@ namespace FFmpegWrapper.Containers;
 
 using System;
 
-public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<OutputFormat>
+using CommunityToolkit.HighPerformance;
+using CommunityToolkit.HighPerformance.Enumerables;
+
+public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquatable<OutputFormat>
 {
     public FFHandle<AVOutputFormat> Handle {
         get {
@@ -21,17 +24,18 @@ public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<Outp
         unsafe
         {
             _handle = handle;
-            Name = Helpers.PtrToStringUTF8(Handle.Ref.name);
-            LongName = Helpers.PtrToStringUTF8(Handle.Ref.long_name);
-            MimeType = Helpers.PtrToStringUTF8(Handle.Ref.mime_type);
-            Extensions = Helpers.PtrToStringUTF8(Handle.Ref.extensions);
+            Name = FFHelper.PtrToStringUTF8(Handle.Ref.name);
+            LongName = FFHelper.PtrToStringUTF8(Handle.Ref.long_name);
+            MimeType = FFHelper.PtrToStringUTF8(Handle.Ref.mime_type);
+            Extensions = FFHelper.PtrToStringUTF8(Handle.Ref.extensions);
         }
     }
 
     // Properties wrapping AVOutputFormat fields
+    
+    
     public readonly string Name;
     public readonly string LongName;
-    
     public readonly string MimeType;
     
     /// <summary>
@@ -46,11 +50,12 @@ public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<Outp
     public AVCodecID SubtitleCodec => Handle.Ref.subtitle_codec;
     
     public int Flags => Handle.Ref.flags;
-    
-    public readonly ReadOnlySpan<string> GetExtensions()
-    {
-        
-    }
+
+    /// <summary>
+    /// Useful for iterating over <see cref="OutputFormat"/> extensions
+    /// </summary>
+    public readonly ReadOnlySpanTokenizer<char> GetExtensionsTokenizer()
+        => Extensions.Tokenize(',');
 
     // Check if this format supports a specific codec
     public unsafe bool SupportsCodec(AVCodecID codecId)
@@ -58,16 +63,9 @@ public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<Outp
         return ffmpeg.av_guess_codec(Handle, null, null, null, AVMediaType.AVMEDIA_TYPE_UNKNOWN) == codecId;
     }
 
-    // Static methods for common operations
-    public static unsafe OutputFormat? GuessFormat(string? shortName = null, string? filename = null, string? mimeType = null)
-    {
-        var format = ffmpeg.av_guess_format(shortName, filename, mimeType);
-        
-    }
-
     // Get all available output formats
 
-    public static ImmutableArray<OutputFormat> AvaliableOutputFormats 
+    public static ImmutableArray<OutputFormat> AvailableOutputFormats 
         => Utils.GetAllAvailableOutputFormats();
     
     
@@ -79,12 +77,12 @@ public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<Outp
     /// </summary>
     private static class Utils
     {
-        private static ImmutableArray<OutputFormat> AvaliableOutputFormats = default;
+        private static ImmutableArray<OutputFormat> s_availableOutputFormats = default;
         
         public static ImmutableArray<OutputFormat> GetAllAvailableOutputFormats()
         {
-            if (!AvaliableOutputFormats.IsDefault) {
-                return AvaliableOutputFormats;
+            if (!s_availableOutputFormats.IsDefault) {
+                return s_availableOutputFormats;
             }
             
             var builder = ImmutableArray.CreateBuilder<OutputFormat>(768);
@@ -98,30 +96,74 @@ public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<Outp
                 }
             }
 
-            AvaliableOutputFormats = builder.ToImmutable();
-            return AvaliableOutputFormats;
+            s_availableOutputFormats = builder.ToImmutable();
+            return s_availableOutputFormats;
         }
     }
 
     // Find format by name
     public static bool TryFindByShortName(string shortName, out OutputFormat format)
     {
-        if (string.IsNullOrEmpty(shortName))
-            return false;
+        unsafe {
+
+            if (string.IsNullOrEmpty(shortName))
+                goto NotFound;
+
             
-        var res = ffmpeg.av_guess_format(shortName, null, null);
-        
-        format = format is not null ? new OutputFormat(format) : null;
+            var res = ffmpeg.av_guess_format(shortName, null, null);
+
+            if (res is not null) {
+                format = new OutputFormat(res);
+                return true;
+            }
+            
+            NotFound:
+            format = default!;
+            return false;
+        }
     }
     
-    public static unsafe OutputFormat? FindByLongName(string name)
+    // Find format by name
+    public static bool TryFindByFileName(string fileName, out OutputFormat format)
     {
-        if (string.IsNullOrEmpty(name))
-            return null;
+        unsafe {
+
+            if (string.IsNullOrEmpty(fileName))
+                goto NotFound;
+
             
-        var format = ffmpeg.av_guess_format(name, null, null);
-        
-        return format is not null ? new OutputFormat(format) : null;
+            var res = ffmpeg.av_guess_format(null, fileName, null);
+
+            if (res is not null) {
+                format = new OutputFormat(res);
+                return true;
+            }
+            
+            NotFound:
+            format = default!;
+            return false;
+        }
+    }
+    
+    public static bool TryFindByMimeType(string fileName, out OutputFormat format)
+    {
+        unsafe {
+
+            if (string.IsNullOrEmpty(fileName))
+                goto NotFound;
+
+            
+            var res = ffmpeg.av_guess_format(null, null, fileName);
+
+            if (res is not null) {
+                format = new OutputFormat(res);
+                return true;
+            }
+            
+            NotFound:
+            format = default!;
+            return false;
+        }
     }
 
     // Check if format supports specific features
@@ -142,10 +184,7 @@ public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<Outp
         return obj is OutputFormat other && Equals(other);
     }
 
-    public override unsafe int GetHashCode()
-    {
-        return ((IntPtr)Handle).GetHashCode();
-    }
+    public override int GetHashCode() => Handle.GetHashCode();
 
     public static bool operator ==(OutputFormat left, OutputFormat right)
     {
@@ -157,21 +196,14 @@ public readonly struct OutputFormat : IFFHandle<AVOutputFormat>, IEquatable<Outp
     }
 
     // ToString for debugging
-    public override unsafe string ToString()
+    public override string ToString()
     {
-        if (Handle == null)
-            return "OutputFormat(null)";
+        unsafe
+        {
+            if (_handle is null)
+                return "OutputFormat(null)";
             
-        return $"OutputFormat({Name}: {LongName})";
-    }
-
-    // Check if handle is valid
-    public bool IsValid {
-        get {
-            unsafe
-            {
-                return Handle != null;
-            }
+            return $"OutputFormat({Name}: {LongName})";
         }
     }
 }

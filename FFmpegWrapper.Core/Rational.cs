@@ -55,14 +55,14 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
     public static bool operator >=(Rational a, Rational b) => a.CompareTo(b) is 0 or +1;
     public static bool operator <=(Rational a, Rational b) => a.CompareTo(b) is 0 or -1;
 
-    public static explicit operator double(Rational q) => q.Num / (double)q.Den;
+    public static explicit operator double(Rational q) => ffmpeg.av_q2d(q);
 
     public static implicit operator Rational(int num) => new(num, 1);
     public static implicit operator Rational(AVRational q) => new(q.num, q.den);
     public static implicit operator AVRational(Rational q) => new() { num = q.Num, den = q.Den };
 
     public override string ToString() => $"{Num}/{Den}";
-    public override bool Equals(object other) => other is Rational r && Equals(r);
+    public override bool Equals(object? other) => other is Rational r && Equals(r);
 
     /// <inheritdoc />
     public override int GetHashCode() => Math.Round((double)this, 10).GetHashCode();

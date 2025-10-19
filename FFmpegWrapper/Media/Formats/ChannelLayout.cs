@@ -76,7 +76,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
         ffmpeg.av_channel_layout_copy(dest, Handle).CheckError();
     }
     
-    public void CopyTo(IFFHandle<AVChannelLayout> dest)
+    public void CopyTo(IFFHandleObserver<AVChannelLayout> dest)
     {
         unsafe
         {
@@ -84,7 +84,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
         }
     }
 
-    public void CopyFrom(IFFHandle<AVChannelLayout> source)
+    public void CopyFrom(IFFHandleObserver<AVChannelLayout> source)
     {
         unsafe
         {
@@ -105,7 +105,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
                 ffmpeg.av_channel_layout_describe(Handle, ptr, (ulong)requiredSize).CheckError();
             }
             
-            return Helpers.SpanToStringUTF8(buf);
+            return FFHelper.SpanToStringUTF8(buf);
         }
     }
 

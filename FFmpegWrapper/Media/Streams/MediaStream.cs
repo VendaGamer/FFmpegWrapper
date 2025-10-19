@@ -14,7 +14,7 @@ public readonly struct MediaStream
     private unsafe readonly AVStream* _handle;
     public int Index => Handle.Ref.index;
 
-    public MediaCodecParameters Type => Handle.Ref.codecpar;
+    public MediaCodecParameters Type => (Handle.Ref.codecpar);
 
     /// <inheritdoc cref="AVStream.time_base" />
     public Rational TimeBase => Handle->time_base;
@@ -27,7 +27,7 @@ public readonly struct MediaStream
     }
 
     /// <inheritdoc cref="AVStream.duration" />
-    public TimeSpan? Duration => Helpers.GetTimeSpan(Handle->duration, TimeBase);
+    public TimeSpan? Duration => FFHelper.GetTimeSpan(Handle->duration, TimeBase);
 
     /// <inheritdoc cref="AVStream.avg_frame_rate" />
     public Rational AvgFrameRate => Handle->avg_frame_rate;

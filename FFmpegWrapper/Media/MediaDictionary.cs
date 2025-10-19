@@ -10,16 +10,16 @@ using Entry = KeyValuePair<string, string>;
 
 /// <summary> Wrapper for an existing <see cref="AVDictionaryEntry"/>. </summary>
 
-public readonly ref struct MediaDictionaryEntry : IFFHandle<AVDictionaryEntry>
+public readonly ref struct MediaDictionaryEntry : IFFHandleObserver<AVDictionaryEntry>
 {
     private readonly unsafe AVDictionaryEntry* _handle;
-    unsafe AVDictionaryEntry* IFFHandle<AVDictionaryEntry>.Handle => _handle;
+    unsafe AVDictionaryEntry* IFFHandleObserver<AVDictionaryEntry>.Handle => _handle;
 
     public string Key {
         get {
             unsafe
             {
-                return Helpers.PtrToStringUTF8(_handle->key);
+                return FFHelper.PtrToStringUTF8(_handle->key);
             }
         }
     }
@@ -27,7 +27,7 @@ public readonly ref struct MediaDictionaryEntry : IFFHandle<AVDictionaryEntry>
     public string Value {
         get {
             unsafe {
-                return Helpers.PtrToStringUTF8(_handle->value);
+                return FFHelper.PtrToStringUTF8(_handle->value);
             }
         }
     }
@@ -103,7 +103,7 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
         if (matchPrefix) flags |= ffmpeg.AV_DICT_IGNORE_SUFFIX;
 
         var entry = ffmpeg.av_dict_get(Handle, key, null, flags);
-        return entry == null ? null : Helpers.PtrToStringUTF8(entry->value);
+        return entry == null ? null : FFHelper.PtrToStringUTF8(entry->value);
     }
 
     /// <summary>
@@ -201,7 +201,7 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
 
         ffmpeg.av_dict_get_string(_handle, &buffer, utf8KeyValueSeparatorChar, utf8PairsSeparator).CheckError();
         
-        string str = Helpers.PtrToStringUTF8(buffer);
+        string str = FFHelper.PtrToStringUTF8(buffer);
         ffmpeg.av_free(buffer);
         
         return str;
@@ -242,8 +242,8 @@ public sealed unsafe class MediaDictionary : FFObject<AVDictionary>, IEnumerable
                 // Direct string creation without null checks for performance
                 // av_dict_iterate guarantees non-null key/value
                 return new Entry(
-                    Helpers.PtrToStringUTF8(_entry->key),
-                    Helpers.PtrToStringUTF8(_entry->value)
+                    FFHelper.PtrToStringUTF8(_entry->key),
+                    FFHelper.PtrToStringUTF8(_entry->value)
                 );
             }
         }
