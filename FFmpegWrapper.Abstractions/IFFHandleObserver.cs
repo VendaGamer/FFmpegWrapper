@@ -1,4 +1,6 @@
-namespace FFmpegWrapper.Core;
+namespace FFmpegWrapper.Abstractions;
+
+using Core;
 
 /// <summary>
 /// Represents unmanaged type of

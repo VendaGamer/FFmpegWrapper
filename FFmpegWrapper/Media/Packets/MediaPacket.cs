@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Media.Packets;
 
-using AngleSharp.Html.Dom;
+using Abstractions;
 
 using Streams;
 

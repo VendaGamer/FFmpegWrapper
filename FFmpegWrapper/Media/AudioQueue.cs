@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Media;
 
+using Abstractions;
+
 public unsafe class AudioQueue : FFObject<AVAudioFifo>
 {
     /// <summary>

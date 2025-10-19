@@ -2,43 +2,68 @@ namespace FFmpegWrapper.Configuration;
 
 using System.Collections.Generic;
 
+using Core;
+
 using static AVOptionType;
 
 /// <summary> Represents an option accepted by a ffmpeg object. </summary>
 public readonly struct ContextOption
 {
-    public readonly AVOption* Handle;
+    public FFHandle<AVOption> Handle {
+        get {
+            unsafe {
+                return _handle;
+            }
+        }
+    }
 
-    public string Name => FFHelper.PtrToStringUTF8(Handle->name)!;
-    public string Description => FFHelper.PtrToStringUTF8(Handle->help)!;
-    public AVOptionType Type => Handle->type;
-    public double MinValue => Handle->min;
-    public double MaxValue => Handle->max;
+
+
+    public readonly string Name;
+    public readonly string Description;
+    public AVOptionType Type => Handle.Ref.type;
+    public double MinValue => Handle.Ref.min;
+    public double MaxValue => Handle.Ref.max;
 
     /// <summary> Offset to the field containing this option, relative to the object pointer. </summary>
-    public int Offset => Handle->offset;
+    public int Offset => Handle.Ref.offset;
+
+    public OptionValue? DefaultValue => Handle.Ref.default_val;
+    
+    private readonly unsafe AVOption* _handle;
 
     //TODO: Expose Option.DefaultValue
     //public OptionValue? DefaultValue => throw new NotImplementedException();
 
-    internal ContextOption(AVOption* handle) => Handle = handle;
+    public ContextOption(FFHandle<AVOption> handle)
+    {
+        unsafe
+        {
+            _handle = handle;
+            Name = FFHelper.PtrToStringUtf8(_handle->name);
+            Description = FFHelper.PtrToStringUtf8(_handle->name);
+        }
+    }
 
     /// <summary> Returns a list of acceptable pre-defined input values. </summary>
     public IReadOnlyList<ContextOption> GetNamedValues()
     {
-        if (Handle->unit == null) {
-            return Array.Empty<ContextOption>();
-        }
-        var list = new List<ContextOption>();
-
-        //The AVOption documentation says that AVClass options must be declared in
-        //a static null terminated array, so this should be mostly fine.
-        for (AVOption* opt = Handle + 1; opt->name != null; opt++) {
-            if (opt->type == AV_OPT_TYPE_CONST && opt->unit == Handle->unit) {
-                list.Add(new ContextOption(opt));
+        unsafe
+        {
+            if (_handle->unit == null) {
+                return Array.Empty<ContextOption>();
             }
+            var list = new List<ContextOption>();
+
+            //The AVOption documentation says that AVClass options must be declared in
+            //a static null terminated array, so this should be mostly fine.
+            for (AVOption* opt = _handle + 1; opt->name != null; opt++) {
+                if (opt->type == AV_OPT_TYPE_CONST && opt->unit == _handle->unit) {
+                    list.Add(new ContextOption(opt));
+                }
+            }
+            return list;
         }
-        return list;
     }
     /// <summary> Sets the field of <paramref name="obj"/> with the given name to <paramref name="value"/>. </summary>
     /// <remarks>
@@ -59,6 +84,7 @@ public readonly struct ContextOption
     public static unsafe void Set(void* obj, string name, OptionValue value, bool searchChildren)
     {
         int flags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0;
+        
         int ret = value.BoxedValue switch {
             string v    => ffmpeg.av_opt_set(obj, name, v, flags),
             long v      => ffmpeg.av_opt_set_int(obj, name, v, flags),
@@ -67,10 +93,12 @@ public readonly struct ContextOption
             ChannelLayout v => ffmpeg.av_opt_set_chlayout(obj, name, &v.Native, flags),
             AVPixelFormat v => ffmpeg.av_opt_set_pixel_fmt(obj, name, v, flags),
             AVSampleFormat v => ffmpeg.av_opt_set_sample_fmt(obj, name, v, flags),
-            byte[] v        => SetBinary(v)
+            byte[] v        => SetBinary(v),
+            _ => throw new ArgumentOutOfRangeException()
         };
+        
         if (ret < 0) {
-            string className = FFHelper.PtrToStringUTF8((*(AVClass**)obj)->class_name)!;
+            string className = FFHelper.PtrToStringUtf8((*(AVClass**)obj)->class_name)!;
             ret.ThrowError($"Invalid option for {className} (trying to set {name} to {value.Type})");
         }
 
@@ -90,7 +118,7 @@ public readonly struct ContextOption
         byte* value;
         ffmpeg.av_opt_get(obj, name, flags, &value);
 
-        string? str = FFHelper.PtrToStringUTF8(value);
+        string? str = FFHelper.PtrToStringUtf8(value);
         ffmpeg.av_free(value);
         return str;
     }
@@ -101,7 +129,6 @@ public readonly struct ContextOption
     public static IReadOnlyList<ContextOption> GetOptions(void* obj, bool removeAliases = true, bool skipDefaults = false)
     {
         var opts = new List<ContextOption>();
-
         AVOption* iter = null;
         while ((iter = ffmpeg.av_opt_next(obj, iter)) != null) {
             if (iter->type == AV_OPT_TYPE_CONST || (skipDefaults && ffmpeg.av_opt_is_set_to_default(obj, iter) != 0)) continue;
@@ -143,44 +170,4 @@ public readonly struct ContextOption
     }
 
     public override string ToString() => Name + ": " + Type.ToString().ToLower().Substring("AV_OPT_TYPE_".Length);
-}
-
-public readonly struct OptionValue
-{
-    private readonly object _value;
-
-    public object BoxedValue => _value;
-
-    private OptionValue(object obj) { _value = obj; }
-
-    public AVOptionType Type => _value switch {
-        string => AV_OPT_TYPE_STRING,
-        long => AV_OPT_TYPE_INT,
-        double => AV_OPT_TYPE_DOUBLE,
-        Rational => AV_OPT_TYPE_RATIONAL,
-        ChannelLayout => AV_OPT_TYPE_CHLAYOUT,
-        AVPixelFormat => AV_OPT_TYPE_PIXEL_FMT,
-        AVSampleFormat => AV_OPT_TYPE_SAMPLE_FMT,
-        byte[]         => AV_OPT_TYPE_BINARY
-    };
-
-    public string AsString() => (string)_value;
-    public long AsInteger() => (long)_value;
-    public double AsDouble() => (double)_value;
-    public Rational AsRational() => (Rational)_value;
-    public ChannelLayout AsChannelLayout() => (ChannelLayout)_value;
-    public AVPixelFormat AsPixelFormat() => (AVPixelFormat)_value;
-    public AVSampleFormat AsSampleFormat() => (AVSampleFormat)_value;
-    public byte[] AsBinary() => (byte[])_value;
-
-    public override string ToString() => _value.ToString();
-
-    public static implicit operator OptionValue(string val) => new(val);
-    public static implicit operator OptionValue(long val) => new(val);
-    public static implicit operator OptionValue(double val) => new(val);
-    public static implicit operator OptionValue(Rational val) => new(val);
-    public static implicit operator OptionValue(ChannelLayout val) => new(val);
-    public static implicit operator OptionValue(AVPixelFormat val) => new(val);
-    public static implicit operator OptionValue(AVSampleFormat val) => new(val);
-    public static implicit operator OptionValue(byte[] val) => new(val);
 }

@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Media;
 
+using Abstractions;
+
 using Codecs.Encoding;
 using Streams;
 
@@ -145,7 +147,10 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             foreach ((MediaStream stream, MediaEncoder? encoder) in _streams) {
                 if (encoder is null) continue;
                 encoder.Open();
-                ffmpeg.avcodec_parameters_from_context(stream.Handle->codecpar, encoder.Handle).CheckError("Could not copy the encoder parameters to the stream.");
+                
+                ffmpeg.avcodec_parameters_from_context(stream.Handle.Ref.codecpar, encoder.Handle)
+                    .CheckError("Could not copy the encoder parameters to the stream.");
+                
             }
 
             AVDictionary* rawOpts = null;

@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Containers;
 
+using Core.Flags;
+
 public readonly struct InputFormat : IFFHandleObserver<AVInputFormat>
 {
     public FFHandle<AVInputFormat> Handle {
@@ -24,10 +26,10 @@ public readonly struct InputFormat : IFFHandleObserver<AVInputFormat>
     {
         unsafe {
             _handle = handle;
-            Extensions = FFHelper.PtrToStringUTF8(_handle->extensions);
-            Name = FFHelper.PtrToStringUTF8(_handle->name);
-            LongName = FFHelper.PtrToStringUTF8(_handle->long_name);
-            MimeType = FFHelper.PtrToStringUTF8(_handle->mime_type);
+            Extensions = FFHelper.PtrToStringUtf8(_handle->extensions);
+            Name = FFHelper.PtrToStringUtf8(_handle->name);
+            LongName = FFHelper.PtrToStringUtf8(_handle->long_name);
+            MimeType = FFHelper.PtrToStringUtf8(_handle->mime_type);
         }
     }
 }

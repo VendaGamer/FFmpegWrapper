@@ -1,7 +1,9 @@
 namespace FFmpegWrapper.Filtering;
 
 using Codecs.Decoding;
-using Flags;
+
+using Core.Flags;
+
 using Media;
 
 partial class MediaFilterPipeline
@@ -220,7 +222,7 @@ partial class MediaFilterPipeline
             if (((long)flags & opt->default_val.i64) == 0) continue;
 
             if (!desc.EndsWith("=")) desc += '+';
-            desc += FFHelper.PtrToStringUTF8(opt->name);
+            desc += FFHelper.PtrToStringUtf8(opt->name);
         }
 
         if (destColorspace != null) {

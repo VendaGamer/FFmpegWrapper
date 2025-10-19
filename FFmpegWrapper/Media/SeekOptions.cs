@@ -6,6 +6,7 @@ namespace FFmpegWrapper.Media;
 [Flags]
 public enum SeekOptions
 {
+    None = 0,
     /// <summary> Seek to the nearest keyframe before or at the requested timestamp. </summary>
     Backward = ffmpeg.AVSEEK_FLAG_BACKWARD,
 

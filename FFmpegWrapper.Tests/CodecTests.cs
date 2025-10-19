@@ -2,8 +2,6 @@ namespace FFmpegWrapper.Tests;
 
 using Codecs;
 
-using Core;
-
 public class CodecTests : TestBase
 {
     [Fact]

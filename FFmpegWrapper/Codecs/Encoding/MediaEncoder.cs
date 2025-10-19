@@ -1,5 +1,9 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
+using Extensions;
+
+using Media;
+
 public abstract class MediaEncoder : CodecBase
 {
 
@@ -30,39 +34,55 @@ public abstract class MediaEncoder : CodecBase
         }
     }
 
-    public MediaEncoder(AVCodecContext ctx, AVMediaType expectedType, bool takeOwnership)
-        : base(ctx, expectedType, takeOwnership) { }
+    public MediaEncoder(FFHandle<AVCodecContext> ctx, MediaType expectedType)
+        : base(ctx)
+    {
+        
+    }
 
     /// <summary> Sets a codec specific option. If it doesn't exist, throws <see cref="InvalidOperationException"/>. </summary>
     public void SetOption(string name, string value)
     {
-        ffmpeg.av_opt_set(Handle->priv_data, name, value, 0).CheckError();
+        unsafe
+        {
+            ffmpeg.av_opt_set(Handle.Ref.priv_data, name, value, 0).CheckError();
+        }
     }
 
     /// <summary> Sets the value for a generic codec option. Note that these values may be ignored or unbalanced for some codecs. </summary>
     /// <remarks> https://ffmpeg.org/ffmpeg-codecs.html#Codec-Options </remarks>
     public void SetGlobalOption(string name, string value)
     {
-        ffmpeg.av_opt_set(Handle, name, value, 0).CheckError();
+        unsafe
+        {
+            ffmpeg.av_opt_set(Handle, name, value, 0).CheckError();
+        }
     }
 
     public bool ReceivePacket(MediaPacket pkt)
     {
-        var result = (LavResult)ffmpeg.avcodec_receive_packet(Handle, pkt.Handle);
+        unsafe
+        {
+            var result = (LavResult)ffmpeg.avcodec_receive_packet(Handle, pkt.Handle);
 
-        if (result is not (LavResult.Success or LavResult.TryAgain or LavResult.EndOfFile)) {
-            result.ThrowIfError("Could not encode packet");
+            if (result is not (LavResult.Success or LavResult.TryAgain or LavResult.EndOfFile)) {
+                result.ThrowIfError("Could not encode packet");
+            }
+            return result >= 0;
         }
-        return result >= 0;
     }
-    public bool SendFrame(MediaFrame? frame)
+    public bool SendFrame(FFHandle<AVFrame>? frame)
     {
-        var result = (LavResult)ffmpeg.avcodec_send_frame(Handle, frame?.r!);
+        unsafe
+        {
+            var result = (LavResult)ffmpeg.avcodec_send_frame(Handle, frame ?? null);
 
-        if (result != LavResult.Success && !(result == LavResult.EndOfFile && frame == null)) {
-            result.ThrowIfError("Could not encode frame");
+            if (result != LavResult.Success && result != LavResult.EndOfFile) {
+                result.ThrowIfError("Could not encode frame");
+            }
+            
+            return result >= 0;
         }
-        return result >= 0;
     }
 
     /// <summary> Returns a presentation timestamp (PTS) in terms of <see cref="CodecBase.TimeBase"/> for the given timespan. </summary>

@@ -2,85 +2,94 @@
 
 using Codecs.Decoding;
 using Codecs.Encoding;
-
-using Flags;
-
+using Core.Flags;
 using Hardware;
-
 using Processing;
 
-public unsafe class VideoFrame : MediaFrame
+public class VideoFrame : MediaFrame
 {
-    public int Width => Handle->width;
-    public int Height => Handle->height;
-    public AVPixelFormat PixelFormat => (AVPixelFormat)Handle->format;
+    public int Width => Handle.Ref.width;
+    public int Height => Handle.Ref.height;
+    public AVPixelFormat PixelFormat => (AVPixelFormat)Handle.Ref.format;
 
-    public PictureFormat Format => new(Width, Height, PixelFormat, Handle->sample_aspect_ratio);
+    public PictureFormat Format => new(Width, Height, PixelFormat, Handle.Ref.sample_aspect_ratio);
     public PictureColorspace Colorspace {
-        get => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
+        get {
+            unsafe
+            {
+                return new PictureColorspace(_handle->colorspace, _handle->color_primaries,
+                    _handle->color_trc, _handle->color_range);
+                
+            }
+        }
         set {
-            ThrowIfDisposed();
-            _handle->colorspace = value.Matrix;
-            _handle->color_primaries = value.Primaries;
-            _handle->color_trc = value.Transfer;
-            _handle->color_range = value.Range;
+            unsafe
+            {
+                ThrowIfDisposed();
+            
+                _handle->colorspace = value.Matrix;
+                _handle->color_primaries = value.Primaries;
+                _handle->color_trc = value.Transfer;
+                _handle->color_range = value.Range;
+            }
         }
     }
 
-    /// <summary> Pointers to the pixel data planes. </summary>
-    /// <remarks> These can point to the end of image data when used in combination with negative values in <see cref="RowSize"/>. </remarks>
-    public byte** Data => (byte**)&Handle->data;
-
-    /// <summary> An array of positive or negative values indicating the size in bytes of each pixel row. </summary>
-    /// <remarks> 
-    /// - Values may be larger than the size of usable data -- there may be extra padding present for performance reasons. <br/>
-    /// - Values can be negative to achieve a vertically inverted iteration over image rows.
-    /// </remarks>
-    public int* RowSize => (int*)&Handle->linesize;
-
     /// <summary> Whether this frame is attached to a hardware frame context. </summary>
-    public bool IsHardwareFrame => Handle->hw_frames_ctx != null;
+    public bool IsHardwareFrame {
+        get {
+            unsafe
+            {
+                return Handle.Ref.hw_frames_ctx is not null;
+            }
+        }
+    }
 
     /// <summary> Whether the frame rows are flipped. Alias for <c>RowSize[0] &lt; 0</c>. </summary>
-    public bool IsVerticallyFlipped => Handle->linesize[0] < 0;
+    public bool IsVerticallyFlipped => Handle.Ref.linesize[0] < 0;
 
     /// <summary> Allocates an empty <see cref="AVFrame"/>. </summary>
     public VideoFrame()
-        : this(ffmpeg.av_frame_alloc(), takeOwnership: true) { }
+    {
+        unsafe
+        {
+            _handle = ffmpeg.av_frame_alloc();
+        }
+    }
 
     /// Allocates an empty <see cref="AVFrame"/>
-    public VideoFrame(PictureFormat fmt, bool clearToBlack = true)
-        : this(fmt.Width, fmt.Height, fmt.PixelFormat, clearToBlack) { }
+    public VideoFrame(PictureFormat fmt)
+        : this(fmt.Width, fmt.Height, fmt.PixelFormat)
+    {
+        
+    }
 
     /// <inheritdoc />
-    public VideoFrame(int width, int height, AVPixelFormat fmt, bool clearToBlack = true)
+    public VideoFrame(int width, int height, AVPixelFormat fmt)
     {
-        if (width <= 0 || height <= 0) {
-            throw new ArgumentException("Invalid frame dimensions.");
-        }
-        _handle = ffmpeg.av_frame_alloc();
-        _handle->format = (int)fmt;
-        _handle->width = width;
-        _handle->height = height;
+        unsafe
+        {
+            if (width <= 0 || height <= 0) {
+                throw new ArgumentException("Invalid frame dimensions.");
+            }
+            _handle = ffmpeg.av_frame_alloc();
+            _handle->format = (int)fmt;
+            _handle->width = width;
+            _handle->height = height;
 
-        ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
-
-        if (clearToBlack) {
-            Clear();
+            ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
         }
     }
     /// <summary> Wraps an existing <see cref="AVFrame"/> pointer. </summary>
     /// <param name="takeOwnership">True if <paramref name="frame"/> should be freed when Dispose() is called.</param>
-    public VideoFrame(AVFrame* frame, bool takeOwnership, bool clearToBlack = false)
+    public VideoFrame(FFHandle<AVFrame> frame)
     {
-        if (frame == null) {
-            throw new ArgumentNullException(nameof(frame));
-        }
-        _handle = frame;
-        _ownsFrame = takeOwnership;
-
-        if (clearToBlack) {
-            Clear();
+        unsafe
+        {
+            if (frame == null) {
+                throw new ArgumentNullException(nameof(frame));
+            }
+            _handle = frame;
         }
     }
 
@@ -89,11 +98,18 @@ public unsafe class VideoFrame : MediaFrame
     /// <param name="y">Row index, in top to bottom order.</param>
     public Span<T> GetRowSpan<T>(int y, int plane = 0) where T : unmanaged
     {
-        if ((uint)y >= (uint)GetPlaneSize(plane).Height) {
-            throw new ArgumentOutOfRangeException();
+        unsafe
+        {
+            if ((uint)y >= (uint)GetPlaneSize(plane).Height) {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            GetPlaneSpan<T>(plane, out int stride);
+            
+            return new Span<T>((void*)Handle.Ref.data[(uint)plane][y * stride],
+                Math.Abs(stride / sizeof(T)));
+            
         }
-        int stride = RowSize[plane];
-        return new Span<T>(&Data[plane][y * stride], Math.Abs(stride / sizeof(T)));
     }
 
     /// <summary> Returns a view over the pixel data for the specified plane. </summary>
@@ -101,186 +117,215 @@ public unsafe class VideoFrame : MediaFrame
     /// <param name="stride">Number of pixels per row.</param>
     public Span<T> GetPlaneSpan<T>(int plane, out int stride) where T : unmanaged
     {
-        int height = GetPlaneSize(plane).Height;
+        unsafe
+        {
+            int height = GetPlaneSize(plane).Height;
 
-        byte* data = _handle->data[(uint)plane];
-        int rowSize = _handle->linesize[(uint)plane];
+            byte* data = _handle->data[(uint)plane];
+            int rowSize = _handle->linesize[(uint)plane];
 
-        if (rowSize < 0) {
-            data += rowSize * (height - 1);
-            rowSize *= -1;
+            if (rowSize < 0) {
+                data += rowSize * (height - 1);
+                rowSize *= -1;
+            }
+            stride = rowSize / sizeof(T);
+            return new Span<T>(data, checked(height * stride));
         }
-        stride = rowSize / sizeof(T);
-        return new Span<T>(data, checked(height * stride));
     }
 
     public (int Width, int Height) GetPlaneSize(int plane)
     {
-        ThrowIfDisposed();
+        unsafe
+        {
+            ThrowIfDisposed();
 
-        var size = (Width, Height);
+            var size = (Width, Height);
 
-        //https://github.com/FFmpeg/FFmpeg/blob/c558fcf41e2027a1096d00b286954da2cc4ae73f/libavutil/imgutils.c#L111
-        if (plane == 0) {
-            return size;
-        }
-        var desc = ffmpeg.av_pix_fmt_desc_get(PixelFormat);
-
-        if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0) {
-            throw new InvalidOperationException();
-        }
-        for (uint i = 0; i < 4; i++) {
-            if (desc->comp[i].plane != plane) continue;
-
-            if ((i == 1 || i == 2) && (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_RGB) == 0) {
-                size.Width = CeilShr(size.Width, desc->log2_chroma_w);
-                size.Height = CeilShr(size.Height, desc->log2_chroma_h);
+            //https://github.com/FFmpeg/FFmpeg/blob/c558fcf41e2027a1096d00b286954da2cc4ae73f/libavutil/imgutils.c#L111
+            if (plane == 0) {
+                return size;
             }
-            return size;
-        }
-        throw new ArgumentOutOfRangeException(nameof(plane));
+            var desc = ffmpeg.av_pix_fmt_desc_get(PixelFormat);
 
-        static int CeilShr(int x, int s) => (x + (1 << s) - 1) >> s;
+            if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0) {
+                throw new InvalidOperationException();
+            }
+            for (uint i = 0; i < 4; i++) {
+                if (desc->comp[i].plane != plane) continue;
+
+                if ((i == 1 || i == 2) && (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_RGB) == 0) {
+                    size.Width = CeilShr(size.Width, desc->log2_chroma_w);
+                    size.Height = CeilShr(size.Height, desc->log2_chroma_h);
+                }
+                return size;
+            }
+            throw new ArgumentOutOfRangeException(nameof(plane));
+
+            static int CeilShr(int x, int s) => (x + (1 << s) - 1) >> s;
+        }
     }
 
     /// <summary> Attempts to create a hardware frame memory mapping. Returns null if the backing device does not support frame mappings. </summary>
     public VideoFrame? Map(HardwareFrameMapping flags)
     {
-        ThrowIfDisposed();
-        if (!IsHardwareFrame) {
-            throw new InvalidOperationException("Cannot create mapping of non-hardware frame.");
-        }
+        unsafe
+        {
+            ThrowIfDisposed();
+            if (!IsHardwareFrame) {
+                throw new InvalidOperationException("Cannot create mapping of non-hardware frame.");
+            }
 
-        var mapping = ffmpeg.av_frame_alloc();
-        int result = ffmpeg.av_hwframe_map(mapping, _handle, (int)flags);
+            var mapping = ffmpeg.av_frame_alloc();
+            int result = ffmpeg.av_hwframe_map(mapping, _handle, (int)flags);
 
-        if (result == 0) {
-            mapping->width = _handle->width;
-            mapping->height = _handle->height;
-            return new VideoFrame(mapping, takeOwnership: true);
+            if (result == 0) {
+                mapping->width = _handle->width;
+                mapping->height = _handle->height;
+                return new VideoFrame(mapping);
+            }
+            ffmpeg.av_frame_free(&mapping);
+            return null;
         }
-        ffmpeg.av_frame_free(&mapping);
-        return null;
     }
     /// <summary> Copy data from this frame to <paramref name="dest"/>. At least one of <see langword="this"/> or <paramref name="dest"/> must be a hardware frame. </summary>
     public void TransferTo(VideoFrame dest)
     {
-        ThrowIfDisposed();
-        ffmpeg.av_hwframe_transfer_data(dest.Handle, _handle, 0).CheckError("Failed to transfer data from hardware frame");
+        unsafe
+        {
+            ThrowIfDisposed();
+            ffmpeg.av_hwframe_transfer_data(dest.Handle, _handle, 0).CheckError("Failed to transfer data from hardware frame");
+        }
     }
 
     /// <summary> Gets an array of possible source or dest formats usable in <see cref="TransferTo(VideoFrame)"/>. </summary>
-    public AVPixelFormat[] GetHardwareTransferFormats(HardwareFrameTransferDirection direction)
+    public ReadOnlySpan<AVPixelFormat> GetHardwareTransferFormats(HardwareFrameTransferDirection direction)
     {
-        ThrowIfDisposed();
-        if (!IsHardwareFrame) {
-            throw new InvalidOperationException("Cannot query transfer formats for non-hardware frame.");
+        unsafe
+        {
+            ThrowIfDisposed();
+            
+            if (!IsHardwareFrame) {
+                throw new InvalidOperationException("Cannot query transfer formats for non-hardware frame.");
+            }
+
+            AVPixelFormat* pFormats;
+
+            if (ffmpeg.av_hwframe_transfer_get_formats(_handle->hw_frames_ctx,
+                    (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
+                return ReadOnlySpan<AVPixelFormat>.Empty;
+            }
+            
+            var formats =
+                FFHelper.GetSpanFromSentinelTerminatedPtr(pFormats, PixelFormats.None);
+            
+            ffmpeg.av_freep(&pFormats);
+
+            return formats;
         }
-
-        AVPixelFormat* pFormats;
-
-        if (ffmpeg.av_hwframe_transfer_get_formats(_handle->hw_frames_ctx, (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
-            return [];
-        }
-        var formats = FFHelper.GetSpanFromSentinelTerminatedPtr(pFormats, PixelFormats.None).ToArray();
-        ffmpeg.av_freep(&pFormats);
-
-        return formats;
     }
 
     /// <summary> Fills this frame with black pixels. </summary>
     public void Clear()
     {
-        ThrowIfDisposed();
-        var linesizes = new long4();
+        unsafe
+        {
+            ThrowIfDisposed();
+            var linesizes = new long4();
 
-        for (uint i = 0; i < 4; i++) {
-            linesizes[i] = _handle->linesize[i];
+            for (uint i = 0; i < 4; i++) {
+                unsafe
+                {
+                    linesizes[i] = _handle->linesize[i];
+                }
+            }
+            ffmpeg.av_image_fill_black(
+                ref *(byte_ptr4*)&_handle->data, linesizes,
+                PixelFormat, _handle->color_range, _handle->width, _handle->height
+            ).CheckError("Failed to clear frame.");
         }
-        ffmpeg.av_image_fill_black(
-            ref *(byte_ptr4*)&_handle->data, linesizes,
-            PixelFormat, _handle->color_range, _handle->width, _handle->height
-        ).CheckError("Failed to clear frame.");
     }
 
     /// <summary> Saves this frame to the specified file. The format will be choosen based on the file extension. (Can be either JPG or PNG) </summary>
     /// <param name="quality">JPEG: Quantization factor. PNG: ZLib compression level. 0-100</param>
     public void Save(string filename, int quality = 90, int outWidth = 0, int outHeight = 0)
     {
-        ThrowIfDisposed();
+        unsafe
+        {
+            ThrowIfDisposed();
 
-        if (IsHardwareFrame) {
-            using var tmp = new VideoFrame();
-            TransferTo(tmp);
-            tmp.Save(filename, quality, outWidth, outHeight);
-            return;
-        }
+            if (IsHardwareFrame) {
+                using var tmp = new VideoFrame();
+                TransferTo(tmp);
+                tmp.Save(filename, quality, outWidth, outHeight);
+                return;
+            }
         
-        bool jpeg = filename.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                    filename.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase);
+            bool jpeg = filename.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                        filename.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase);
 
-        var codec = jpeg ? AVCodecID.AV_CODEC_ID_MJPEG : AVCodecID.AV_CODEC_ID_PNG;
-        var pixFmt = jpeg ? AVPixelFormat.AV_PIX_FMT_YUV444P : AVPixelFormat.AV_PIX_FMT_RGBA;
+            var codec = jpeg ? AVCodecID.AV_CODEC_ID_MJPEG : AVCodecID.AV_CODEC_ID_PNG;
+            var pixFmt = jpeg ? AVPixelFormat.AV_PIX_FMT_YUV444P : AVPixelFormat.AV_PIX_FMT_RGBA;
 
-        if (outWidth <= 0) outWidth = Width;
-        if (outHeight <= 0) outHeight = Height;
+            if (outWidth <= 0) outWidth = Width;
+            if (outHeight <= 0) outHeight = Height;
 
-        // SwScale fails to convert color range when pixel format and resolution are equal. See #6
-        if (jpeg && pixFmt == PixelFormat && outWidth == Width && outHeight == Height) {
-            using var rgbFrame = new VideoFrame(outWidth, outHeight, PixelFormats.RGBA);
+            // SwScale fails to convert color range when pixel format and resolution are equal. See #6
+            if (jpeg && pixFmt == PixelFormat && outWidth == Width && outHeight == Height) {
+                using var rgbFrame = new VideoFrame(outWidth, outHeight, PixelFormats.RGBA);
 
-            // This seems to be redundant, but keeping for good sake.
-            rgbFrame.Colorspace = new PictureColorspace(AVColorSpace.AVCOL_SPC_RGB, AVColorPrimaries.AVCOL_PRI_BT470M, AVColorTransferCharacteristic.AVCOL_TRC_GAMMA22, AVColorRange.AVCOL_RANGE_JPEG);
+                // This seems to be redundant, but keeping for good sake.
+                rgbFrame.Colorspace = new PictureColorspace(AVColorSpace.AVCOL_SPC_RGB, AVColorPrimaries.AVCOL_PRI_BT470M, AVColorTransferCharacteristic.AVCOL_TRC_GAMMA22, AVColorRange.AVCOL_RANGE_JPEG);
 
-            SwScaler.Shared.Reinit(Format, rgbFrame.Format, InterpolationMode.Bilinear | InterpolationMode.HighQuality);
-            SwScaler.Shared.SetColorspace(Colorspace, rgbFrame.Colorspace);
-            SwScaler.Shared.Convert(this, rgbFrame);
+                SwScaler.Shared.Reinit(Format, rgbFrame.Format, InterpolationMode.Bilinear | InterpolationMode.HighQuality);
+                SwScaler.Shared.SetColorspace(Colorspace, rgbFrame.Colorspace);
+                SwScaler.Shared.Convert(Handle, rgbFrame.Handle);
             
-            rgbFrame.Save(filename, quality, outWidth, outHeight);
-            return;
-        }
+                rgbFrame.Save(filename, quality, outWidth, outHeight);
+                return;
+            }
 
-        using var tempFrame = new VideoFrame(outWidth, outHeight, pixFmt);
-        using var encoder = new VideoEncoder(codec, tempFrame.Format, Rational.One);
+            using var tempFrame = new VideoFrame(outWidth, outHeight, pixFmt);
+            using var encoder = new VideoEncoder(codec, tempFrame.Format, Rational.One);
 
-        tempFrame.Colorspace = Colorspace;
+            tempFrame.Colorspace = Colorspace;
 
-        if (jpeg) {
-            //1-31
-            int q = 1 + (100 - quality) * 31 / 100;
-            encoder.MaxQuantizer = q;
-            encoder.MinQuantizer = q;
-            encoder.Handle->color_range = AVColorRange.AVCOL_RANGE_JPEG;
-            tempFrame.Handle->color_range = AVColorRange.AVCOL_RANGE_JPEG;
-        } else {
-            //zlib compression (0-9)
-            encoder.CompressionLevel = quality * 9 / 100;
-        }
+            if (jpeg) {
+                //1-31
+                int q = 1 + (100 - quality) * 31 / 100;
+                encoder.MaxQuantizer = q;
+                encoder.MinQuantizer = q;
+                encoder.Handle.Ref.color_range = AVColorRange.AVCOL_RANGE_JPEG;
+                tempFrame.Handle.Ref.color_range = AVColorRange.AVCOL_RANGE_JPEG;
+            } else {
+                //zlib compression (0-9)
+                encoder.CompressionLevel = quality * 9 / 100;
+            }
         
-        encoder.Open();
+            encoder.Open();
 
-        var scalerMode = quality >= 80 ? InterpolationMode.Bicubic | InterpolationMode.HighQuality : InterpolationMode.Bilinear;
+            var scalerMode = quality >= 80 ? InterpolationMode.Bicubic | InterpolationMode.HighQuality : InterpolationMode.Bilinear;
         
-        SwScaler.Shared.Reinit(Format, tempFrame.Format, scalerMode);
-        SwScaler.Shared.SetColorspace(this.Colorspace, tempFrame.Colorspace);
-        SwScaler.Shared.Convert(this, tempFrame);
+            SwScaler.Shared.Reinit(Format, tempFrame.Format, scalerMode);
+            SwScaler.Shared.SetColorspace(this.Colorspace, tempFrame.Colorspace);
+            SwScaler.Shared.Convert(Handle, tempFrame.Handle);
 
-        encoder.SendFrame(tempFrame);
+            encoder.SendFrame(tempFrame.Handle);
         
-        using var packet = new MediaPacket();
-        encoder.ReceivePacket(packet);
+            using var packet = new MediaPacket();
+            encoder.ReceivePacket(packet);
         
-        #if NET9_0_OR_GREATER
+#if NET9_0_OR_GREATER
         File.WriteAllBytes(filename, packet.Data);
-        #elif NETSTANDARD2_1_OR_GREATER
+#elif NETSTANDARD2_1_OR_GREATER
         using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
         fs.Write(packet.Data);
-        #else
+#else
             using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
             using var us = new UnmanagedMemoryStream(packet.DataRaw, packet.DataLength);
             us.CopyTo(fs);
             
-        #endif
+#endif
+        }
     }
 
     /// <summary> Decodes a single frame from the specified image or video file. </summary>
@@ -298,7 +343,7 @@ public unsafe class VideoFrame : MediaFrame
 
         var frame = new VideoFrame();
 
-        if (position != null && !demuxer.Seek(position.Value, SeekOptions.Forward)) {
+        if (position != null && !demuxer.Seek(position.Value, SeekOptions.None)) {
             //Position is past the stream duration, go back to the start or we won't get anything.
             demuxer.Seek(TimeSpan.Zero, SeekOptions.Backward);
         }

@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Media;
+namespace FFmpegWrapper.Core.Flags;
 
 /// <summary>
 /// Flags for controlling AVDictionary operations

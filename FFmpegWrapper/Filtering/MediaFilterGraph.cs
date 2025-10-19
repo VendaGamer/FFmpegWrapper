@@ -1,7 +1,11 @@
 namespace FFmpegWrapper.Filtering;
 
 using System.Text;
+
+using Abstractions;
+
 using Configuration;
+
 using Hardware;
 
 using Media;
@@ -158,7 +162,7 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
             var outputs = new Dictionary<string, MediaFilterNodePort>();
 
             for (AVFilterInOut* link = inputLinks; link != null; link = link->next) {
-                string name = FFHelper.PtrToStringUTF8(link->name)!;
+                string name = FFHelper.PtrToStringUtf8(link->name)!;
                 var node = new MediaFilterNode(link->filter_ctx); //TODO: handle buffer sinks and other derived nodes
                 outputs.Add(name, new MediaFilterNodePort(node, link->pad_idx));
             }
@@ -209,9 +213,9 @@ public unsafe class MediaFilterGraph : FFObject<AVFilterGraph>
                 PrintPort(srcNodeIdx, srcPortIdx);
             }
             //Filter name
-            sb.Append(FFHelper.PtrToStringUTF8(node->filter->name));
+            sb.Append(FFHelper.PtrToStringUtf8(node->filter->name));
             if (node->name != null) {
-                sb.Append($"@{FFHelper.PtrToStringUTF8(node->name)}");
+                sb.Append($"@{FFHelper.PtrToStringUtf8(node->name)}");
             }
 
             //Options
@@ -278,7 +282,7 @@ public unsafe class MediaFilterNode
 {
     public AVFilterContext* Handle { get; }
 
-    public string? Name => FFHelper.PtrToStringUTF8(Handle->name);
+    public string? Name => FFHelper.PtrToStringUtf8(Handle->name);
     public MediaFilter Filter => new(Handle->filter);
 
     public MediaFilterNodePort GetOutput(int index)

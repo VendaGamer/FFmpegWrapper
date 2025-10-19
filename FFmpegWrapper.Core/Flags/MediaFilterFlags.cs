@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Filtering;
+namespace FFmpegWrapper.Core.Flags;
 
 [Flags]
 public enum MediaFilterFlags

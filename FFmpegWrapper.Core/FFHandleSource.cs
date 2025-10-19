@@ -1,18 +1,16 @@
 namespace FFmpegWrapper.Core;
 
-public struct FFHandleSource<T>
+public readonly struct FFHandleSource<T> : IEquatable<FFHandleSource<T>>
     where T : unmanaged
 {
     public readonly unsafe T** Raw;
     
     public unsafe FFHandleSource(T** handle)
     {
-        unsafe {
-            Raw = handle;
+        Raw = handle;
             
-            if (Raw is null) {
-                throw new ArgumentNullException(nameof(handle));
-            }
+        if (Raw is null) {
+            throw new ArgumentNullException(nameof(handle));
         }
     }
     
@@ -40,7 +38,6 @@ public struct FFHandleSource<T>
         return new FFHandleSource<T>(handle);
     }
     
-    /// <inheritdoc />
     public bool Equals(FFHandleSource<T> other)
     {
         unsafe

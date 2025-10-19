@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Flags;
+namespace FFmpegWrapper.Core.Flags;
 
 [Flags]
 public enum SearchFlags

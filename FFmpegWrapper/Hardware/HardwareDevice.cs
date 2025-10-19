@@ -1,4 +1,7 @@
 namespace FFmpegWrapper.Hardware;
+
+using Abstractions;
+
 using Codecs;
 
 using Extensions;

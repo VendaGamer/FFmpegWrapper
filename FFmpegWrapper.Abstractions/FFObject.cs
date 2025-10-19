@@ -1,7 +1,8 @@
-namespace FFmpegWrapper.Core;
+namespace FFmpegWrapper.Abstractions;
 
 using System.Runtime.ConstrainedExecution;
-using System.Security;
+
+using Core;
 
 /// <summary>
 /// Provides a base implementation for managed wrapper classes that encapsulate unmanaged FFmpeg objects.

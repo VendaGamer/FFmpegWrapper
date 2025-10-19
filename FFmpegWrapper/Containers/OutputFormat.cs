@@ -24,10 +24,10 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
         unsafe
         {
             _handle = handle;
-            Name = FFHelper.PtrToStringUTF8(Handle.Ref.name);
-            LongName = FFHelper.PtrToStringUTF8(Handle.Ref.long_name);
-            MimeType = FFHelper.PtrToStringUTF8(Handle.Ref.mime_type);
-            Extensions = FFHelper.PtrToStringUTF8(Handle.Ref.extensions);
+            Name = FFHelper.PtrToStringUtf8(Handle.Ref.name);
+            LongName = FFHelper.PtrToStringUtf8(Handle.Ref.long_name);
+            MimeType = FFHelper.PtrToStringUtf8(Handle.Ref.mime_type);
+            Extensions = FFHelper.PtrToStringUtf8(Handle.Ref.extensions);
         }
     }
 

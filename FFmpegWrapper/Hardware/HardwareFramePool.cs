@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Hardware;
 
+using Abstractions;
+
 public unsafe class HardwareFramePool : FFObject<AVBufferRef>
 {
     public AVHWFramesContext* RawHandle {

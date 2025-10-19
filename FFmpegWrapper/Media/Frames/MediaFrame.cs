@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
+using Abstractions;
+
 public unsafe abstract class MediaFrame : FFObject<AVFrame>
 {
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
@@ -7,8 +9,8 @@ public unsafe abstract class MediaFrame : FFObject<AVFrame>
 
     /// <inheritdoc cref="AVFrame.pts" />
     public long? PresentationTimestamp {
-        get => FFHelper.GetPTS(_handle->pts);
-        set => FFHelper.SetPTS(ref _handle->pts, value);
+        get => FFHelper.GetPts(_handle->pts);
+        set => FFHelper.SetPts(ref _handle->pts, value);
     }
 
     /// <summary> Duration of the frame, in the same units as <see cref="PresentationTimestamp"/>. Null if unknown. </summary>

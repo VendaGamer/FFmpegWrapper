@@ -105,7 +105,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
                 ffmpeg.av_channel_layout_describe(Handle, ptr, (ulong)requiredSize).CheckError();
             }
             
-            return FFHelper.SpanToStringUTF8(buf);
+            return FFHelper.SpanToStringUtf8(buf);
         }
     }
 

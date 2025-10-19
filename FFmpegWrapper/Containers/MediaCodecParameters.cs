@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Containers;
 
+using Abstractions;
+
 using Media;
 using Media.Streams;
 

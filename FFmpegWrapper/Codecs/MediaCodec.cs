@@ -35,7 +35,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return FFHelper.PtrToStringUTF8(Raw->name);
+                return FFHelper.PtrToStringUtf8(Raw->name);
             }
         }
     }
@@ -45,7 +45,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return FFHelper.PtrToStringUTF8(Raw->long_name)!;
+                return FFHelper.PtrToStringUtf8(Raw->long_name)!;
             }
         }
     }
@@ -56,9 +56,9 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
             unsafe
             {
                 if (Raw->wrapper_name is null) {
-                    return FFHelper.SpanToStringUTF8("builtin"u8);
+                    return FFHelper.SpanToStringUtf8("builtin"u8);
                 }
-                return FFHelper.PtrToStringUTF8(Raw->wrapper_name);
+                return FFHelper.PtrToStringUtf8(Raw->wrapper_name);
             }
         }
     }

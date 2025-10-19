@@ -79,7 +79,7 @@ public unsafe struct FrameSideData(AVFrameSideData* handle)
     public AVFrameSideData* Handle { get; } = handle;
 
     public Span<byte> Data => new Span<byte>(Handle->data, checked((int)Handle->size));
-    public MediaDictionary Metadata => new(&Handle->metadata);
+    public MediaDictionary Metadata => new(&Handle.->metadata);
     public AVFrameSideDataType Type => Handle->type;
 
     /// <summary>

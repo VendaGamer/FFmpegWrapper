@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Hardware;
+namespace FFmpegWrapper.Core.Flags;
 [Flags]
 public enum HardwareFrameMapping
 {

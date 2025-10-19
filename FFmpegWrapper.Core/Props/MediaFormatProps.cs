@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Props;
+namespace FFmpegWrapper.Core.Props;
 
 public enum MediaFormatProps
 {

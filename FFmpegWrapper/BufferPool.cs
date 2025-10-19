@@ -1,7 +1,8 @@
-namespace FFmpegWrapper.Core;
+namespace FFmpegWrapper;
 
-using System.Buffers;
 using System.Runtime.InteropServices;
+
+using Core;
 
 public class BufferPool : FFObject<AVBufferPool>
 {

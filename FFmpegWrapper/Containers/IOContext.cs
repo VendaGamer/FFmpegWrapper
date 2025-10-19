@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Containers;
 
+using Abstractions;
+
 public abstract unsafe class IOContext : FFObject<AVIOContext>
 {
     public bool CanRead => _readFn != null;

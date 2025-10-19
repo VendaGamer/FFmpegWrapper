@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Core;
+namespace FFmpegWrapper.Extensions;
 
 public static class LavResultExtensions
 {

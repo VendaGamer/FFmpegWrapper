@@ -3,6 +3,7 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 
+using Abstractions;
 using Hardware;
 
 public abstract class CodecBase : FFObject<AVCodecContext>

@@ -1,4 +1,4 @@
-namespace FFmpegWrapper.Containers;
+namespace FFmpegWrapper.Core.Flags;
 
 /// <summary>
 /// Flags for AVOutputFormat that control various aspects of muxing behavior

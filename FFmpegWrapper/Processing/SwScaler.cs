@@ -1,6 +1,7 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-using Flags;
+using Core.Flags;
+
 using Media;
 
 public sealed class SwScaler : FFObject<SwsContext>
@@ -33,7 +34,7 @@ public sealed class SwScaler : FFObject<SwsContext>
         }
     }
 
-    public bool Reinit(PictureFormat inFmt, PictureFormat outFmt, InterpolationMode flags = InterpolationMode.Bicubic)
+    public bool Reinit(in PictureFormat inFmt, in PictureFormat outFmt, InterpolationMode flags = InterpolationMode.Bicubic)
     {
         if (inFmt.Equals(outFmt)) {
             return false;
@@ -80,47 +81,53 @@ public sealed class SwScaler : FFObject<SwsContext>
             ffmpeg.sws_setColorspaceDetails(_handle, in *(int4*)invTable, srcRange, in *(int4*)table, dstRange, brightness, contrast, saturation);
         }
     }
-
-    public void Convert(VideoFrame src, VideoFrame dst)
+    
+    public void Convert(FFHandle<AVFrame> src, FFHandle<AVFrame> dst)
     {
         unsafe
         {
-            Convert(src.Handle, dst.Handle);
+            CheckFrame(src, InputFormat, input: true);
+            CheckFrame(dst, OutputFormat, input: false);
+            
+            ffmpeg.sws_scale_frame(Handle, dst, src).CheckError();
         }
-    }
-    public unsafe void Convert(AVFrame* src, AVFrame* dst)
-    {
-        CheckFrame(src, InputFormat, input: true);
-        CheckFrame(dst, OutputFormat, input: false);
-        ffmpeg.sws_scale_frame(_handle, dst, src).CheckError();
     }
 
     /// <summary> Converts and rescales <paramref name="src"/> into the given frame. The input pixel format must be interleaved. </summary>
     /// <param name="stride"> The number of bytes per pixel line in <paramref name="src"/>. </param>
-    public void Convert(ReadOnlySpan<byte> src, int stride, VideoFrame dst)
+    public void Convert(ReadOnlySpan<byte> src, int stride, FFHandle<AVFrame> dst)
     {
         unsafe
         {
             CheckBuffer(src, stride, InputFormat, input: true);
-            CheckFrame(dst.Handle, OutputFormat, input: false);
+            CheckFrame(dst, OutputFormat, input: false);
 
             fixed (byte* pSrc = src) {
-                ffmpeg.sws_scale(Handle, [pSrc], [stride], 0, InputFormat.Height, dst.Handle->data, dst.Handle->linesize).CheckError();
+                ffmpeg.sws_scale(Handle, [pSrc],
+                    [stride], 0, InputFormat.Height,
+                    dst.Ref.data,
+                dst.Ref.linesize).CheckError();
+                
             }
         }
     }
 
     /// <summary> Converts and rescales <paramref name="src"/> into the given buffer. The output pixel format must be interleaved. </summary>
     /// <param name="stride"> The number of bytes per pixel line in <paramref name="dst"/>. </param>
-    public void Convert(VideoFrame src, Span<byte> dst, int stride)
+    public void Convert(FFHandle<AVFrame> src, Span<byte> dst, int stride)
     {
         unsafe
         {
-            CheckFrame(src.Handle, InputFormat, input: true);
+            CheckFrame(src, InputFormat, input: true);
             CheckBuffer(dst, stride, OutputFormat, input: false);
         
             fixed (byte* pDst = dst) {
-                ffmpeg.sws_scale(Handle, src.Handle->data, src.Handle->linesize, 0, src.Height, [pDst], [stride]).CheckError();
+                
+                
+                ffmpeg.sws_scale(Handle, src.Ref.data,
+                    src.Ref.linesize, 0, src.Ref.height,
+                    [pDst], [stride]).CheckError();
+                
             }
         }
     }
@@ -137,14 +144,21 @@ public sealed class SwScaler : FFObject<SwsContext>
 
             fixed (byte* pSrc = src)
             fixed (byte* pDst = dst) {
-                ffmpeg.sws_scale(Handle, [pSrc], [srcStride], 0, InputFormat.Height, [pDst], [dstStride]).CheckError();
+                ffmpeg.sws_scale(Handle, [pSrc],
+                    [srcStride], 0,
+                    InputFormat.Height, [pDst],
+                    [dstStride]).CheckError();
+                
             }
         }
     }
 
-    private static unsafe void CheckFrame(AVFrame* frame, in PictureFormat format, bool input)
+    private static void CheckFrame(FFHandle<AVFrame> frame, in PictureFormat format, bool input)
     {
-        if (frame->format != (int)format.PixelFormat || frame->width != format.Width || frame->height != format.Height) {
+        if (frame.Ref.format != (int)format.PixelFormat ||
+            frame.Ref.width != format.Width ||
+            frame.Ref.height != format.Height) {
+            
             throw new ArgumentException((input ? "Input" : "Output") + " frame must match rescaler format");
         }
     }
