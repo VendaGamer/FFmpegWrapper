@@ -5,41 +5,25 @@
 /// </summary>
 public class AudioDecoder : MediaDecoder
 {
+    
+    
     public AVSampleFormat SampleFormat {
         get {
             unsafe
             {
-                return Handle->sample_fmt;
+                return Handle.Ref.sample_fmt;
             }
         }
     }
 
     public int SampleRate {
-        get {
-            unsafe
-            {
-                return Handle->sample_rate;
-            }
-        }
+        get => Handle.Ref.sample_rate;
+        set => Handle.Ref.sample_rate = value;
     }
 
-    public int NumChannels {
-        get {
-            unsafe
-            {
-                return Handle->ch_layout.nb_channels;
-            }
-        }
-    }
+    public int NumChannels => Handle.Ref.ch_layout.nb_channels;
 
-    public ChannelLayout ChannelLayout {
-        get {
-            unsafe
-            {
-                return ChannelLayout.FromHandle(&Handle->ch_layout);
-            }
-        }
-    }
+    public ChannelLayout ChannelLayout => new(Handle.Ref.ch_layout);
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 

@@ -7,22 +7,26 @@ using Streams;
 
 public sealed class MediaMuxer : FFObject<AVFormatContext>
 {
-    public IOContext? IOContext { get; }
-    readonly bool _iocLeaveOpen;
-    readonly bool _ownsCtx;
-
-    private ImmutableArray<KeyValuePair<MediaStream, MediaEncoder?>> _streams
-        = ImmutableArray<KeyValuePair<MediaStream, MediaEncoder?>>.Empty;
-    
-    private MediaPacket? _tempPacket;
-
-    public ImmutableArray<MediaStream> Streams { get; private set; } =
-        ImmutableArray<MediaStream>.Empty;
+    public ReadOnlySpan<MediaStream> Streams {
+        get {
+            unsafe
+            {
+                ref var handle = ref Handle.Ref;
+            
+                return new ReadOnlySpan<MediaStream>(handle.streams, (int)handle.nb_streams);
+            }
+        }
+    }
 
     /// <inheritdoc cref="AVFormatContext.metadata" />
     public MediaDictionary Metadata;
 
     public bool IsOpen { get; private set; } = false;
+    internal MediaPacket TempPacket => _tempPacket ??= new MediaPacket();
+    
+    private readonly IFFHandleOwner<AVIOContext>? _ownedIOContext;
+    
+    private MediaPacket? _tempPacket;
 
     public MediaMuxer(string filename)
     {
@@ -37,29 +41,43 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
     }
 
-    public unsafe MediaMuxer(IOContext ioContext, string formatExtension, bool leaveOpen = false)
-        : this(ioContext, ContainerTypes.GetOutputFormat(formatExtension), leaveOpen) { }
-
-    public unsafe MediaMuxer(IOContext ioContext, AVOutputFormat* format, bool leaveOpen = false)
+    public MediaMuxer(IFFHandleOwner<AVIOContext> ioContext, ReadOnlySpan<char> formatExtension)
+        : this(ioContext, OutputFormat.FindByExtenion(formatExtension).Handle)
     {
-        IOContext = ioContext;
-        _iocLeaveOpen = leaveOpen;
-
-        _handle = ffmpeg.avformat_alloc_context();
-        if (_handle == null) {
-            throw new OutOfMemoryException("Could not allocate muxer");
-        }
-        _handle->oformat = format;
-        _handle->pb = ioContext.Handle;
+        _ownedIOContext = ioContext;
     }
 
-    /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
-    /// <param name="takeOwnership">True if <paramref name="ctx"/> should be freed when Dispose() is called.</param>
-    public unsafe MediaMuxer(AVFormatContext* ctx, bool takeOwnership)
+    public MediaMuxer(IFFHandleOwner<AVIOContext> ioContext,
+        FFHandle<AVOutputFormat> format)
     {
-        _handle = ctx;
-        Metadata = new MediaDictionary(_handle->metadata);
-        _ownsCtx = takeOwnership;
+        unsafe
+        {
+            _handle = ffmpeg.avformat_alloc_context();
+        
+            if (_handle == null) {
+                throw new OutOfMemoryException("Could not allocate muxer");
+            }
+        
+            _handle->oformat = format;
+            _handle->pb = ioContext.Handle;
+        }
+    }
+
+    public MediaMuxer(FFHandle<AVIOContext> ioContextHandle)
+    {
+        unsafe {
+            _handle = ffmpeg.avformat_alloc_context();
+            _handle->pb = ioContextHandle;
+        }
+    }
+
+    public MediaMuxer(
+        FFHandle<AVIOContext> ioContextHandle,
+        FFHandle<AVFormatContext> formatContext)
+    {
+        unsafe {
+            _handle = formatContext;
+        }
     }
 
     /// <summary> Creates and adds a new stream to the muxed file. </summary>
@@ -112,15 +130,17 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
                 throw new OutOfMemoryException("Could not allocate stream");
             }
 
-            ffmpeg.avcodec_parameters_copy(stream->codecpar, srcStream.Handle->codecpar).CheckError("Failed to copy codec parameters");
+            ffmpeg.avcodec_parameters_copy(stream->codecpar,
+                srcStream.Handle.Ref.codecpar).CheckError("Failed to copy codec parameters");
+            
             stream->codecpar->codec_tag = 0;
 
             stream->id = (int)_handle->nb_streams - 1;
             stream->time_base = srcStream.TimeBase;
 
             var st = new MediaStream(stream);
-
-            _streams = _streams.Add(new KeyValuePair<MediaStream, MediaEncoder?>(st, null));
+            
+            
             return st;
         }
     }
@@ -143,13 +163,10 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             if (IsOpen) {
                 throw new InvalidOperationException("Muxer is already open.");
             }
-            
-            foreach ((MediaStream stream, MediaEncoder? encoder) in _streams) {
-                if (encoder is null) continue;
-                encoder.Open();
-                
-                ffmpeg.avcodec_parameters_from_context(stream.Handle.Ref.codecpar, encoder.Handle)
-                    .CheckError("Could not copy the encoder parameters to the stream.");
+            foreach (MediaStream stream in Streams) {
+                //TODO:
+                // ffmpeg.avcodec_parameters_from_context(stream.Handle.Ref.codecpar, some_handle)
+                //     .CheckError("Could not copy the encoder parameters to the stream.");
                 
             }
 
@@ -196,7 +213,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         {
             ThrowIfNotOpen();
 
-            ffmpeg.av_interleaved_write_frame(_handle, packet?.Handle).CheckError("Failed to write packet");
+            ffmpeg.av_interleaved_write_frame(_handle, packet?.Handle ?? null).CheckError("Failed to write packet");
         }
     }
 
@@ -205,13 +222,14 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     {
         ThrowIfNotOpen();
 
-        if (_streams[stream.Index].Key != stream) {
+        if (Streams[stream.Index].Handle != stream.Handle) {
             throw new ArgumentException("Specified stream is not owned by the muxer.");
         }
-        _tempPacket ??= new();
+        
+        _tempPacket ??= new MediaPacket();
 
-        encoder.SendFrame(frame);
-
+        encoder.SendFrame(frame?.Handle ?? null);
+        
         while (encoder.ReceivePacket(_tempPacket)) {
             unsafe
             {
@@ -234,21 +252,16 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <inheritdoc />
     protected unsafe override void Free()
     {
-        if (_handle != null) {
-            ffmpeg.av_write_trailer(_handle);
+        ffmpeg.av_write_trailer(_handle);
 
-            if (_ownsCtx) {
-                if (IOContext == null) {
-                    ffmpeg.avio_closep(&_handle->pb);
-                }
-                ffmpeg.avformat_free_context(_handle);
-            }
-            _handle = null;
-
-            if (!_iocLeaveOpen) {
-                IOContext?.Dispose();
-            }
-            _tempPacket?.Dispose();
+        ffmpeg.avformat_free_context(_handle);
+        
+        fixed (AVFormatContext** ptr = &_handle) {
+            ffmpeg.avformat_close_input(ptr);
         }
+
+        _ownedIOContext?.Dispose();
+        
+        _tempPacket?.Dispose();
     }
 }

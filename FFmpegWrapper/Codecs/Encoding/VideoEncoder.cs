@@ -7,22 +7,25 @@ using Media;
 public unsafe class VideoEncoder : MediaEncoder
 {
     public int Width {
-        get => _handle->width;
+        get => Handle.Ref.width;
         set {
             ThrowIfDisposed();
-            _handle->width = value;
+            Handle.Ref.width = value;
         }
     }
     public int Height {
-        get => _handle->height;
+        get => Handle.Ref.height;
         set {
             ThrowIfOpen();
-            _handle->height = value;
+            Handle.Ref.height = value;
         }
     }
     public AVPixelFormat PixelFormat {
-        get => _handle->pix_fmt;
-        set => SetOrThrowIfOpen(ref _handle->pix_fmt, value);
+        get => Handle.Ref.pix_fmt;
+        set {
+            ThrowIfOpen();
+            Handle.Ref.pix_fmt = value;
+        }
     }
 
     public PictureFormat FrameFormat {
@@ -36,20 +39,33 @@ public unsafe class VideoEncoder : MediaEncoder
     }
 
     public PictureColorspace Colorspace {
-        get => new(_handle->colorspace, _handle->color_primaries, _handle->color_trc, _handle->color_range);
+        get {
+            ref var handle = ref Handle.Ref;
+            
+            return new PictureColorspace(handle.colorspace, handle.color_primaries,
+                handle.color_trc, handle.color_range);
+            
+        }
         set {
             ThrowIfOpen();
-            _handle->colorspace = value.Matrix;
-            _handle->color_primaries = value.Primaries;
-            _handle->color_trc = value.Transfer;
-            _handle->color_range = value.Range;
+            ref var handle = ref Handle.Ref;
+            handle.colorspace = value.Matrix;
+            handle.color_primaries = value.Primaries;
+            handle.color_trc = value.Transfer;
+            handle.color_range = value.Range;
         }
     }
 
     /// <inheritdoc cref="AVCodecContext.gop_size"/>
     public int GopSize {
-        get => _handle->gop_size;
-        set => SetOrThrowIfOpen(ref _handle->gop_size, value);
+        get => Handle.Ref.gop_size;
+        set {
+            ThrowIfOpen();
+            
+            ref var handle = ref Handle.Ref;
+
+            handle.gop_size = value;
+        }
     }
     /// <inheritdoc cref="AVCodecContext.max_b_frames"/>
     public int MaxBFrames {
@@ -70,7 +86,7 @@ public unsafe class VideoEncoder : MediaEncoder
         : this(MediaCodec.GetEncoder(codecId), format, frameRate, bitrate) { }
 
     public VideoEncoder(MediaCodec codec, in PictureFormat format, Rational frameRate, int bitrate = 0)
-        : this(AllocContext(codec), takeOwnership: true)
+        : this(AllocContext(codec))
     {
         FrameFormat = format;
         FrameRate = frameRate;
@@ -84,8 +100,10 @@ public unsafe class VideoEncoder : MediaEncoder
         SetHardwareContext(config, device, framePool);
     }
 
-    public VideoEncoder(AVCodecContext* ctx, bool takeOwnership)
-        : base(ctx, MediaTypes.Video, takeOwnership) { }
+    public VideoEncoder(FFHandle<AVCodecContext> ctx) : base(ctx)
+    {
+        
+    }
 
     /// <summary> Returns the correct <see cref="MediaFrame.PresentationTimestamp"/> for the given frame number, in respect to <see cref="CodecBase.FrameRate"/> and <see cref="CodecBase.TimeBase"/>. </summary>
     public long GetFramePts(long frameNumber)

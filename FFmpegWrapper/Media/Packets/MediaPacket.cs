@@ -2,6 +2,8 @@
 
 using Abstractions;
 
+using Core.Flags;
+
 using Streams;
 
 public class MediaPacket : FFObject<AVPacket>
@@ -56,7 +58,6 @@ public class MediaPacket : FFObject<AVPacket>
             ThrowIfDisposed();
             unsafe
             {
-                AVBuffer
                 if (value is null)
                     _handle->dts = NoTimeStampValue;
                 else
@@ -74,30 +75,50 @@ public class MediaPacket : FFObject<AVPacket>
         get => Handle.Ref.stream_index;
         set => Handle.Ref.stream_index = value;
     }
-
-    /// <summary> Whether this packet contains a key-frame. (Checks if AV_PKT_FLAG_KEY is set) </summary>
-    public bool IsKeyFrame {
-        get => (_handle->flags & ffmpeg.AV_PKT_FLAG_KEY) != 0;
-        set => _handle->flags = value ? (_handle->flags | ffmpeg.AV_PKT_FLAG_KEY) : (_handle->flags & ~ffmpeg.AV_PKT_FLAG_KEY);
+    
+    public PacketFlags Flags {
+        get => (PacketFlags)Handle.Ref.flags;
+        set => Handle.Ref.flags = (int)value;
     }
 
     /// <inheritdoc cref="AVPacket.pos"/>
     public long BytePosition {
-        get => _handle->pos;
-        set => _handle->pos = value;
+        get => Handle.Ref.pos;
+        set => Handle.Ref.pos = value;
     }
 
     public Span<byte> Data {
-        get => new(_handle->data, _handle->size);
+        get {
+            unsafe
+            {
+                ref var handle = ref Handle.Ref;
+
+                return new Span<byte>(handle.data, handle.size);
+            }
+        }
     }
 
-    internal byte* DataRaw {
+    internal unsafe byte* DataRaw {
         get => _handle->data;
     }
 
-    internal int DataLength => _handle->size;
+    internal int DataLength {
+        get {
+            unsafe
+            {
+                return _handle->size;
+            }
+        }
+    }
 
-    public PacketSideDataList SideData => new(&_handle->side_data, &_handle->side_data_elems);
+    public PacketSideDataList SideData {
+        get {
+            unsafe
+            {
+                return new PacketSideDataList(&_handle->side_data, &_handle->side_data_elems);
+            }
+        }
+    }
 
     public MediaPacket()
     {

@@ -3,7 +3,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.HighPerformance.Buffers;
-using CommunityToolkit.HighPerformance.Helpers;
 
 public static class FFHelper
 {
@@ -67,6 +66,7 @@ public static class FFHelper
     {
         return StringPool.Shared.GetOrAdd(span, Encoding.UTF8);
     }
+    
     
 #if NET6_0_OR_GREATER
     public static string PtrToStringUtf8(FFHandle<byte> ptr)

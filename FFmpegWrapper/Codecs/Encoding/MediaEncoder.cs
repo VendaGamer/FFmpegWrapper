@@ -34,7 +34,7 @@ public abstract class MediaEncoder : CodecBase
         }
     }
 
-    public MediaEncoder(FFHandle<AVCodecContext> ctx, MediaType expectedType)
+    public MediaEncoder(FFHandle<AVCodecContext> ctx)
         : base(ctx)
     {
         

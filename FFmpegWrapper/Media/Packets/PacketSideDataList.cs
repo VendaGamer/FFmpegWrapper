@@ -103,10 +103,8 @@ public readonly struct PacketSideDataList
     /// <summary> Returns the value of an <see cref="AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX"/> entry. </summary>
     public bool TryGetDisplayMatrix(out ReadOnlySpan2D<byte> entry)
     {
-        if (TryGet(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, out var sideData)) {
-            sideData.
-        }
-        return entry?.GetDataRef<int9>().ToArray();
+        entry = default!;
+        return false;
     }
 
     public override string ToString()

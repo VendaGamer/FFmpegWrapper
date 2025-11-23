@@ -51,7 +51,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             }
         }
     }
-
+    
     /// <summary> Indicates if the codec requires flushing with NULL input at the end in order to give the complete and correct output. </summary>
     public bool IsDelayed {
         get {
@@ -84,6 +84,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     }
     
     private IMemoryOwner<byte>? _extraData;
+
     protected CodecBase(FFHandle<AVCodecContext> ctx)
     {
         unsafe
@@ -92,8 +93,13 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         }
     }
 
-    protected unsafe static FFHandle<AVCodecContext> AllocContext(MediaCodec? codec)
-        => ffmpeg.avcodec_alloc_context3(codec is not null ? codec.Value.Raw : null);
+    protected static FFHandle<AVCodecContext> AllocContext(MediaCodec? codec)
+    {
+        unsafe
+        {
+            return ffmpeg.avcodec_alloc_context3(codec is not null ? codec.Value.Raw : null);
+        }
+    }
 
     /// <summary> Initializes the codec if not already. </summary>
     /// <returns>false if already open</returns>

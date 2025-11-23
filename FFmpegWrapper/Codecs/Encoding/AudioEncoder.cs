@@ -60,14 +60,12 @@ public class AudioEncoder : MediaEncoder
     public AudioEncoder(AVCodecID codecId, in AudioFormat format, int bitrate = 0)
         : this(MediaCodec.GetEncoder(codecId), format, bitrate) { }
 
-    public unsafe AudioEncoder(MediaCodec codec, in AudioFormat format, int bitrate = 0)
-        : this(AllocContext(codec), takeOwnership: true)
+    public AudioEncoder(MediaCodec codec, in AudioFormat format, int bitrate = 0)
+        : this(AllocContext(codec))
     {
         Format = format;
         BitRate = bitrate;
         TimeBase = new Rational(1, format.SampleRate);
     }
-
-    public unsafe AudioEncoder(AVCodecContext* ctx, bool takeOwnership)
-        : base(ctx, MediaTypes.Audio, takeOwnership) { }
+    
 }

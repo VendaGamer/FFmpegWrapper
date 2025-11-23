@@ -1,9 +1,7 @@
-namespace FFmpegWrapper.Containers;
-
-using System;
-
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Enumerables;
+
+namespace FFmpegWrapper.Containers;
 
 public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquatable<OutputFormat>
 {
@@ -165,6 +163,58 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
             return false;
         }
     }
+    
+    public static bool TryFindByExtension(string extension, out OutputFormat outputFormat)
+    {
+        unsafe {
+
+            if (string.IsNullOrEmpty(extension))
+                goto NotFound;
+            
+            var res = extension.LastIndexOf('.') == -1 ?
+                ffmpeg.av_guess_format(null, $"dummy.{extension}", null) :
+                ffmpeg.av_guess_format(null, extension, null);
+
+            if (res is not null) {
+                outputFormat = new OutputFormat(res);
+                return true;
+            }
+            
+            NotFound:
+            outputFormat = default!;
+            return false;
+        }
+    }
+
+    public static OutputFormat FindByExtenion(ReadOnlySpan<char> extension)
+    {
+        if (TryFindByExtension(extension, out OutputFormat format)) {
+            return format;
+        }
+
+        throw new ArgumentException(nameof(extension));
+    }
+
+    public static bool TryFindByExtension(
+        ReadOnlySpan<char> extension,
+        out OutputFormat outputFormat,
+        StringComparison comparisonType = StringComparison.Ordinal)
+    {
+        var formats = AvailableOutputFormats.AsSpan();
+        
+        for (int i = 0; i < formats.Length; i++) {
+            foreach (var span in formats[i].GetExtensionsTokenizer()) {
+                if (span.Equals(extension, comparisonType)) {
+                    outputFormat = formats[i];
+                    return true;
+                }
+            }
+        }
+
+        outputFormat = default!;
+        return false;
+    }
+    
 
     // Check if format supports specific features
     public unsafe bool SupportsGlobalHeader => (Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0;

@@ -3,78 +3,32 @@ namespace FFmpegWrapper.Media;
 using System.Collections;
 using Abstractions;
 using Core.Flags;
-using Entry = KeyValuePair<string, string>;
 
-/// <summary> Wrapper for an existing <see cref="AVDictionaryEntry"/>. </summary>
-
-public readonly ref struct MediaDictionaryEntry : IFFHandleObserver<AVDictionaryEntry>
-{
-    public FFHandle<AVDictionaryEntry> Handle {
-        get {
-            unsafe {
-                return _handle;
-            }
-        }
-    }
-
-    public string Key {
-        get {
-            unsafe
-            {
-                return FFHelper.PtrToStringUtf8(_handle->key);
-            }
-        }
-    }
-
-    public string Value {
-        get {
-            unsafe {
-                return FFHelper.PtrToStringUtf8(_handle->value);
-            }
-        }
-    }
-
-    public Entry ToEntry() => new(Key, Value);
-    
-    private readonly unsafe AVDictionaryEntry* _handle;
-    public unsafe MediaDictionaryEntry(AVDictionaryEntry* handle)
-    {
-        this._handle = handle;
-    }
-}
 /// <summary>
 /// Efficient wrapper for AVDictionary with minimal overhead operations
 /// </summary>
-public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
+public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaDictionaryEntry>
 {
-    private readonly bool _ownsTarget;
-
     /// <summary>
     /// Creates a new owned MediaDictionary
     /// </summary>
     public MediaDictionary()
     {
-        unsafe
-        {
-            // Allocate a pointer that we own
-            _handle = (AVDictionary*)ffmpeg.av_mallocz((ulong)sizeof(AVDictionary));
-            if (_handle == null) 
-                throw new OutOfMemoryException("Failed to allocate AVDictionary pointer");
-        
-            base._handle = _handle; // handle is initially null
-            _ownsTarget = true;
+        unsafe {
+            fixed (AVDictionary** ptr = &_handle) {
+                ffmpeg.av_dict_copy(ptr ,null,0);
+            }
         }
     }
 
     /// <summary>
-    /// Wraps an existing AVDictionary pointer (does not take ownership of the pointer itself)
+    /// Wraps an existing AVDictionary pointer (takes ownership of the pointer)
     /// </summary>
     public MediaDictionary(FFHandle<AVDictionary> target)
     {
         unsafe
         {
-            base._handle = target;
-            _ownsTarget = false;
+            _handle = target;
         }
     }
 
@@ -98,7 +52,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
         get => GetValue(key) ?? throw new KeyNotFoundException($"Key '{key}' not found in dictionary");
         set => SetValue(key, value);
     }
-
+    
     /// <summary>
     /// Checks if a key exists
     /// </summary>
@@ -113,15 +67,11 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
     /// <summary>
     /// Gets the value associated with the given key, or null if there is no match.
     /// </summary>
-    public string? GetValue(string key, bool matchCase = false, bool matchPrefix = false)
+    public string? GetValue(string key, DictionaryFlags flags = DictionaryFlags.MatchCase)
     {
         unsafe
         {
-            int flags = 0;
-            if (matchCase) flags |= ffmpeg.AV_DICT_MATCH_CASE;
-            if (matchPrefix) flags |= ffmpeg.AV_DICT_IGNORE_SUFFIX;
-
-            var entry = ffmpeg.av_dict_get(Handle, key, null, flags);
+            var entry = ffmpeg.av_dict_get(Handle, key, null, (int)flags);
             return entry == null ? null : FFHelper.PtrToStringUtf8(entry->value);
         }
     }
@@ -129,24 +79,21 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
     /// <summary>
     /// Tries to get a value, returning false if the key doesn't exist
     /// </summary>
-    public bool TryGetValue(string key, out string? value, bool matchCase = false, bool matchPrefix = false)
+    public bool TryGetValue(string key, out string? value, DictionaryFlags flags = DictionaryFlags.None)
     {
-        value = GetValue(key, matchCase, matchPrefix);
+        value = GetValue(key, flags);
         return value != null;
     }
 
     /// <summary>
     /// Sets the value associated with the given key, overwriting it if necessary.
     /// </summary>
-    public void SetValue(string key, string? value, bool allowMultiple = false)
+    public void SetValue(string key, string? value, DictionaryFlags flags = DictionaryFlags.None)
     {
         unsafe
         {
-            int flags = allowMultiple ? ffmpeg.AV_DICT_MULTIKEY : 0;
-        
-            // Update our handle after the operation since av_dict_set can reallocate
             fixed (AVDictionary** ptr = &_handle) {
-                ffmpeg.av_dict_set(ptr, key, value, flags).CheckError();
+                ffmpeg.av_dict_set(ptr, key, value, (int)flags).CheckError();
             }
         
             base._handle = _handle;
@@ -156,7 +103,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
     /// <summary>
     /// Removes a key from the dictionary
     /// </summary>
-    public bool Remove(string key)
+    public bool Remove(string key, DictionaryFlags flags = DictionaryFlags.None)
     {
         bool existed = ContainsKey(key);
         if (existed)
@@ -165,7 +112,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
             {
                 fixed(AVDictionary** ptr = &_handle)
                 {
-                    ffmpeg.av_dict_set(ptr, key, null, 0).CheckError();
+                    ffmpeg.av_dict_set(ptr, key, null, (int)flags).CheckError();
                 }
                 base._handle = _handle;
             }
@@ -181,7 +128,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
         unsafe
         {
             fixed (AVDictionary** ptr = &_handle) {
-                ffmpeg.av_dict_free(ptr);
+                ffmpeg.av_dict(ptr);
             }
             base._handle = _handle; // Should be null after free
         }
@@ -207,6 +154,9 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
     /// </summary>
     public void CopyFrom(MediaDictionary other, DictionaryFlags flags = 0)
     {
+        foreach (var VARIABLE in GetEnumerator()) {
+            
+        }
         unsafe
         {
             fixed (AVDictionary** prt = &_handle) {
@@ -214,10 +164,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
             }
         }
     }
-
-    /// <summary>
-    /// Gets a fast enumerator that avoids boxing
-    /// </summary>
+    
     public Enumerator GetEnumerator()
     {
         unsafe
@@ -226,7 +173,8 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
         }
     }
 
-    IEnumerator<Entry> IEnumerable<Entry>.GetEnumerator() => GetEnumerator();
+    IEnumerator<MediaDictionaryEntry> IEnumerable<MediaDictionaryEntry>.GetEnumerator()
+        => GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -240,7 +188,6 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
         unsafe
         {
             byte* buffer = null!;
-
             ffmpeg.av_dict_get_string(_handle, &buffer, utf8KeyValueSeparatorChar, utf8PairsSeparator).CheckError();
         
             string str = FFHelper.PtrToStringUtf8(buffer);
@@ -267,43 +214,26 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
         }
     }
     
-    public struct Enumerator : IEnumerator<Entry>
+    public ref struct Enumerator : IEnumerator<MediaDictionaryEntry>
     {
         private readonly unsafe AVDictionary* _dict;
-        private unsafe AVDictionaryEntry* _entry;
+        private unsafe AVDictionaryEntry* _currentEntry;
         
         internal unsafe Enumerator(AVDictionary* dict)
         {
             _dict = dict;
-            _entry = null;
+            _currentEntry = null;
         }
         
         /// <summary>
         /// Current entry
         /// </summary>
-        public Entry Current
+        public MediaDictionaryEntry Current
         {
             get {
                 unsafe
                 {
-                    // Direct string creation without null checks for performance
-                    // av_dict_iterate guarantees non-null key/value
-                    return new Entry(
-                        FFHelper.PtrToStringUtf8(_entry->key),
-                        FFHelper.PtrToStringUtf8(_entry->value)
-                    );
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets current entry as MediaDictionaryEntry
-        /// </summary>
-        public MediaDictionaryEntry CurrentEntry {
-            get {
-                unsafe
-                {
-                    return new MediaDictionaryEntry(_entry);
+                    return new MediaDictionaryEntry(_currentEntry);
                 }
             }
         }
@@ -312,12 +242,19 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<Entry>
         public bool MoveNext()
         {
             unsafe {
-                _entry = ffmpeg.av_dict_iterate(_dict, _entry);
-                return _entry is not null;
+                _currentEntry = ffmpeg.av_dict_iterate(_dict, _currentEntry);
+                return _currentEntry is not null;
             }
         }
         object IEnumerator.Current => Current;
-        void IEnumerator.Reset() => throw new NotSupportedException("Reset is not supported on dictionary enumerators");
+
+        void IEnumerator.Reset()
+        {
+            unsafe
+            {
+                _currentEntry = null;
+            }
+        }
         void IDisposable.Dispose(){ }
     }
 }

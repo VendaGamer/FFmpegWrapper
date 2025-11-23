@@ -15,7 +15,7 @@ public static class ContainerTypes
         M4a = "m4a",
         Wav = "wav";
 
-    public static unsafe AVOutputFormat* GetOutputFormat(string extension)
+    public static unsafe FFHandle<AVOutputFormat> GetOutputFormat(string extension)
     {
         var fmt = ffmpeg.av_guess_format(null, "dummy." + extension, null);
         if (fmt == null) {

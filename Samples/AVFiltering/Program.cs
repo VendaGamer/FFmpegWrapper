@@ -71,9 +71,8 @@ class StreamInfo : IDisposable
 {
     public MediaDecoder Decoder { get; }
     public MediaStream InStream { get; }
-
     private MediaMuxer _muxer;
-    private MediaStream _outStream = null!;
+    private MediaStream _outStream;
     private MediaEncoder _encoder = null!;
     private MediaFrame _frame = null!;
 
@@ -118,8 +117,9 @@ class StreamInfo : IDisposable
         // Encode filtered frames
         while (filter.ReceiveFrame(_frame, outPort)) {
             _frame.PresentationTimestamp = _frame.BestEffortTimestamp;
-            unsafe { _frame.Handle->pict_type = AVPictureType.AV_PICTURE_TYPE_NONE; }
-            _muxer.EncodeAndWrite(_outStream, _encoder!, _frame);
+            _frame.Handle.Ref.pict_type = AVPictureType.AV_PICTURE_TYPE_NONE;
+            
+            _muxer.EncodeAndWrite(_outStream, _encoder, _frame);
         }
     }
 

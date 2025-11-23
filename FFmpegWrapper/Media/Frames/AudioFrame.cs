@@ -1,16 +1,15 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
-public unsafe class AudioFrame : MediaFrame
+public class AudioFrame : MediaFrame
 {
-    public AVSampleFormat SampleFormat => (AVSampleFormat)_handle->format;
-    public int SampleRate => _handle->sample_rate;
-    public int NumChannels => _handle->ch_layout.nb_channels;
-    public ChannelLayout ChannelLayout => ChannelLayout.FromHandle(&_handle->ch_layout);
+    public AVSampleFormat SampleFormat => (AVSampleFormat)Handle.Ref.format;
+    public int SampleRate => Handle.Ref.sample_rate;
+    public ChannelLayout ChannelLayout => new(Handle.Ref.ch_layout);
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 
-    public byte** Data => (byte**)&_handle->data;
-    public int Stride => _handle->linesize[0];
+    public unsafe byte** Data => (byte**)&_handle->data;
+    public int Stride => Handle.Ref.linesize[0];
 
     public bool IsPlanar => ffmpeg.av_sample_fmt_is_planar(SampleFormat) != 0;
     /// <summary>
@@ -18,51 +17,58 @@ public unsafe class AudioFrame : MediaFrame
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">Is thrown if value is less then zero or if value is greater than Capacity</exception>
     public int Count {
-        get => _handle->nb_samples;
+        get => Handle.Ref.nb_samples;
         set {
             if (value < 0 || value > Capacity) {
                 throw new ArgumentOutOfRangeException(nameof(value), "Must must be positive and not exceed the frame capacity.");
             }
-            _handle->nb_samples = value;
+            Handle.Ref.nb_samples = value;
         }
     }
 
-    public int Capacity => Stride / (ffmpeg.av_get_bytes_per_sample(SampleFormat) * (IsPlanar ? 1 : NumChannels));
-
-    /// <summary> Allocates an empty <see cref="AVFrame"/>. </summary>
-    public AudioFrame()
-        : this(ffmpeg.av_frame_alloc(), takeOwnership: true) { }
+    public int Capacity {
+        get {
+            ref var handle = ref Handle.Ref;
+            
+            return handle.linesize[0] / 
+                ffmpeg.av_get_bytes_per_sample(SampleFormat)
+                 * (IsPlanar ? 1 : handle.ch_layout.nb_channels);
+        }
+    }
 
     public AudioFrame(in AudioFormat fmt, int capacity)
     {
-        _handle = ffmpeg.av_frame_alloc();
-        _handle->format = (int)fmt.SampleFormat;
-        _handle->sample_rate = fmt.SampleRate;
-        fmt.Layout.CopyTo(&_handle->ch_layout);
+        unsafe
+        {
+            _handle = ffmpeg.av_frame_alloc();
+            _handle->format = (int)fmt.SampleFormat;
+            _handle->sample_rate = fmt.SampleRate;
+            fmt.Layout.CopyTo(&_handle->ch_layout);
 
-        _handle->nb_samples = capacity;
-        ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
+            _handle->nb_samples = capacity;
+            ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
+        }
     }
     public AudioFrame(AVSampleFormat fmt, int sampleRate, int numChannels, int capacity)
         : this(new AudioFormat(fmt, sampleRate, numChannels), capacity) { }
-
-    /// <summary> Wraps an existing <see cref="AVFrame"/> into an <see cref="AudioFrame"/> instance. </summary>
-    /// <param name="takeOwnership">True if <paramref name="frame"/> should be freed when Dispose() is called.</param>
-    public AudioFrame(AVFrame* frame, bool takeOwnership)
+    
+    public AudioFrame(FFHandle<AVFrame> frameHandle)
     {
-        if (frame == null) {
-            throw new ArgumentNullException(nameof(frame));
+        unsafe
+        {
+            _handle = frameHandle;
         }
-        _handle = frame;
-        _ownsFrame = takeOwnership;
     }
 
     public Span<T> GetSamples<T>(int channel = 0) where T : unmanaged
     {
-        if ((uint)channel >= (uint)NumChannels || (!IsPlanar && channel != 0)) {
-            throw new ArgumentOutOfRangeException();
+        unsafe
+        {
+            if ((uint)channel >= (uint)ChannelLayout.NumChannels || (!IsPlanar && channel != 0)) {
+                throw new ArgumentOutOfRangeException();
+            }
+            return new Span<T>(Data[channel], Stride / sizeof(T));
         }
-        return new Span<T>(Data[channel], Stride / sizeof(T));
     }
 
     /// <summary> Copy interleaved samples from the span into this frame. </summary>
@@ -72,22 +78,28 @@ public unsafe class AudioFrame : MediaFrame
     /// <inheritdoc cref="CopyFrom(Span{float})"/>
     public int CopyFrom(Span<short> samples) => CopyFrom<short>(samples);
 
+    public int CopyFrom(Span<byte> samples) => CopyFrom<byte>(samples);
+
     private int CopyFrom<T>(Span<T> samples) where T : unmanaged
     {
-        var fmt = Format;
-        if (fmt.IsPlanar || fmt.BytesPerSample != sizeof(T)) {
-            throw new InvalidOperationException("Incompatible format");
-        }
-        if (samples.Length % fmt.NumChannels != 0) {
-            throw new ArgumentException("Sample count must be a multiple of channel count.", nameof(samples));
-        }
+        unsafe {
+         
+            var fmt = Format;
+            if (fmt.IsPlanar || fmt.BytesPerSample != sizeof(T)) {
+                throw new InvalidOperationException("Incompatible format");
+            }
+            if (samples.Length % fmt.NumChannels != 0) {
+                throw new ArgumentException("Sample count must be a multiple of channel count.", nameof(samples));
+            }
 
-        int count = Math.Min(Capacity, samples.Length / fmt.NumChannels);
+            int count = Math.Min(Capacity, samples.Length / fmt.NumChannels);
 
-        fixed (T* ptr = samples) {
-            byte** temp = stackalloc byte*[1] { (byte*)ptr };
-            ffmpeg.av_samples_copy(_handle->extended_data, temp, 0, 0, count, fmt.NumChannels, fmt.SampleFormat);
+            fixed (T* ptr = samples) {
+                byte** temp = null;
+                ffmpeg.av_samples_copy(_handle->extended_data, temp, 0, 0, count, fmt.NumChannels, fmt.SampleFormat);
+            }
+            return count;
+            
         }
-        return count;
     }
 }
