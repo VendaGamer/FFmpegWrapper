@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegWrapper.Core", "FFmpe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegWrapper.Abstractions", "FFmpegWrapper.Abstractions\FFmpegWrapper.Abstractions.csproj", "{94D43BA0-E4F2-47BA-83E3-3F27FB08A5A6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bindings", "Bindings", "{FB6991D2-06DB-4A65-8FF0-42670F2072B3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

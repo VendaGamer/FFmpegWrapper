@@ -34,7 +34,7 @@ public unsafe class HardwareFramePool : FFObject<AVBufferRef>
             ffmpeg.av_frame_free(&frame);
             err.ThrowError(msg: "Failed to allocate hardware frame");
         }
-        return new VideoFrame(frame, takeOwnership: true);
+        return new VideoFrame(frame);
     }
 
     protected override void Free()

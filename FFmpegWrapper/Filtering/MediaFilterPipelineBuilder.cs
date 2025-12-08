@@ -218,7 +218,7 @@ partial class MediaFilterPipeline
         // Convert flags to string because vf_scale only accepts a string.
         for (var opt = ffmpeg.sws_get_class()->option; opt->name != null; opt++) {
             if (opt->type != AVOptionType.AV_OPT_TYPE_CONST) continue;
-            if (!FFHelper.StrCmp(opt->unit, "sws_flags"u8)) continue;
+            if (!FFHelper.(opt->unit, "sws_flags"u8)) continue;
             if (((long)flags & opt->default_val.i64) == 0) continue;
 
             if (!desc.EndsWith("=")) desc += '+';

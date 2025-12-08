@@ -15,12 +15,20 @@ public readonly struct FFHandle<T> : IEquatable<FFHandle<T>>
     /// <summary>
     /// Safe handle to underlying ffmpeg object
     /// </summary>
-    public readonly ref T Ref
+    public ref T Ref
     {
         get
         {
             unsafe {
                 return ref Unsafe.AsRef<T>(Raw);
+            }
+        }
+    }
+
+    public bool IsNull {
+        get {
+            unsafe {
+                return Raw is null;
             }
         }
     }

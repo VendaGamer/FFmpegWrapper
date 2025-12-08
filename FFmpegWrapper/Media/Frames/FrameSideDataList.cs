@@ -59,7 +59,7 @@ public unsafe struct FrameSideDataList
     public int[]? GetDisplayMatrix()
     {
         var entry = Get(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX);
-        return entry?.GetDataRef<int9>().ToArray();
+        
     }
 
     public override string ToString()
@@ -74,34 +74,55 @@ public unsafe struct FrameSideDataList
     }
 }
 
-public unsafe struct FrameSideData(AVFrameSideData* handle)
+public struct FrameSideData(FFHandle<AVFrameSideData> handle)
 {
-    public AVFrameSideData* Handle { get; } = handle;
+    public FFHandle<AVFrameSideData> Handle {
+        get {
+            unsafe {
+                return _handle;
+            }
+        }
+    }
+    
+    private unsafe AVFrameSideData* _handle;
 
-    public Span<byte> Data => new Span<byte>(Handle->data, checked((int)Handle->size));
-    public MediaDictionary Metadata => new(&Handle.->metadata);
+    public Span<byte> Data {
+        get {
+            unsafe
+            {
+                return new Span<byte>(_handle->data, checked((int)_handle->size));
+            }
+        }
+    }
+
+    public MediaDictionary Metadata {
+        get {
+            unsafe
+            {
+                return new(Handle.Ref.metadata);
+            }
+        }
+    }
+
     public AVFrameSideDataType Type => Handle->type;
 
     /// <summary>
     /// Returns the side data payload reinterpreted as a <typeparamref name="T"/> pointer, 
     /// or null if the payload is smaller than <c>sizeof(T)</c>.
     /// </summary>
-    public T* GetDataPtr<T>() where T : unmanaged
+    public FFHandle<T> GetDataHandle<T>() where T : unmanaged
     {
-        return Handle->size < (ulong)sizeof(T) ? null : (T*)Handle->data;
-    }
-
-    /// <summary>
-    /// Returns the side data payload reinterpreted as a <typeparamref name="T"/> reference, 
-    /// or throws <see cref="InvalidCastException"/> if the payload is smaller than <c>sizeof(T)</c>.
-    /// </summary>
-    public ref T GetDataRef<T>() where T : unmanaged
-    {
-        if (Handle->size < (ulong)sizeof(T)) {
-            throw new InvalidCastException();
+        unsafe {
+            return _handle->size < (ulong)sizeof(T) ? null : (T*)_handle->data;
         }
-        return ref *(T*)Handle->data;
     }
+    
 
-    public override string ToString() => $"{ffmpeg.av_frame_side_data_name(Type)}: {Handle->size} bytes";
+    public override string ToString()
+    {
+        unsafe
+        {
+            return $"{ffmpeg.av_frame_side_data_name(Type)}: {_handle->size} bytes";
+        }
+    }
 }

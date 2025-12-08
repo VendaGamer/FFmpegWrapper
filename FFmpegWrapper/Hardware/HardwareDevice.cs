@@ -97,7 +97,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
             // Find the first available config that matches the current priority level.
             var config = availableConfigs.FirstOrDefault(c => c.DeviceType == preferredDeviceType);
 
-            if (config.IsNull()) {
+            if (config.Handle.IsNull) {
                 continue;
             }
             // Attempt to create the hardware device. A 'using' block ensures it's disposed if not returned.
