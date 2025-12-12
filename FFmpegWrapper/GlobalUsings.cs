@@ -1,9 +1,12 @@
 global using System.Collections.Immutable;
 global using System.Runtime.CompilerServices;
-global using FFmpeg.AutoGen.Abstractions;
 global using FFmpegWrapper.Containers;
 global using FFmpegWrapper.Media.Formats;
 global using FFmpegWrapper.Media.Frames;
 global using FFmpegWrapper.Media.Packets;
 global using FFmpegWrapper.Abstractions;
 global using FFmpegWrapper.Core;
+global using FFmpegBindings.Abstractions;
+global using static FFmpegBindings.Abstractions.FFmpeg;
+global using static FFmpegBindings.Abstractions.FFmpegConstants;
+global using static FFmpegBindings.Abstractions.FFmpegDelegates;

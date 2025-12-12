@@ -211,7 +211,11 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
     /// <returns>A string describing the range, matrix, primaries, and transfer characteristics.</returns>
     public override string ToString()
     {
-        return $"{ffmpeg.av_color_range_name(Range)}, {ffmpeg.av_color_space_name(Matrix)}/{ffmpeg.av_color_primaries_name(Primaries)}/{ffmpeg.av_color_transfer_name(Transfer)}";
+        unsafe {
+            var colorSpaceName = FFHelper.PtrToStringUtf8(av_color_space_name(Matrix));
+            return $"{colorSpaceName}, {av_color_space_name(Matrix)}/{av_color_primaries_name(Primaries)}/{av_color_transfer_name(Transfer)}";
+        }
+        
     }
     
     /// <summary>

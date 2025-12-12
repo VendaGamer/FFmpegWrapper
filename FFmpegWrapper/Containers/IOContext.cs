@@ -18,13 +18,13 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
         if (!(canRead ^ canWrite)) {
             throw new InvalidOperationException("IOContext must be either readable or writeable");
         }
-        var buffer = (byte*)ffmpeg.av_mallocz((ulong)bufferSize);
+        var buffer = (byte*)av_mallocz((ulong)bufferSize);
         
         _readFn = canRead ? ReadBridge : null;
         _writeFn = canWrite ? WriteBridge : null;
         _seekFn = canSeek ? SeekBridge : null;
 
-        _handle = ffmpeg.avio_alloc_context(
+        _handle = avio_alloc_context(
             buffer, bufferSize, canWrite ? 1 : 0, null,
             _readFn, _writeFn, _seekFn
         );
@@ -32,7 +32,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
         int ReadBridge(void* opaque, byte* buffer, int length)
         {
             int bytesRead = Read(new Span<byte>(buffer, length));
-            return bytesRead > 0 ? bytesRead : ffmpeg.AVERROR_EOF;
+            return bytesRead > 0 ? bytesRead : AVERROR_EOF;
         }
         int WriteBridge(void* opaque, byte* buffer, int length)
         {
@@ -41,8 +41,8 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
         }
         long SeekBridge(void* opaque, long offset, int whence)
         {
-            if (whence == ffmpeg.AVSEEK_SIZE) {
-                return GetLength() ?? ffmpeg.AVERROR(38); //ENOSYS
+            if (whence == AVSEEK_SIZE) {
+                return GetLength() ?? AVERROR(38); //ENOSYS
             }
             return Seek(offset, (SeekOrigin)whence);
         }
@@ -54,7 +54,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
         if (!CanWrite) {
             throw new InvalidOperationException();
         }
-        ffmpeg.avio_flush(_handle);
+        avio_flush(_handle);
     }
 
     /// <summary> Creates an IOContext that reads from the given stream. </summary>
@@ -95,7 +95,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
     protected override void Free()
     {
         if (_handle != null) {
-            fixed (AVIOContext** c = &_handle) ffmpeg.avio_closep(c);
+            fixed (AVIOContext** c = &_handle) avio_closep(c);
         }
     }
 }

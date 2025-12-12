@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Media.Streams;
 
-using Core.Flags;
+using Core;
 
 public readonly struct MediaStream
 {
@@ -12,6 +12,7 @@ public readonly struct MediaStream
             }
         }
     }
+    
     public int Index => Handle.Ref.index;
 
     /// <inheritdoc cref="AVStream.time_base" />
@@ -41,7 +42,7 @@ public readonly struct MediaStream
     }
 
     /// <inheritdoc cref="AVStream.disposition" />
-    public MediaStreamDisposition Disposition => (MediaStreamDisposition)Handle.Ref.disposition;
+    public AVDispositionFlags Disposition => (AVDispositionFlags)Handle.Ref.disposition;
 
     /// <inheritdoc cref="AVStream.codecpar" />
     public CodecParameters CodecPars {

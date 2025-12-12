@@ -43,7 +43,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
                     var index = 0;
                     AVCodecHWConfig* res = null!;
                     
-                    while((res = ffmpeg.avcodec_get_hw_config(codec.Raw, index)) != null)
+                    while((res = avcodec_get_hw_config(codec.Raw, index)) != null)
                     {
                         if (codec.IsDecoder) {
                             decBuilder.Add(new CodecHardwareConfig(codec, res));
@@ -80,9 +80,9 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
             void* iterState = null;
             AVCodec* codec;
 
-            while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
+            while ((codec = av_codec_iterate(&iterState)) != null) {
                 if ((codecId != null && codec->id != codecId) ||
-                    ffmpeg.av_codec_is_decoder(codec) == 0)
+                    av_codec_is_decoder(codec) == 0)
                     continue;
 
 
@@ -90,7 +90,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
                 int i = 0;
                 AVCodecHWConfig* configPtr;
 
-                while ((configPtr = ffmpeg.avcodec_get_hw_config(codec, i++)) != null) {
+                while ((configPtr = avcodec_get_hw_config(codec, i++)) != null) {
                     const int reqMethods =
                         (int)(CodecHardwareMethods.DeviceContext | CodecHardwareMethods.FramesContext);
 

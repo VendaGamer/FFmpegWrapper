@@ -43,7 +43,7 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// <remarks>
     /// Packed formats (like RGB24) have 1 plane, while planar formats (like YUV420P) have multiple planes.
     /// </remarks>
-    public int NumPlanes => ffmpeg.av_pix_fmt_count_planes(PixelFormat);
+    public int NumPlanes => av_pix_fmt_count_planes(PixelFormat);
     
     /// <summary>
     /// Gets a value indicating whether this pixel format uses a planar layout.
@@ -121,7 +121,7 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// <returns>A string in the format "WIDTHxHEIGHT PIXEL_FORMAT_NAME".</returns>
     public override string ToString()
     {
-        return $"{Width}x{Height} {ffmpeg.av_get_pix_fmt_name(PixelFormat)}";
+        return $"{Width}x{Height} {av_get_pix_fmt_name(PixelFormat)}";
     }
     
     /// <summary>

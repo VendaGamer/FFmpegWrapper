@@ -2,31 +2,86 @@
 
 using Abstractions;
 
-public unsafe abstract class MediaFrame : FFObject<AVFrame>
+public abstract class MediaFrame : FFObject<AVFrame>
 {
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
-    public long? BestEffortTimestamp => _handle->best_effort_timestamp;
+    public long? BestEffortTimestamp {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return Handle.Raw->best_effort_timestamp;
+            }
+        }
+    }
 
     /// <inheritdoc cref="AVFrame.pts" />
     public long? PresentationTimestamp {
-        get => FFHelper.GetPts(_handle->pts);
-        set => FFHelper.SetPts(ref _handle->pts, value);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return FFHelper.GetPts(Handle.Raw->pts);
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set {
+            unsafe
+            {
+                FFHelper.SetPts(ref Handle.Raw->pts, value);
+            }
+        }
     }
 
     /// <summary> Duration of the frame, in the same units as <see cref="PresentationTimestamp"/>. Null if unknown. </summary>
     public long? Duration {
-        get => _handle->duration > 0 ? _handle->duration : null;
-        set => _handle->duration = value ?? 0;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                var handle = Handle.Raw;
+                
+                return handle->duration is 0 ? Handle.Raw->duration : null;
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set {
+            unsafe {
+                var handle = Handle.Raw;
+
+                if (value is null)
+                    handle->duration = 0;
+                else
+                    handle->duration = value.Value;
+            }
+        }
     }
 
     /// <inheritdoc cref="AVFrame.side_data"/>
-    public FrameSideDataList SideData => new(_handle);
+    public FrameSideDataList SideData {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return new FrameSideDataList(_handle);
+            }
+        }
+    }
 
-    protected override void Free()
+    public ReadOnlySpan<int> LineSize {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return new ReadOnlySpan<int>(Handle.Raw->linesize, AV_NUM_DATA_POINTERS);
+            }
+        }
+    }
+
+    protected override unsafe void Free()
     {
         if (_handle is not null) {
             fixed (AVFrame** ppFrame = &_handle) {
-                ffmpeg.av_frame_free(ppFrame);
+                av_frame_free(ppFrame);
             }
         }
     }

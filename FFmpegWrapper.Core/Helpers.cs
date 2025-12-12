@@ -10,14 +10,14 @@ public static class FFHelper
     {
         unsafe
         {
-            byte* buf = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE + 1];
-            ffmpeg.av_strerror(errno, buf, ffmpeg.AV_ERROR_MAX_STRING_SIZE);
+            byte* buf = stackalloc byte[AV_ERROR_MAX_STRING_SIZE + 1];
+            av_strerror(errno, buf, AV_ERROR_MAX_STRING_SIZE);
             return Marshal.PtrToStringAnsi((nint)buf)!;
         }
     }
     public static int CheckError(this int errno)
     {
-        if (errno < 0 && errno != ffmpeg.EAGAIN && errno != ffmpeg.AVERROR_EOF) {
+        if (errno < 0 && errno is not (int)AVError.AVERROR_EOF) {
             ThrowError(errno);
         }
         return errno;
@@ -33,7 +33,7 @@ public static class FFHelper
     }
     public static int CheckError(this int errno, string msg)
     {
-        if (errno < 0 && errno != ffmpeg.EAGAIN && errno != ffmpeg.AVERROR_EOF) {
+        if (errno < 0 &&  errno is not (int)AVError.AVERROR_EOF) {
             ThrowError(errno, msg);
         }
         return errno;
@@ -45,21 +45,36 @@ public static class FFHelper
         throw new InvalidOperationException(msg + ": " + ErrorString(errno));
     }
 
-    public static ReadOnlySpan<T> GetSpanFromSentinelTerminatedPtr<T>(FFHandle<T> handle, T terminator) where T : unmanaged
+    public static unsafe ReadOnlySpan<byte> Utf8SpanFromPtrNullTerm(byte* handle)
     {
-        unsafe
-        {
-            int len = 0;
-            if (handle.Raw is null) {
-                return ReadOnlySpan<T>.Empty;
-            }
-        
-            while (!handle.Raw[len].Equals(terminator)) {
-                len++;
-            }
-        
-            return new ReadOnlySpan<T>(handle.Raw, len);
+#if NET6_0_OR_GREATER
+        return MemoryMarshal.CreateReadOnlySpanFromNullTerminated(handle);
+#else
+        int len = 0;
+        if (handle is null) {
+            return ReadOnlySpan<byte>.Empty;
         }
+        
+        while (handle[len] is not 0) {
+            len++;
+        }
+
+        return new ReadOnlySpan<byte>(handle, len);
+#endif
+    }
+
+    public unsafe static ReadOnlySpan<T> GetSpanFromSentinelTerminatedPtr<T>(T* handle, T terminator) where T : unmanaged
+    {
+        int len = 0;
+        if (handle is null) {
+            return ReadOnlySpan<T>.Empty;
+        }
+        
+        while (!handle[len].Equals(terminator)) {
+            len++;
+        }
+        
+        return new ReadOnlySpan<T>(handle, len);
     }
 
     public static string SpanToStringUtf8(ReadOnlySpan<byte> span)
@@ -69,31 +84,25 @@ public static class FFHelper
     
     
 #if NET6_0_OR_GREATER
-    public static string PtrToStringUtf8(FFHandle<byte> ptr)
+    public static unsafe string PtrToStringUtf8(byte* ptr)
     {
-        unsafe
-        {
-            return SpanToStringUtf8(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr));
-        }
+        return SpanToStringUtf8(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr));
     }
 #else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string PtrToStringUtf8(FFHandle<byte> ptr)
+    public static unsafe string PtrToStringUtf8(byte* ptr)
     {
-        unsafe
-        {
-            int length = 0;
-            while (ptr.Raw[length] != 0)
-                length++;
-            
-            return SpanToStringUtf8(new ReadOnlySpan<byte>(ptr, length));
-        }
+        int length = 0;
+        while (ptr.Raw[length] != 0)
+            length++;
+        
+        return SpanToStringUtf8(new ReadOnlySpan<byte>(ptr, length));
     }
 #endif
 
     public static TimeSpan? GetTimeSpan(long pts, Rational timeBase)
     {
-        if (pts == ffmpeg.AV_NOPTS_VALUE) {
+        if (pts == AV_NOPTS_VALUE) {
             return null;
         }
         
@@ -106,7 +115,7 @@ public static class FFHelper
 #endif
     public static long? GetPts(long pts)
     {
-        if (pts == ffmpeg.AV_NOPTS_VALUE) {
+        if (pts == AV_NOPTS_VALUE) {
             return null;
         }
 
@@ -116,7 +125,7 @@ public static class FFHelper
     public static void SetPts(ref long pts, long? value)
     {
         if (value is null) {
-            pts = ffmpeg.AV_NOPTS_VALUE;
+            pts = AV_NOPTS_VALUE;
             return;
         }
         

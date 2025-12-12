@@ -77,7 +77,7 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
     {
         unsafe {
             fixed (AVHWFramesConstraints** desc = &_handle) {
-                ffmpeg.av_hwframe_constraints_free(desc);
+                av_hwframe_constraints_free(desc);
             }
         }
     }

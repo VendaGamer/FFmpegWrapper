@@ -2,8 +2,8 @@
 
 public abstract class MediaDecoder : CodecBase
 {
-    public unsafe MediaDecoder(AVCodecContext* ctx, AVMediaType expectedType, bool takeOwnership)
-        : base(ctx, expectedType, takeOwnership) { }
+    public unsafe MediaDecoder(FFHandle<AVCodecContext> ctx, AVMediaType expectedType)
+        : base(ctx, expectedType) { }
     
     public void SendPacket(MediaPacket? packet)
     {
@@ -11,7 +11,7 @@ public abstract class MediaDecoder : CodecBase
         {
             ThrowIfDisposed();
         
-            var result = ffmpeg.avcodec_send_packet(_handle, packet!.Handle);
+            var result = avcodec_send_packet(_handle, packet!.Handle);
             // Fast path for success
             if (result == 0) return;
         
@@ -29,7 +29,7 @@ public abstract class MediaDecoder : CodecBase
     {
         unsafe
         {
-            return (LavResult)ffmpeg.avcodec_send_packet(Handle, packet!.Handle);
+            return (LavResult)avcodec_send_packet(Handle, packet!.Handle);
         }
     }
     
@@ -38,13 +38,13 @@ public abstract class MediaDecoder : CodecBase
         unsafe
         {
             ThrowIfDisposed();
-            var result = ffmpeg.avcodec_receive_frame(_handle, frame.Handle);
+            var result = avcodec_receive_frame(_handle, frame.Handle);
         
             // Fast path for success (most common case)
             if (result == 0) return true;
         
             // Fast path for common non-error cases
-            if (result == ffmpeg.AVERROR(ffmpeg.EAGAIN) || result == ffmpeg.AVERROR_EOF) {
+            if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) {
                 return false;
             }
         
@@ -65,21 +65,21 @@ public abstract class MediaDecoder : CodecBase
         foreach (var packet in packets) {
             unsafe
             {
-                var sendResult = ffmpeg.avcodec_send_packet(_handle, packet.Handle);
-                if (sendResult != 0 && sendResult != ffmpeg.AVERROR_EOF) {
+                var sendResult = avcodec_send_packet(_handle, packet.Handle);
+                if (sendResult != 0 && sendResult != AVERROR_EOF) {
                     ((LavResult)sendResult).ThrowIfError("Could not send packet");
                     continue;
                 }
 
                 // Try to receive multiple frames from this packet
                 for (int i = framesDecoded; i < frames.Length; i++) {
-                    var receiveResult = ffmpeg.avcodec_receive_frame(_handle, frames[i].Handle);
+                    var receiveResult = avcodec_receive_frame(_handle, frames[i].Handle);
                 
                     if (receiveResult == 0) {
                         framesDecoded++;
-                    } else if (receiveResult == ffmpeg.AVERROR(ffmpeg.EAGAIN)) {
+                    } else if (receiveResult == AVERROR(EAGAIN)) {
                         break; // Need more input
-                    } else if (receiveResult == ffmpeg.AVERROR_EOF) {
+                    } else if (receiveResult == AVERROR_EOF) {
                         return framesDecoded; // End of stream
                     } else {
                         ((LavResult)receiveResult).ThrowIfError("Could not receive frame");

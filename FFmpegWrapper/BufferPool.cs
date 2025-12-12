@@ -6,12 +6,19 @@ using Core;
 
 public class BufferPool : FFObject<AVBufferPool>
 {
-    public BufferPool(ulong size, AllocateBuffer? allocFunc = null)
+    private av_buffer_pool_init_alloc _alloc;
+    public BufferPool(nuint size, AllocateBuffer? allocFunc = null)
     {
         unsafe {
-            _handle = ffmpeg.av_buffer_pool_init(size, new av_buffer_pool_init_alloc_func{
-                Pointer = Marshal.GetFunctionPointerForDelegate(allocFunc)
-            });
+            
+            _alloc = NativeAlloc;
+            _handle = av_buffer_pool_init(size, (delegate* unmanaged[Cdecl]<nuint, AVBufferRef*>)
+                Marshal.GetFunctionPointerForDelegate(_alloc));
+            
+            AVBufferRef* NativeAlloc(nuint size)
+            {
+                return allocFunc(size);
+            }
         }
     }
 
@@ -26,9 +33,11 @@ public class BufferPool : FFObject<AVBufferPool>
     protected override unsafe void Free()
     {
         fixed (AVBufferPool** ptr = &_handle) {
-            ffmpeg.av_buffer_pool_uninit(ptr);
+            av_buffer_pool_uninit(ptr);
         }
     }
-    
-    public delegate FFHandle<AVBufferRef> AllocateBuffer(ulong size);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public unsafe delegate AVBufferRef* av_buffer_pool_init_alloc(nuint size);
+    public delegate FFHandle<AVBufferRef> AllocateBuffer(nuint size);
 }

@@ -28,7 +28,6 @@
     
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.HighPerformance" />
-        <PackageReference Include="FFmpeg.AutoGen.Abstractions" />
         <PackageReference Include="Microsoft.NETCore.Platforms" />
         <PackageReference Include="OwnerCore" />
         <PackageReference Include="System.Collections.Immutable" />

@@ -28,6 +28,6 @@ public sealed class CustomChannelLayout : CriticalFinalizerObject, IDisposable
 
     private unsafe void Dispose(bool disposing)
     {
-        ffmpeg.av_channel_layout_uninit(Layout.Handle);
+        av_channel_layout_uninit(Layout.Handle);
     }
 }

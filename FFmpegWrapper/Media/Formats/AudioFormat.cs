@@ -11,8 +11,8 @@ public readonly struct AudioFormat : IEquatable<AudioFormat>
     /// </summary>
     /// <value>The number of audio channels, typically ranging from 1 to 8 or more.</value>
     public int NumChannels => Layout.NumChannels;
-    public int BytesPerSample => ffmpeg.av_get_bytes_per_sample(SampleFormat);
-    public bool IsPlanar => ffmpeg.av_sample_fmt_is_planar(SampleFormat) != 0;
+    public int BytesPerSample => av_get_bytes_per_sample(SampleFormat);
+    public bool IsPlanar => av_sample_fmt_is_planar(SampleFormat) != 0;
 
     public AudioFormat(AVSampleFormat sampleFmt, int sampleRate, int numChannels)
     {

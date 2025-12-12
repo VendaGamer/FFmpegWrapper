@@ -108,7 +108,7 @@ public unsafe class VideoEncoder : MediaEncoder
     /// <summary> Returns the correct <see cref="MediaFrame.PresentationTimestamp"/> for the given frame number, in respect to <see cref="CodecBase.FrameRate"/> and <see cref="CodecBase.TimeBase"/>. </summary>
     public long GetFramePts(long frameNumber)
     {
-        return ffmpeg.av_rescale_q(frameNumber, ffmpeg.av_inv_q(FrameRate), TimeBase);
+        return av_rescale_q(frameNumber, av_inv_q(FrameRate), TimeBase);
     }
     
 }

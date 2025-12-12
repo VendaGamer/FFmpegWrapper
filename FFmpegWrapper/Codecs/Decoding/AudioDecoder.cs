@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
+using System.Runtime.InteropServices;
+
 /// <summary>
 /// Decodes audio files
 /// </summary>
@@ -28,11 +30,14 @@ public class AudioDecoder : MediaDecoder
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 
     public AudioDecoder(AVCodecID codecId)
-        : this(MediaCodec.GetDecoder(codecId)) { }
+        : this(MediaCodec.GetDecoder(codecId))
+    {
+        
+    }
 
     public unsafe AudioDecoder(MediaCodec codec)
-        : this(AllocContext(codec), takeOwnership: true) { }
+        : this(AllocContext(codec)) { }
 
-    public unsafe AudioDecoder(AVCodecContext* ctx, bool takeOwnership)
-        : base(ctx, MediaTypes.Audio, takeOwnership) { }
+    public AudioDecoder(FFHandle<AVCodecContext> ctx)
+        : base(ctx, MediaTypes.Audio) { }
 }

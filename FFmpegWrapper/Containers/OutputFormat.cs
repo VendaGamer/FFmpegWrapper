@@ -3,6 +3,8 @@ using CommunityToolkit.HighPerformance.Enumerables;
 
 namespace FFmpegWrapper.Containers;
 
+using Extensions;
+
 public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquatable<OutputFormat>
 {
     public FFHandle<AVOutputFormat> Handle {
@@ -58,7 +60,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
     // Check if this format supports a specific codec
     public unsafe bool SupportsCodec(AVCodecID codecId)
     {
-        return ffmpeg.av_guess_codec(Handle, null, null, null, AVMediaType.AVMEDIA_TYPE_UNKNOWN) == codecId;
+        return av_guess_codec(Handle, null, null, null, AVMediaType.AVMEDIA_TYPE_UNKNOWN) == codecId;
     }
 
     // Get all available output formats
@@ -89,7 +91,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
                 void* iterState = null;
                 AVOutputFormat* outputFormat;
                 
-                while ((outputFormat = ffmpeg.av_muxer_iterate(&iterState)) != null) {
+                while ((outputFormat = av_muxer_iterate(&iterState)) != null) {
                     builder.Add(new OutputFormat(outputFormat));
                 }
             }
@@ -100,15 +102,15 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
     }
 
     // Find format by name
-    public static bool TryFindByShortName(string shortName, out OutputFormat format)
+    public static bool TryFindByShortName(ReadOnlySpan<byte> shortName, out OutputFormat format)
     {
         unsafe {
 
-            if (string.IsNullOrEmpty(shortName))
+            if (shortName.IsEmpty)
                 goto NotFound;
 
             
-            var res = ffmpeg.av_guess_format(shortName, null, null);
+            var res = av_guess_format(shortName.RawHandle, null, null);
 
             if (res is not null) {
                 format = new OutputFormat(res);
@@ -122,15 +124,15 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
     }
     
     // Find format by name
-    public static bool TryFindByFileName(string fileName, out OutputFormat format)
+    public static bool TryFindByFileName(ReadOnlySpan<byte> fileName, out OutputFormat format)
     {
         unsafe {
 
-            if (string.IsNullOrEmpty(fileName))
+            if (fileName.IsEmpty)
                 goto NotFound;
 
             
-            var res = ffmpeg.av_guess_format(null, fileName, null);
+            var res = av_guess_format(null, fileName.RawHandle, null);
 
             if (res is not null) {
                 format = new OutputFormat(res);
@@ -143,15 +145,15 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
         }
     }
     
-    public static bool TryFindByMimeType(string fileName, out OutputFormat format)
+    public static bool TryFindByMimeType(ReadOnlySpan<byte> fileName, out OutputFormat format)
     {
         unsafe {
 
-            if (string.IsNullOrEmpty(fileName))
+            if (fileName.IsEmpty)
                 goto NotFound;
 
             
-            var res = ffmpeg.av_guess_format(null, null, fileName);
+            var res = av_guess_format(null, null, fileName.RawHandle);
 
             if (res is not null) {
                 format = new OutputFormat(res);
@@ -163,17 +165,17 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
             return false;
         }
     }
+
+    private const byte DOT = (byte)'.';
     
-    public static bool TryFindByExtension(string extension, out OutputFormat outputFormat)
+    public static bool TryFindByExtension(ReadOnlySpan<byte> extension, out OutputFormat outputFormat)
     {
         unsafe {
 
-            if (string.IsNullOrEmpty(extension))
+            if (extension.IsEmpty)
                 goto NotFound;
             
-            var res = extension.LastIndexOf('.') == -1 ?
-                ffmpeg.av_guess_format(null, $"dummy.{extension}", null) :
-                ffmpeg.av_guess_format(null, extension, null);
+            var res = av_guess_format(null, extension.RawHandle, null);
 
             if (res is not null) {
                 outputFormat = new OutputFormat(res);
@@ -181,7 +183,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
             }
             
             NotFound:
-            outputFormat = default!;
+            outputFormat = default;
             return false;
         }
     }
@@ -210,18 +212,20 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
                 }
             }
         }
-
+        
+        
         outputFormat = default!;
         return false;
     }
     
 
     // Check if format supports specific features
-    public unsafe bool SupportsGlobalHeader => (Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0;
     
-    public unsafe bool SupportsSeek => (Flags & ffmpeg.AVFMT_SEEK_TO_PTS) != 0;
+    public unsafe bool SupportsGlobalHeader => (Flags & (int)AVFormatCapabilityFlags.AVFMT_GLOBALHEADER) != 0;
     
-    public unsafe bool RequiresFilename => (Flags & ffmpeg.AVFMT_NOFILE) == 0;
+    public unsafe bool SupportsSeek => (Flags & (int)AVFormatCapabilityFlags.AVFMT_SEEK_TO_PTS) != 0;
+    
+    public unsafe bool RequiresFilename => (Flags & (int)AVFormatCapabilityFlags.AVFMT_NOFILE) == 0;
 
     // Equality implementation
     public unsafe bool Equals(OutputFormat other)

@@ -4,37 +4,43 @@ using System.Runtime.InteropServices;
 
 using Core;
 
-public sealed class CustomBufferPool<TUserData> : BufferPool
-    where TUserData : class
+public sealed class CustomBufferPool<TUserData>
+    where TUserData : unmanaged
 {
     public readonly TUserData UserData;
+    private av_buffer_pool_init2_alloc _alloc;
+    private av_buffer_pool_init2_pool_free _free;
     
-    public CustomBufferPool(ulong size, TUserData userData,
-        AllocateBuffer? allocFunc = null, FreeUserData? freeUserData = null)
-        : base(AllocateBufferPool(size, userData, allocFunc, freeUserData))
+    public CustomBufferPool(nuint size, TUserData userData,
+        AllocateBufferWithUserData? allocFunc = null, FreeUserData? freeUserData = null)
     {
         UserData = userData;
-    }
-
-    private static FFHandle<AVBufferPool> AllocateBufferPool(
-        ulong size, TUserData userData,
-        AllocateBuffer? allocFunc = null,
-        FreeUserData? freeUserData = null)
-    {
+        
         unsafe
         {
-            return ffmpeg.av_buffer_pool_init2(size,
-                Unsafe.AsPointer(ref userData),
-                new av_buffer_pool_init2_alloc_func() {
-                    Pointer = Marshal.GetFunctionPointerForDelegate(allocFunc)
-                },
-                new av_buffer_pool_init2_pool_free_func() {
-                    Pointer = Marshal.GetFunctionPointerForDelegate(freeUserData)
-                });
+            _alloc = NativeAlloc;
+            _free = NativeFree;
+        
+
+            av_buffer_pool_init2(size, Unsafe.AsPointer(ref userData), 
+                (delegate* unmanaged[Cdecl]<void*, nuint, AVBufferRef*>)
+                        Marshal.GetFunctionPointerForDelegate(_alloc),
+                    (delegate* unmanaged[Cdecl]<void*, void>)
+                        Marshal.GetFunctionPointerForDelegate(_free));
+            
+
+            unsafe AVBufferRef* NativeAlloc(void* opaque, nuint size)
+            {
+                return allocFunc((TUserData*)opaque, size).Raw;
+            }
+        
+            unsafe void NativeFree(void* opaque)
+            {
+                freeUserData((TUserData*)opaque);
+            }
         }
     }
-
-    public delegate FFHandle<AVBufferRef> AllocateBufferWithUserData(ulong size, TUserData data);
-
-    public delegate void FreeUserData(TUserData userData);
+    
+    public delegate FFHandle<AVBufferRef> AllocateBufferWithUserData(FFHandle<TUserData> data, nuint size);
+    public unsafe delegate void FreeUserData(FFHandle<TUserData> userData);
 }

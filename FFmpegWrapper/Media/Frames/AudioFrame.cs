@@ -9,9 +9,23 @@ public class AudioFrame : MediaFrame
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 
     public unsafe byte** Data => (byte**)&_handle->data;
-    public int Stride => Handle.Ref.linesize[0];
+    public ReadOnlySpan<int> LineSize {
+        get {
+            unsafe
+            {
+                return new ReadOnlySpan<int>(Handle.Raw->linesize, AV_NUM_DATA_POINTERS);
+            }
+        }
+    }
 
-    public bool IsPlanar => ffmpeg.av_sample_fmt_is_planar(SampleFormat) != 0;
+    public int Stride {
+        get {
+            
+        }
+    }
+    
+
+    public bool IsPlanar => av_sample_fmt_is_planar(SampleFormat) is not 0;
     /// <summary>
     /// 
     /// </summary>
@@ -28,11 +42,14 @@ public class AudioFrame : MediaFrame
 
     public int Capacity {
         get {
-            ref var handle = ref Handle.Ref;
+            unsafe
+            {
+                ref var handle = ref Handle.Ref;
             
-            return handle.linesize[0] / 
-                ffmpeg.av_get_bytes_per_sample(SampleFormat)
-                 * (IsPlanar ? 1 : handle.ch_layout.nb_channels);
+                return handle.linesize[0] / 
+                       av_get_bytes_per_sample(SampleFormat)
+                       * (IsPlanar ? 1 : handle.ch_layout.nb_channels);
+            }
         }
     }
 
@@ -40,13 +57,13 @@ public class AudioFrame : MediaFrame
     {
         unsafe
         {
-            _handle = ffmpeg.av_frame_alloc();
+            _handle = av_frame_alloc();
             _handle->format = (int)fmt.SampleFormat;
             _handle->sample_rate = fmt.SampleRate;
             fmt.Layout.CopyTo(&_handle->ch_layout);
 
             _handle->nb_samples = capacity;
-            ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
+            av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
         }
     }
     public AudioFrame(AVSampleFormat fmt, int sampleRate, int numChannels, int capacity)
@@ -96,7 +113,7 @@ public class AudioFrame : MediaFrame
 
             fixed (T* ptr = samples) {
                 byte** temp = null;
-                ffmpeg.av_samples_copy(_handle->extended_data, temp, 0, 0, count, fmt.NumChannels, fmt.SampleFormat);
+                av_samples_copy(_handle->extended_data, temp, 0, 0, count, fmt.NumChannels, fmt.SampleFormat);
             }
             return count;
             

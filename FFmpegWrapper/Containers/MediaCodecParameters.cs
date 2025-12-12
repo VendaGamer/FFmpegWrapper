@@ -3,7 +3,6 @@
 using Abstractions;
 
 using Media;
-using Media.Streams;
 
 public class MediaCodecParameters : FFObject<AVCodecParameters>
 {
@@ -17,7 +16,7 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
     public MediaCodecParameters()
     {
         unsafe {
-            _handle = ffmpeg.avcodec_parameters_alloc();
+            _handle = avcodec_parameters_alloc();
         }
     }
     
@@ -53,7 +52,14 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
     public int Profile => Handle.Ref.profile;
 
     /// <summary> Shorthand for <c>ffmpeg.avcodec_profile_name(CodecId, Profile)</c>. </summary>
-    public string ProfileName => ffmpeg.avcodec_profile_name(CodecId, Profile);
+    public ReadOnlySpan<byte> ProfileName {
+        get {
+            unsafe
+            {
+                return FFHelper.Utf8SpanFromPtrNullTerm(avcodec_profile_name(CodecId, Profile));
+            }
+        }
+    }
 
     /// <inheritdoc cref="AVCodecParameters.level" />
     public int Level => Handle.Ref.level;
@@ -148,7 +154,7 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
     protected override unsafe void Free()
     {
         fixed (AVCodecParameters** ptr = &_handle) {
-            ffmpeg.avcodec_parameters_free(ptr);
+            avcodec_parameters_free(ptr);
         }
     }
 }

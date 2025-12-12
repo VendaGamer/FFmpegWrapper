@@ -1,5 +1,6 @@
 namespace FFmpegWrapper.Tests;
-using FFmpeg.Wrapper;
+
+using Core;
 
 public class RationalTests : TestBase
 {

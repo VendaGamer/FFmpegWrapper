@@ -29,10 +29,10 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
     public Rational Reciprocal() => new(Den, Num);
 
     /// <param name="max"> Maximum allowed numerator and denominator. </param>
-    public static Rational FromDouble(double value, int max) => ffmpeg.av_d2q(value, max);
+    public static Rational FromDouble(double value, int max) => av_d2q(value, max);
 
     /// <summary> Rescales a fixed-point integer based on <paramref name="oldScale"/> to <paramref name="newScale"/>. </summary>
-    public static long Rescale(long value, Rational oldScale, Rational newScale) => ffmpeg.av_rescale_q(value, oldScale, newScale);
+    public static long Rescale(long value, Rational oldScale, Rational newScale) => av_rescale_q(value, oldScale, newScale);
 
     /// <summary> Rescales a timestamp based around an arbitrary time scale to a <see cref="TimeSpan"/>. </summary>
     /// <param name="scale">The scale that represents one second of time.</param>
@@ -42,10 +42,10 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
         return TimeSpan.FromTicks(ticks);
     }
 
-    public static Rational operator +(Rational a, Rational b) => ffmpeg.av_add_q(a, b);
-    public static Rational operator -(Rational a, Rational b) => ffmpeg.av_sub_q(a, b);
-    public static Rational operator *(Rational a, Rational b) => ffmpeg.av_mul_q(a, b);
-    public static Rational operator /(Rational a, Rational b) => ffmpeg.av_div_q(a, b);
+    public static Rational operator +(Rational a, Rational b) => av_add_q(a, b);
+    public static Rational operator -(Rational a, Rational b) => av_sub_q(a, b);
+    public static Rational operator *(Rational a, Rational b) => av_mul_q(a, b);
+    public static Rational operator /(Rational a, Rational b) => av_div_q(a, b);
 
     //Comparison for equality is to properly handle the degenerate case of 0/0, where cmp_q() returns INT_MIN.
     public static bool operator ==(Rational a, Rational b) => a.CompareTo(b) == 0;
@@ -55,7 +55,7 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
     public static bool operator >=(Rational a, Rational b) => a.CompareTo(b) is 0 or +1;
     public static bool operator <=(Rational a, Rational b) => a.CompareTo(b) is 0 or -1;
 
-    public static explicit operator double(Rational q) => ffmpeg.av_q2d(q);
+    public static explicit operator double(Rational q) => av_q2d(q);
 
     public static implicit operator Rational(int num) => new(num, 1);
     public static implicit operator Rational(AVRational q) => new(q.num, q.den);
@@ -71,7 +71,7 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
     public bool Equals(Rational other) => other == this || ((other.Den | Den) == 0 && (other.Num ^ Num) >= 0);
 
     /// <inheritdoc />
-    public int CompareTo(Rational other) => ffmpeg.av_cmp_q(this, other);
+    public int CompareTo(Rational other) => av_cmp_q(this, other);
 
     /// <inheritdoc />
     public bool Equals(Rational x, Rational y)

@@ -18,8 +18,8 @@ public readonly struct ExistingMediaDictionary : IFFHandleSourceObserver<AVDicti
     public void Clear()
     {
         unsafe {
-            ffmpeg.av_dict_free(_handleSource);
-            ffmpeg.av_dict_copy(_handleSource, null, 0).CheckError("Could not clear allocate new dictionary");
+            av_dict_free(_handleSource);
+            av_dict_copy(_handleSource, null, 0).CheckError("Could not clear allocate new dictionary");
         }
     }
 }

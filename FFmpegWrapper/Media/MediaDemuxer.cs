@@ -4,6 +4,10 @@ using Abstractions;
 using Codecs;
 using Codecs.Decoding;
 
+using CommunityToolkit.HighPerformance;
+
+using Extensions;
+
 using Streams;
 
 public class MediaDemuxer : FFObject<AVFormatContext>
@@ -14,7 +18,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         get {
             unsafe
             {
-                return FFHelper.GetTimeSpan(Handle.Ref.duration, new Rational(1, ffmpeg.AV_TIME_BASE));
+                return FFHelper.GetTimeSpan(Handle.Ref.duration, new Rational(1, AV_TIME_BASE));
             }
         }
     }
@@ -48,7 +52,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// or use <see cref="MediaDemuxer(string, IEnumerable{KeyValuePair{string, string}})"/> with the
     /// <c>protocol_whitelist=file</c> option.
     /// </remarks>
-    public unsafe MediaDemuxer(string url)
+    public unsafe MediaDemuxer(ReadOnlySpan<byte> url)
         : this(CreateContext(url, null, null)) { }
 
     /// <inheritdoc />
@@ -68,7 +72,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <remarks> See https://ffmpeg.org/ffmpeg-formats.html, https://ffmpeg.org/ffmpeg-protocols.html </remarks>
     /// <param name="url">URL to be opened for demuxing</param>
     /// <param name="options"> A dictionary filled with AVFormatContext and demuxer-private options. </param>
-    public unsafe MediaDemuxer(string url, IEnumerable<KeyValuePair<string, string>> options)
+    public unsafe MediaDemuxer(ReadOnlySpan<byte> url, Span2D<byte> options)
         : this(CreateContext(url, null, options)) { }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
@@ -82,9 +86,9 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
     }
     
-    private static unsafe FFHandle<AVFormatContext> CreateContext(string? url, FFHandle<AVIOContext> pb, IEnumerable<KeyValuePair<string, string>>? options)
+    private static unsafe FFHandle<AVFormatContext> CreateContext(ReadOnlySpan<byte> url, FFHandle<AVIOContext> pb, Span2D<byte> options)
     {
-        AVFormatContext* ctx = ffmpeg.avformat_alloc_context();
+        AVFormatContext* ctx = avformat_alloc_context();
         if (ctx == null) {
             throw new OutOfMemoryException("Could not allocate demuxer.");
         }
@@ -94,18 +98,18 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         AVDictionary* rawOpts = null;
         MediaDictionary.Populate(&rawOpts, options);
         
-        ffmpeg.avformat_open_input(&ctx, url, null, &rawOpts).CheckError("Could not open input");
+        avformat_open_input(&ctx, url.RawHandle, null, &rawOpts).CheckError("Could not open input");
 
         try {
-            if (ffmpeg.av_dict_count(rawOpts) > 0) {
+            if (av_dict_count(rawOpts) > 0) {
                 string invalidKeys = string.Join("', '", new MediaDictionary(rawOpts).Select(e => e.Key));
                 throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '{invalidKeys}')");
             }
         } finally {
-            ffmpeg.av_dict_free(&rawOpts);
+            av_dict_free(&rawOpts);
         }
 
-        ffmpeg.avformat_find_stream_info(ctx, null).CheckError("Could not find stream information");
+        avformat_find_stream_info(ctx, null).CheckError("Could not find stream information");
         return ctx;
     }
 
@@ -115,7 +119,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         unsafe
         {
             ThrowIfDisposed();
-            var index = ffmpeg.av_find_best_stream(_handle, type, -1, -1, null, 0);
+            var index = av_find_best_stream(_handle, type, -1, -1, null, 0);
         
             if (index < 0) {
                 stream = default;
@@ -151,7 +155,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
                 _ => throw new NotSupportedException($"Stream type {stream.CodecPars.MediaType} is not supported."),
             };
             
-            ffmpeg.avcodec_parameters_to_context(decoder.Handle, codecPar).CheckError("Could not copy stream parameters to the decoder.");
+            avcodec_parameters_to_context(decoder.Handle, codecPar).CheckError("Could not copy stream parameters to the decoder.");
         
             // Fixup some unset properties for consistency 
             decoder.TimeBase = stream.TimeBase;
@@ -173,9 +177,9 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         {
             ThrowIfDisposed();
             
-            int result = ffmpeg.av_read_frame(_handle, packet.Clear());
+            int result = av_read_frame(_handle, packet.Clear());
 
-            if (result < 0 && result != ffmpeg.AVERROR_EOF) {
+            if (result < 0 && result is not (int)AVError.AVERROR_EOF) {
                 result.ThrowError(msg: "Failed to read packet");
             }
             return result >= 0;
@@ -190,7 +194,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <exception cref="InvalidOperationException">If the underlying IO context doesn't support seeks.</exception>
     /// <exception cref="ArgumentException">If <paramref name="stream"/> is not owned by the demuxer.</exception>
     /// <returns>true if succeeded</returns>
-    public bool Seek(TimeSpan timestamp, SeekOptions options, MediaStream? stream = null)
+    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options, MediaStream? stream = null)
     {
         ThrowIfDisposed();
 
@@ -208,16 +212,16 @@ public class MediaDemuxer : FFObject<AVFormatContext>
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
             }
             
-            ts = ffmpeg.av_rescale_q(timestamp.Ticks,
+            ts = av_rescale_q(timestamp.Ticks,
                 new Rational(1, (int)TimeSpan.TicksPerSecond), stream.Value.TimeBase);
             
         } else {
             streamIndex = -1;
-            ts = ffmpeg.av_rescale(timestamp.Ticks, ffmpeg.AV_TIME_BASE, TimeSpan.TicksPerSecond);
+            ts = av_rescale(timestamp.Ticks, AV_TIME_BASE, TimeSpan.TicksPerSecond);
         }
 
         unsafe {
-            return ffmpeg.av_seek_frame(_handle, streamIndex, ts, (int)options) >= 0;
+            return av_seek_frame(_handle, streamIndex, ts, (int)options) >= 0;
         }
     }
 
@@ -232,7 +236,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
             }
     
-            var guessedRate = ffmpeg.av_guess_frame_rate(_handle, stream.Handle, null);
+            var guessedRate = av_guess_frame_rate(_handle, stream.Handle, null);
     
             // Return the guessed rate (caller needs to validate)
             return guessedRate;
@@ -243,6 +247,6 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     protected override unsafe void Free()
     {
         _ioContext?.Dispose();
-        fixed (AVFormatContext** ptr = &_handle) ffmpeg.avformat_close_input(ptr);
+        fixed (AVFormatContext** ptr = &_handle) avformat_close_input(ptr);
     }
 }

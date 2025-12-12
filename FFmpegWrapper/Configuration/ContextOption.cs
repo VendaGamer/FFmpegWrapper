@@ -83,16 +83,16 @@ public readonly struct ContextOption
     /// <param name="value"></param>
     public static unsafe void Set(void* obj, string name, OptionValue value, bool searchChildren)
     {
-        int flags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0;
+        int flags = searchChildren ? AV_OPT_SEARCH_CHILDREN : 0;
         
         int ret = value.BoxedValue switch {
-            string v    => ffmpeg.av_opt_set(obj, name, v, flags),
-            long v      => ffmpeg.av_opt_set_int(obj, name, v, flags),
-            double v    => ffmpeg.av_opt_set_double(obj, name, v, flags),
-            Rational v  => ffmpeg.av_opt_set_q(obj, name, v, flags),
-            ChannelLayout v => ffmpeg.av_opt_set_chlayout(obj, name, &v.Native, flags),
-            AVPixelFormat v => ffmpeg.av_opt_set_pixel_fmt(obj, name, v, flags),
-            AVSampleFormat v => ffmpeg.av_opt_set_sample_fmt(obj, name, v, flags),
+            string v    => av_opt_set(obj, name, v, flags),
+            long v      => av_opt_set_int(obj, name, v, flags),
+            double v    => av_opt_set_double(obj, name, v, flags),
+            Rational v  => av_opt_set_q(obj, name, v, flags),
+            ChannelLayout v => av_opt_set_chlayout(obj, name, &v.Native, flags),
+            AVPixelFormat v => av_opt_set_pixel_fmt(obj, name, v, flags),
+            AVSampleFormat v => av_opt_set_sample_fmt(obj, name, v, flags),
             byte[] v        => SetBinary(v),
             _ => throw new ArgumentOutOfRangeException()
         };
@@ -105,7 +105,7 @@ public readonly struct ContextOption
         int SetBinary(byte[] data)
         {
             fixed (byte* pData = data) {
-                return ffmpeg.av_opt_set_bin(obj, name, pData, data.Length, flags);
+                return av_opt_set_bin(obj, name, pData, data.Length, flags);
             }
         }
     }
@@ -113,13 +113,13 @@ public readonly struct ContextOption
     /// <summary> Gets the value of an option in <paramref name="obj"/> as a string. </summary>
     public static string? GetAsString(void* obj, string name, bool searchChildren)
     {
-        int flags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0;
+        int flags = searchChildren ? AV_OPT_SEARCH_CHILDREN : 0;
 
         byte* value;
-        ffmpeg.av_opt_get(obj, name, flags, &value);
+        av_opt_get(obj, name, flags, &value);
 
         string? str = FFHelper.PtrToStringUtf8(value);
-        ffmpeg.av_free(value);
+        av_free(value);
         return str;
     }
 
@@ -130,8 +130,8 @@ public readonly struct ContextOption
     {
         var opts = new List<ContextOption>();
         AVOption* iter = null;
-        while ((iter = ffmpeg.av_opt_next(obj, iter)) != null) {
-            if (iter->type == AV_OPT_TYPE_CONST || (skipDefaults && ffmpeg.av_opt_is_set_to_default(obj, iter) != 0)) continue;
+        while ((iter = av_opt_next(obj, iter)) != null) {
+            if (iter->type == AV_OPT_TYPE_CONST || (skipDefaults && av_opt_is_set_to_default(obj, iter) != 0)) continue;
 
             opts.Add(new ContextOption(iter));
         }

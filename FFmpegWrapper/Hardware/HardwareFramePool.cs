@@ -28,10 +28,10 @@ public unsafe class HardwareFramePool : FFObject<AVBufferRef>
     /// <summary> Allocate a new frame attached to the current hardware frame pool. </summary>
     public VideoFrame AllocFrame()
     {
-        var frame = ffmpeg.av_frame_alloc();
-        int err = ffmpeg.av_hwframe_get_buffer(_handle, frame, 0);
+        var frame = av_frame_alloc();
+        int err = av_hwframe_get_buffer(_handle, frame, 0);
         if (err < 0) {
-            ffmpeg.av_frame_free(&frame);
+            av_frame_free(&frame);
             err.ThrowError(msg: "Failed to allocate hardware frame");
         }
         return new VideoFrame(frame);
@@ -41,7 +41,7 @@ public unsafe class HardwareFramePool : FFObject<AVBufferRef>
     {
         if (_handle != null) {
             fixed (AVBufferRef** ppCtx = &_handle) {
-                ffmpeg.av_buffer_unref(ppCtx);
+                av_buffer_unref(ppCtx);
             }
         }
     }

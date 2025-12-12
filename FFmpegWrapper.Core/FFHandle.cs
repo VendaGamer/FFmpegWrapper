@@ -4,7 +4,7 @@ namespace FFmpegWrapper.Core;
 /// TODO: Comment
 /// </summary>
 /// <typeparam name="T">Okay</typeparam>
-public readonly struct FFHandle<T> : IEquatable<FFHandle<T>>
+public readonly struct FFHandle<T>
     where T : unmanaged
 {
     /// <summary>
@@ -82,19 +82,12 @@ public readonly struct FFHandle<T> : IEquatable<FFHandle<T>>
         return new FFHandle<T>(handle);
     }
     
-    /// <inheritdoc />
     public bool Equals(FFHandle<T> other)
     {
         unsafe
         {
             return Raw == other.Raw;
         }
-    }
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj)
-    {
-        return obj is FFHandle<T> other && Equals(other);
     }
 
 

@@ -1,5 +1,6 @@
 namespace FFmpegWrapper.Media.Frames;
 
+using System.Runtime.InteropServices;
 using System.Text;
 
 public unsafe struct FrameSideDataList
@@ -26,24 +27,24 @@ public unsafe struct FrameSideDataList
     /// <summary> Returns the side data entry for the given type, or null if not present. </summary>
     public FrameSideData? Get(AVFrameSideDataType type)
     {
-        AVFrameSideData* entry = ffmpeg.av_frame_get_side_data(_frame, type);
+        AVFrameSideData* entry = av_frame_get_side_data(_frame, type);
         return entry != null ? new FrameSideData(entry) : null;
     }
 
     /// <summary> Allocates and adds a new a side data entry. </summary>
-    public FrameSideData Add(AVFrameSideDataType type, int size)
+    public FrameSideData Add(AVFrameSideDataType type, nuint size)
     {
-        var entry = ffmpeg.av_frame_new_side_data(_frame, type, (ulong)size);
+        var entry = av_frame_new_side_data(_frame, type, size);
         if (entry == null) {
             throw new OutOfMemoryException();
         }
         return new FrameSideData(entry);
     }
-
+    
     public bool Remove(AVFrameSideDataType type)
     {
         int prevCount = Count;
-        ffmpeg.av_frame_remove_side_data(_frame, type);
+        av_frame_remove_side_data(_frame, type);
         return Count != prevCount;
     }
 
@@ -51,14 +52,14 @@ public unsafe struct FrameSideDataList
     {
         // https://github.com/FFmpeg/FFmpeg/blob/4e120fbbbd087c3acbad6ce2e8c7b1262a5c8632/libavfilter/f_sidedata.c#L117
         while (_frame->nb_side_data != 0) {
-            ffmpeg.av_frame_remove_side_data(_frame, _frame->side_data[0]->type);
+            av_frame_remove_side_data(_frame, _frame->side_data[0]->type);
         }
     }
 
     /// <summary> Returns the value of an <see cref="AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX"/> entry. </summary>
     public int[]? GetDisplayMatrix()
     {
-        var entry = Get(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX);
+        var entry = Get(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX).Value.GetDataSpan<int>();
         
     }
 
@@ -90,7 +91,7 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
         get {
             unsafe
             {
-                return new Span<byte>(_handle->data, checked((int)_handle->size));
+                return new Span<byte>(_handle->data, (int)_handle->size);
             }
         }
     }
@@ -99,21 +100,25 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
         get {
             unsafe
             {
-                return new(Handle.Ref.metadata);
+                return new MediaDictionary(Handle.Ref.metadata);
             }
         }
     }
 
-    public AVFrameSideDataType Type => Handle->type;
+    public AVFrameSideDataType Type => Handle.Ref.type;
 
     /// <summary>
     /// Returns the side data payload reinterpreted as a <typeparamref name="T"/> pointer, 
     /// or null if the payload is smaller than <c>sizeof(T)</c>.
     /// </summary>
-    public FFHandle<T> GetDataHandle<T>() where T : unmanaged
+    public ReadOnlySpan<T> GetDataSpan<T>() where T : unmanaged
     {
         unsafe {
-            return _handle->size < (ulong)sizeof(T) ? null : (T*)_handle->data;
+            if (_handle->size % (nuint)sizeof(T) is 0) {
+                return new ReadOnlySpan<T>(handle.Raw->data, (int)handle.Raw->size);
+            }
+
+            return ReadOnlySpan<T>.Empty;
         }
     }
     
@@ -122,7 +127,7 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
     {
         unsafe
         {
-            return $"{ffmpeg.av_frame_side_data_name(Type)}: {_handle->size} bytes";
+            return $"{av_frame_side_data_name(Type)}: {_handle->size} bytes";
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-using Core.Flags;
+using CommunityToolkit.HighPerformance;
 
 using Media;
 
@@ -17,14 +17,14 @@ public sealed class SwScaler : FFObject<SwsContext>
     public PictureFormat InputFormat { get; private set; }
     public PictureFormat OutputFormat { get; private set; }
 
-    public SwScaler(PictureFormat inFmt, PictureFormat outFmt, InterpolationMode flags = InterpolationMode.Bicubic)
+    public SwScaler(PictureFormat inFmt, PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
     {
         unsafe
         {
             InputFormat = inFmt;
             OutputFormat = outFmt;
 
-            _handle = ffmpeg.sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
+            _handle = sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
                 outFmt.Width, outFmt.Height, outFmt.PixelFormat,
                 (int)flags, null, null, null);
 
@@ -34,7 +34,7 @@ public sealed class SwScaler : FFObject<SwsContext>
         }
     }
 
-    public bool Reinit(in PictureFormat inFmt, in PictureFormat outFmt, InterpolationMode flags = InterpolationMode.Bicubic)
+    public bool Reinit(in PictureFormat inFmt, in PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
     {
         if (inFmt.Equals(outFmt)) {
             return false;
@@ -46,7 +46,7 @@ public sealed class SwScaler : FFObject<SwsContext>
         
         unsafe
         {
-            _handle = ffmpeg.sws_getCachedContext(_handle, inFmt.Width, inFmt.Height, inFmt.PixelFormat,
+            _handle = sws_getCachedContext(_handle, inFmt.Width, inFmt.Height, inFmt.PixelFormat,
                 outFmt.Width, outFmt.Height, outFmt.PixelFormat,
                 (int)flags, null, null, null);
             
@@ -66,10 +66,10 @@ public sealed class SwScaler : FFObject<SwsContext>
             ThrowIfDisposed();
             int* table, invTable;
             int srcRange, dstRange, brightness, contrast, saturation;
-            ffmpeg.sws_getColorspaceDetails(_handle, &invTable, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation);
+            sws_getColorspaceDetails(_handle, &invTable, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation);
 
-            table = ffmpeg.sws_getCoefficients((int)input.Matrix);
-            invTable = ffmpeg.sws_getCoefficients((int)output.Matrix);
+            table = sws_getCoefficients((int)input.Matrix);
+            invTable = sws_getCoefficients((int)output.Matrix);
 
             if (input.Range != AVColorRange.AVCOL_RANGE_UNSPECIFIED) {
                 srcRange = input.Range == AVColorRange.AVCOL_RANGE_JPEG ? 1 : 0;
@@ -78,7 +78,7 @@ public sealed class SwScaler : FFObject<SwsContext>
                 dstRange = output.Range == AVColorRange.AVCOL_RANGE_JPEG ? 1 : 0;
             }
 
-            ffmpeg.sws_setColorspaceDetails(_handle, in *(int4*)invTable, srcRange, in *(int4*)table, dstRange, brightness, contrast, saturation);
+            sws_setColorspaceDetails(_handle, invTable, srcRange, table, dstRange, brightness, contrast, saturation);
         }
     }
     
@@ -89,67 +89,22 @@ public sealed class SwScaler : FFObject<SwsContext>
             CheckFrame(src, InputFormat, input: true);
             CheckFrame(dst, OutputFormat, input: false);
             
-            ffmpeg.sws_scale_frame(Handle, dst, src).CheckError();
+            sws_scale_frame(Handle, dst, src).CheckError();
         }
     }
 
     /// <summary> Converts and rescales <paramref name="src"/> into the given frame. The input pixel format must be interleaved. </summary>
     /// <param name="stride"> The number of bytes per pixel line in <paramref name="src"/>. </param>
-    public void Convert(ReadOnlySpan<byte> src, int stride, FFHandle<AVFrame> dst)
+    public unsafe void Convert(byte** src, ReadOnlySpan<int> stride, FFHandle<AVFrame> dst)
     {
         unsafe
         {
             CheckBuffer(src, stride, InputFormat, input: true);
             CheckFrame(dst, OutputFormat, input: false);
-
-            fixed (byte* pSrc = src) {
-                ffmpeg.sws_scale(Handle, [pSrc],
-                    [stride], 0, InputFormat.Height,
-                    dst.Ref.data,
-                dst.Ref.linesize).CheckError();
-                
-            }
-        }
-    }
-
-    /// <summary> Converts and rescales <paramref name="src"/> into the given buffer. The output pixel format must be interleaved. </summary>
-    /// <param name="stride"> The number of bytes per pixel line in <paramref name="dst"/>. </param>
-    public void Convert(FFHandle<AVFrame> src, Span<byte> dst, int stride)
-    {
-        unsafe
-        {
-            CheckFrame(src, InputFormat, input: true);
-            CheckBuffer(dst, stride, OutputFormat, input: false);
-        
-            fixed (byte* pDst = dst) {
-                
-                
-                ffmpeg.sws_scale(Handle, src.Ref.data,
-                    src.Ref.linesize, 0, src.Ref.height,
-                    [pDst], [stride]).CheckError();
-                
-            }
-        }
-    }
-
-    /// <summary> Converts and rescales <paramref name="src"/> into the given buffer. The input and output pixel formats must be interleaved. </summary>
-    /// <param name="srcStride"> The number of bytes per pixel line in <paramref name="src"/>. </param>
-    /// <param name="dstStride"> The number of bytes per pixel line in <paramref name="dst"/>. </param>
-    public void Convert(ReadOnlySpan<byte> src, int srcStride, Span<byte> dst, int dstStride)
-    {
-        unsafe
-        {
-            CheckBuffer(src, srcStride, InputFormat, input: true);
-            CheckBuffer(dst, dstStride, OutputFormat, input: false);
-
-            fixed (byte* pSrc = src)
-            fixed (byte* pDst = dst) {
-                ffmpeg.sws_scale(Handle, [pSrc],
-                    [srcStride], 0,
-                    InputFormat.Height, [pDst],
-                    [dstStride]).CheckError();
-                
-            }
+            sws_scale(Handle, src,
+                (int*)stride.DangerousGetReference(), 0, InputFormat.Height,
+                dst.Ref.data,
+            dst.Ref.linesize).CheckError();
         }
     }
 
@@ -163,19 +118,19 @@ public sealed class SwScaler : FFObject<SwsContext>
         }
     }
 
-    private static void CheckBuffer(ReadOnlySpan<byte> buffer, int stride, in PictureFormat format, bool input)
+    private unsafe static void CheckBuffer(byte** buffer, ReadOnlySpan<int> stride, in PictureFormat format, bool input)
     {
-        if (format.IsPlanar || buffer.Length < (long)format.Height * stride || 
-            stride < ffmpeg.av_image_get_linesize(format.PixelFormat, format.Width, 0)
-        ) {
-            throw new ArgumentException((input ? "Input" : "Output") + " buffer must match rescaler format");
-        }
+        // if (format.IsPlanar || buffer.Length < (long)format.Height * stride || 
+        //     stride < av_image_get_linesize(format.PixelFormat, format.Width, 0)
+        // ) {
+        //     throw new ArgumentException((input ? "Input" : "Output") + " buffer must match rescaler format");
+        // }
     }
 
     protected override unsafe void Free()
     {
         if (_handle != null) {
-            ffmpeg.sws_freeContext(_handle);
+            sws_freeContext(_handle);
             _handle = null;
         }
     }

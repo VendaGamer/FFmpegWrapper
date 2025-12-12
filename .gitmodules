@@ -1,0 +1,3 @@
+[submodule "Bindings"]
+	path = Bindings
+	url = https://github.com/VendaGamer/FFmpegBindings.git

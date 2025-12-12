@@ -1,13 +1,18 @@
 namespace FFmpegWrapper.Core;
 
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Text;
 
 public static class FFmpegUtils
 {
     private static av_log_set_callback_callback logCallback = null!;
-    private static Action<FFmpegLogLevel, string> userCallback = null!;
-    private static FFmpegLogLevel s_MinLevel;
+    private static Action<AVLog, string> userCallback = null!;
+    private static AVLog s_MinLevel;
+
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public unsafe delegate void av_log_set_callback_callback(void* avcl, int level, byte* fmt, int vl);
     
     private const int DefaultBufferSize = 1024;
     
@@ -18,7 +23,7 @@ public static class FFmpegUtils
     /// <summary> Set log level and message callback. </summary>
     /// <param name="minLevel">Level of logging</param>
     /// <param name="cb"> Callback that will receive log messages. If null, will default printing to stdout. </param> 
-    public static void SetLoggerCallback(FFmpegLogLevel minLevel, Action<FFmpegLogLevel, string> cb)
+    public static void SetLoggerCallback(AVLog minLevel, Action<AVLog, string> cb)
     {
         unsafe
         {
@@ -26,12 +31,14 @@ public static class FFmpegUtils
             userCallback = cb;
             logCallback = NativeCb;
         
-            ffmpeg.av_log_set_level((int)minLevel);
-            ffmpeg.av_log_set_callback(logCallback);
+            av_log_set_level((int)minLevel);
+            
+            av_log_set_callback((delegate* unmanaged[Cdecl]<void*, int, byte*, int, void>)
+                Marshal.GetFunctionPointerForDelegate(logCallback));
         
             return;
 
-            void NativeCb(void* avcl, int level, string fmt, byte* vl)
+            static void NativeCb(void* avcl, int level, byte* fmt, int vl)
             {
                 if (level > (int)s_MinLevel) return;
             
@@ -59,14 +66,14 @@ public static class FFmpegUtils
                 }
             }
 
-            void ProcessLogMessage(void* avcl, int level, string fmt, byte* vl, byte[] buffer)
+            static void ProcessLogMessage(void* avcl, int level, byte* fmt, int vl, byte[] buffer)
             {
                 int length;
             
                 fixed (byte* pBuffer = buffer)
                 {
                     int localPrintPrefix = t_PrintPrefix;
-                    length = ffmpeg.av_log_format_line2(avcl, level, fmt, vl, pBuffer, buffer.Length, &localPrintPrefix);
+                    length = av_log_format_line2(avcl, level, fmt, vl, pBuffer, buffer.Length, &localPrintPrefix);
                     length = Math.Min(length, buffer.Length - 1);
                     t_PrintPrefix = localPrintPrefix;
                 }
@@ -77,15 +84,15 @@ public static class FFmpegUtils
                         length--;
                 
                     string message = Encoding.UTF8.GetString(buffer, 0, length);
-                    userCallback!((FFmpegLogLevel)level, message);
+                    userCallback!((AVLog)level, message);
                 }
             }
         
-            void ProcessLogMessageStack(void* avcl, int level, string fmt,
-                byte* vl, byte* buffer, int bufferLength)
+            static void ProcessLogMessageStack(void* avcl, int level, byte* fmt,
+                int vl, byte* buffer, int bufferLength)
             {
                 int localPrintPrefix = t_PrintPrefix;
-                int length = ffmpeg.av_log_format_line2(avcl, level, fmt, vl, buffer, bufferLength, &localPrintPrefix);
+                int length = av_log_format_line2(avcl, level, fmt, vl, buffer, bufferLength, &localPrintPrefix);
                 length = Math.Min(length, bufferLength - 1);
                 t_PrintPrefix = localPrintPrefix;
 
@@ -95,14 +102,15 @@ public static class FFmpegUtils
                         length--;
                 
                     string message = Encoding.UTF8.GetString(buffer, length);
-                    userCallback!((FFmpegLogLevel)level, message);
+                    userCallback!((AVLog)level, message);
                 
                 }
             }
 
-            static int EstimateLogLength(string fmt)
+            unsafe static int EstimateLogLength(byte* fmt)
             {
-                return fmt.Length * 2 + 256;
+                var span = FFHelper.GetSpanFromSentinelTerminatedPtr<byte>(fmt,0);
+                return span.Length * 2 + 256;
             }
         }
     }

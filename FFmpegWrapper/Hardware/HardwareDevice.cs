@@ -49,7 +49,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
         var builder = ImmutableArray.CreateBuilder<AVHWDeviceType>();
         AVHWDeviceType type = AVHWDeviceType.AV_HWDEVICE_TYPE_NONE;
         
-        while ((type = ffmpeg.av_hwdevice_iterate_types(type)) != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
+        while ((type = av_hwdevice_iterate_types(type)) != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
         {
             builder.Add(type);
         }
@@ -144,7 +144,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
     {
         _handle = deviceCtx;
         
-        var desc = ffmpeg.av_hwdevice_get_hwframe_constraints(_handle, null);
+        var desc = av_hwdevice_get_hwframe_constraints(_handle, null);
         if (desc is not null) {
             FrameConstraints = new HardwareFrameConstraints(desc);
         }
@@ -158,7 +158,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
         unsafe
         {
             AVBufferRef* ctx;
-            if (ffmpeg.av_hwdevice_ctx_create(&ctx, type, null, null, 0) < 0) {
+            if (av_hwdevice_ctx_create(&ctx, type, null, null, 0) < 0) {
                 device = null!;
                 return false;
             }
@@ -175,7 +175,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
     {
         unsafe
         {
-            var poolRef = ffmpeg.av_hwframe_ctx_alloc(Handle);
+            var poolRef = av_hwframe_ctx_alloc(Handle);
             if (poolRef == null) {
                 throw new OutOfMemoryException("Failed to allocate hardware frame pool");
             }
@@ -186,8 +186,8 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
             pool->height = swFormat.Height;
             pool->initial_pool_size = initialSize;
 
-            if (ffmpeg.av_hwframe_ctx_init(poolRef) < 0) {
-                ffmpeg.av_buffer_unref(&poolRef);
+            if (av_hwframe_ctx_init(poolRef) < 0) {
+                av_buffer_unref(&poolRef);
                 return null;
             }
             return new HardwareFramePool(poolRef);
@@ -220,7 +220,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
         {
             if (_handle != null) {
                 fixed (AVBufferRef** ppCtx = &_handle) {
-                    ffmpeg.av_buffer_unref(ppCtx);
+                    av_buffer_unref(ppCtx);
                 }
             }
         }

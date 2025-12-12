@@ -55,7 +55,7 @@ public readonly struct PacketSideDataList
     {
         unsafe
         {
-            var entry = ffmpeg.av_packet_side_data_get(*_handle, *_count, type);
+            var entry = av_packet_side_data_get(*_handle, *_count, type);
             if (entry is null) {
                 sideData = default;
                 return false;
@@ -67,11 +67,11 @@ public readonly struct PacketSideDataList
     }
 
     /// <summary> Allocates or overwrites a side data entry. </summary>
-    public PacketSideData Add(AVPacketSideDataType type, ulong size)
+    public PacketSideData Add(AVPacketSideDataType type, nuint size)
     {
         unsafe
         {
-            var entry = ffmpeg.av_packet_side_data_new(_handle, _count, type, size, 0);
+            var entry = av_packet_side_data_new(_handle, _count, type, size, 0);
             if (entry == null) {
                 throw new OutOfMemoryException();
             }
@@ -84,7 +84,7 @@ public readonly struct PacketSideDataList
         unsafe
         {
             int prevCount = Count;
-            ffmpeg.av_packet_side_data_remove(*_handle, _count, type);
+            av_packet_side_data_remove(*_handle, _count, type);
             return Count != prevCount;
         }
     }
@@ -95,7 +95,7 @@ public readonly struct PacketSideDataList
         while (Count != 0) {
             unsafe
             {
-                ffmpeg.av_packet_side_data_remove(*_handle, _count, _handle[0]->type);
+                av_packet_side_data_remove(*_handle, _count, _handle[0]->type);
             }
         }
     }

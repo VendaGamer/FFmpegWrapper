@@ -23,7 +23,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
     {
         unsafe
         {
-            return (AudioChannel)ffmpeg.av_channel_layout_channel_from_index(Handle, index);
+            return (AudioChannel)av_channel_layout_channel_from_index(Handle, index);
         }
     }
 
@@ -39,7 +39,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
         unsafe
         {
             ChannelLayout layout = default;
-            ffmpeg.av_channel_layout_default(layout.Handle, numChannels);
+            av_channel_layout_default(layout.Handle, numChannels);
             return layout;
         }
     }
@@ -51,7 +51,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
         unsafe
         {
             ChannelLayout layout = default;
-            if (ffmpeg.av_channel_layout_from_mask(layout.Handle, mask) < 0) {
+            if (av_channel_layout_from_mask(layout.Handle, mask) < 0) {
                 throw new ArgumentException();
             }
             return layout;
@@ -64,7 +64,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
         unsafe
         {
             ChannelLayout layout = default;
-            if (ffmpeg.av_channel_layout_from_string(layout.Handle, str) < 0) {
+            if (av_channel_layout_from_string(layout.Handle, str) < 0) {
                 throw new ArgumentException();
             }
             return layout;
@@ -73,14 +73,14 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
 
     public unsafe void CopyTo(FFHandle<AVChannelLayout> dest)
     {
-        ffmpeg.av_channel_layout_copy(dest, Handle).CheckError();
+        av_channel_layout_copy(dest, Handle).CheckError();
     }
     
     public void CopyTo(IFFHandleObserver<AVChannelLayout> dest)
     {
         unsafe
         {
-            ffmpeg.av_channel_layout_copy(dest.Handle, Handle).CheckError();
+            av_channel_layout_copy(dest.Handle, Handle).CheckError();
         }
     }
 
@@ -88,7 +88,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
     {
         unsafe
         {
-            ffmpeg.av_channel_layout_copy(Handle, source.Handle).CheckError();
+            av_channel_layout_copy(Handle, source.Handle).CheckError();
         }
     }
 
@@ -97,12 +97,12 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
     {
         unsafe
         {
-            int requiredSize = ffmpeg.av_channel_layout_describe(Handle, null, 0).CheckError();
+            int requiredSize = av_channel_layout_describe(Handle, null, 0).CheckError();
         
             Span<byte> buf = stackalloc byte[requiredSize];
             
             fixed (byte* ptr = buf) {
-                ffmpeg.av_channel_layout_describe(Handle, ptr, (ulong)requiredSize).CheckError();
+                av_channel_layout_describe(Handle, ptr, (ulong)requiredSize).CheckError();
             }
             
             return FFHelper.SpanToStringUtf8(buf);
@@ -115,7 +115,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
         unsafe
         {
             fixed (AVChannelLayout* a = &Native) {
-                int c = ffmpeg.av_channel_layout_compare(a, &other.Native);
+                int c = av_channel_layout_compare(a, &other.Native);
                 return c == 0;
             }
         }

@@ -10,7 +10,10 @@
 
     <ItemGroup>
       <PackageReference Include="CommunityToolkit.HighPerformance" />
-      <PackageReference Include="FFmpeg.AutoGen.Abstractions" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Bindings\FFmpegBindings.Abstractions\FFmpegBindings.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

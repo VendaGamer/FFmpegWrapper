@@ -12,7 +12,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
-                return ffmpeg.avcodec_is_open(Handle) != 0;
+                return avcodec_is_open(Handle) != 0;
             }
         }
     }
@@ -58,7 +58,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             unsafe
             {
                 ThrowIfDisposed();
-                return (_handle->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0;
+                return (_handle->codec->capabilities & (int)AVCodecCapabilities.AV_CODEC_CAP_DELAY) is not 0;
             }
         }
     }
@@ -97,7 +97,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     {
         unsafe
         {
-            return ffmpeg.avcodec_alloc_context3(codec is not null ? codec.Value.Raw : null);
+            return avcodec_alloc_context3(codec is not null ? codec.Value.Raw : null);
         }
     }
 
@@ -110,7 +110,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         
         unsafe
         {
-            ffmpeg.avcodec_open2(Handle, null, null).CheckError("Could not open codec");
+            avcodec_open2(Handle, null, null).CheckError("Could not open codec");
         }
 
         return true;
@@ -127,13 +127,13 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             ThrowIfDisposed();
             
             int caps = _handle->codec->capabilities;
-
-            if ((caps & ffmpeg.AV_CODEC_CAP_SLICE_THREADS) != 0 && preferFrameSlices) {
-                _handle->thread_type = ffmpeg.FF_THREAD_SLICE;
+            
+            if ((caps & (int)AVCodecCapabilities.AV_CODEC_CAP_SLICE_THREADS) != 0 && preferFrameSlices) {
+                _handle->thread_type = FF_THREAD_SLICE;
                 _handle->thread_count = threadCount;
             }
-            else if ((caps & ffmpeg.AV_CODEC_CAP_FRAME_THREADS) != 0) {
-                _handle->thread_type = ffmpeg.FF_THREAD_FRAME;
+            else if ((caps & (int)AVCodecCapabilities.AV_CODEC_CAP_FRAME_THREADS) != 0) {
+                _handle->thread_type = FF_THREAD_FRAME;
                 _handle->thread_count = threadCount;
             } else {
                 _handle->thread_type = 0;
@@ -150,8 +150,8 @@ public abstract class CodecBase : FFObject<AVCodecContext>
                 throw new ArgumentException("Mismatching hardware codec config.");
             }
         
-            _handle->hw_device_ctx = ffmpeg.av_buffer_ref(device.Handle);
-            _handle->hw_frames_ctx = framePool == null ? null : ffmpeg.av_buffer_ref(framePool.Handle);
+            _handle->hw_device_ctx = av_buffer_ref(device.Handle);
+            _handle->hw_frames_ctx = framePool == null ? null : av_buffer_ref(framePool.Handle);
 
             if (framePool == null && (config.Methods & ~CodecHardwareMethods.FramesContext) == 0) {
                 throw new ArgumentException("Specified hardware codec config requires a frame pool to be provided.");
@@ -167,7 +167,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             if (!IsOpen) {
                 throw new InvalidOperationException("Cannot flush closed codec");
             }
-            ffmpeg.avcodec_flush_buffers(Handle);
+            avcodec_flush_buffers(Handle);
         }
     }
 
@@ -219,7 +219,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             _extraData?.Dispose();
             
             fixed (AVCodecContext** c = &_handle) {
-                ffmpeg.avcodec_free_context(c);
+                avcodec_free_context(c);
             }
         }
     }

@@ -17,7 +17,7 @@ public static class ContainerTypes
 
     public static unsafe FFHandle<AVOutputFormat> GetOutputFormat(string extension)
     {
-        var fmt = ffmpeg.av_guess_format(null, "dummy." + extension, null);
+        var fmt = av_guess_format(null, "dummy." + extension, null);
         if (fmt == null) {
             throw new NotSupportedException();
         }

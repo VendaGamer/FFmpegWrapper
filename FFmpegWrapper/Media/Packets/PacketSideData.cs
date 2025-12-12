@@ -48,5 +48,11 @@ public readonly struct PacketSideData
         }
     }
 
-    public override string ToString() => $"{ffmpeg.av_packet_side_data_name(Type)}: {Size} bytes";
+    public override string ToString()
+    {
+        unsafe
+        {
+            return $"{FFHelper.PtrToStringUtf8(av_packet_side_data_name(Type))}: {Size} bytes";
+        }
+    }
 }

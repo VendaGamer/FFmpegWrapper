@@ -45,7 +45,7 @@ public abstract class MediaEncoder : CodecBase
     {
         unsafe
         {
-            ffmpeg.av_opt_set(Handle.Ref.priv_data, name, value, 0).CheckError();
+            av_opt_set(Handle.Ref.priv_data, name, value, 0).CheckError();
         }
     }
 
@@ -55,7 +55,7 @@ public abstract class MediaEncoder : CodecBase
     {
         unsafe
         {
-            ffmpeg.av_opt_set(Handle, name, value, 0).CheckError();
+            av_opt_set(Handle, name, value, 0).CheckError();
         }
     }
 
@@ -63,7 +63,7 @@ public abstract class MediaEncoder : CodecBase
     {
         unsafe
         {
-            var result = (LavResult)ffmpeg.avcodec_receive_packet(Handle, pkt.Handle);
+            var result = (LavResult)avcodec_receive_packet(Handle, pkt.Handle);
 
             if (result is not (LavResult.Success or LavResult.TryAgain or LavResult.EndOfFile)) {
                 result.ThrowIfError("Could not encode packet");
@@ -75,7 +75,7 @@ public abstract class MediaEncoder : CodecBase
     {
         unsafe
         {
-            var result = (LavResult)ffmpeg.avcodec_send_frame(Handle, frame ?? null);
+            var result = (LavResult)avcodec_send_frame(Handle, frame ?? null);
 
             if (result != LavResult.Success && result != LavResult.EndOfFile) {
                 result.ThrowIfError("Could not encode frame");
@@ -93,6 +93,6 @@ public abstract class MediaEncoder : CodecBase
     /// <summary> Rescales the given timestamp to be in terms of <see cref="CodecBase.TimeBase"/>. </summary>
     public long GetFramePts(long pts, Rational timeBase)
     {
-        return ffmpeg.av_rescale_q(pts, timeBase, TimeBase);
+        return av_rescale_q(pts, timeBase, TimeBase);
     }
 }

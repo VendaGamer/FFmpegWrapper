@@ -15,11 +15,11 @@ public readonly struct AVBuffer : IFFHandleObserver<AVBufferRef>
 
     private readonly unsafe AVBufferRef* _handle;
 
-    public AVBuffer(ulong size)
+    public AVBuffer(nuint size)
     {
         unsafe
         {
-            _handle = ffmpeg.av_buffer_alloc(size);
+            _handle = av_buffer_alloc(size);
         }
     }
 }

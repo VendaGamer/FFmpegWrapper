@@ -2,7 +2,7 @@
 
 using Abstractions;
 
-using Core.Flags;
+using Core;
 
 using Streams;
 
@@ -76,8 +76,8 @@ public class MediaPacket : FFObject<AVPacket>
         set => Handle.Ref.stream_index = value;
     }
     
-    public PacketFlags Flags {
-        get => (PacketFlags)Handle.Ref.flags;
+    public AV_PKT_FLAGS Flags {
+        get => (AV_PKT_FLAGS)Handle.Ref.flags;
         set => Handle.Ref.flags = (int)value;
     }
 
@@ -92,7 +92,6 @@ public class MediaPacket : FFObject<AVPacket>
             unsafe
             {
                 ref var handle = ref Handle.Ref;
-
                 return new Span<byte>(handle.data, handle.size);
             }
         }
@@ -124,7 +123,7 @@ public class MediaPacket : FFObject<AVPacket>
     {
         unsafe
         {
-            _handle = ffmpeg.av_packet_alloc();
+            _handle = av_packet_alloc();
             if (_handle == null) {
                 throw new OutOfMemoryException();
             }
@@ -135,7 +134,7 @@ public class MediaPacket : FFObject<AVPacket>
     {
         unsafe
         {
-            ffmpeg.av_new_packet(_handle, size).CheckError("Failed to allocate packet buffer");
+            av_new_packet(_handle, size).CheckError("Failed to allocate packet buffer");
         }
     }
 
@@ -146,12 +145,12 @@ public class MediaPacket : FFObject<AVPacket>
         {
             ThrowIfDisposed();
 
-            if (_handle->buf == null || _handle->buf->size < (ulong)data.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE) {
-                byte* buffer = (byte*)ffmpeg.av_malloc((ulong)data.Length + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE);
+            if (_handle->buf == null || _handle->buf->size < (ulong)data.Length + AV_INPUT_BUFFER_PADDING_SIZE) {
+                var buffer = (byte*)av_malloc((nuint)data.Length + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (buffer == null) {
                     throw new OutOfMemoryException();
                 }
-                ffmpeg.av_packet_from_data(_handle, buffer, data.Length).CheckError("Failed to allocate packet buffer");
+                av_packet_from_data(_handle, buffer, data.Length).CheckError("Failed to allocate packet buffer");
             }
             _handle->size = data.Length;
             data.CopyTo(Data);
@@ -163,7 +162,7 @@ public class MediaPacket : FFObject<AVPacket>
     {
         unsafe
         {
-            ffmpeg.av_packet_rescale_ts(Handle, sourceBase, destBase);
+            av_packet_rescale_ts(Handle, sourceBase, destBase);
         }
     }
     
@@ -172,7 +171,7 @@ public class MediaPacket : FFObject<AVPacket>
         ThrowIfDisposed();
         unsafe
         {
-            ffmpeg.av_packet_unref(_handle);
+            av_packet_unref(_handle);
             return _handle;
         }
     }
@@ -182,7 +181,7 @@ public class MediaPacket : FFObject<AVPacket>
         unsafe
         {
             fixed (AVPacket** pkt = &_handle) {
-                ffmpeg.av_packet_free(pkt);
+                av_packet_free(pkt);
             }
         }
     }

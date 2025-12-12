@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Core;
 
-public readonly struct FFHandleSource<T> : IEquatable<FFHandleSource<T>>
+public readonly struct FFHandleSource<T>
     where T : unmanaged
 {
     public readonly unsafe T** Raw;
@@ -44,12 +44,6 @@ public readonly struct FFHandleSource<T> : IEquatable<FFHandleSource<T>>
         {
             return Raw == other.Raw;
         }
-    }
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj)
-    {
-        return obj is FFHandleSource<T> other && Equals(other);
     }
 
 

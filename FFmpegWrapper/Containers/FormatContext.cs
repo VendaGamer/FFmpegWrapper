@@ -9,7 +9,7 @@ public abstract class FormatContext : FFObject<AVFormatContext>
     public long FileSize {
         get {
             unsafe {
-                return ffmpeg.avio_size(Handle.Ref.pb);
+                return avio_size(Handle.Ref.pb);
             }
         }
     }
@@ -24,7 +24,7 @@ public abstract class FormatContext : FFObject<AVFormatContext>
             unsafe {
                 ThrowIfDisposed();
                 
-                if (_handle->duration > 0 &&  ffmpeg.avio_size(_handle->pb) > 0) {
+                if (_handle->duration > 0 &&  avio_size(_handle->pb) > 0) {
                     throw new InvalidOperationException("Do not set bitrate if duration and filesize is known");
                 }
                 
@@ -50,20 +50,20 @@ public abstract class FormatContext : FFObject<AVFormatContext>
     private unsafe FormatContext(AVOutputFormat* outputFormat, string? formatName, string? filename)
     {
         fixed (AVFormatContext** ptr = &_handle) {
-            ffmpeg.avformat_alloc_output_context2(ptr, outputFormat, formatName, filename);
+            avformat_alloc_output_context2(ptr, outputFormat, formatName, filename);
         }
     }
 
     protected FormatContext()
     {
         unsafe {
-            _handle = ffmpeg.avformat_alloc_context();
+            _handle = avformat_alloc_context();
         }
     }
     
     /// <inheritdoc/>
     protected override unsafe void Free()
     {
-        ffmpeg.avformat_free_context(_handle);
+        avformat_free_context(_handle);
     }
 }

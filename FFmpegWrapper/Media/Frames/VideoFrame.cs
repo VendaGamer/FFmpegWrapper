@@ -2,7 +2,6 @@
 
 using Codecs.Decoding;
 using Codecs.Encoding;
-using Core.Flags;
 using Hardware;
 using Processing;
 
@@ -53,7 +52,7 @@ public class VideoFrame : MediaFrame
     {
         unsafe
         {
-            _handle = ffmpeg.av_frame_alloc();
+            _handle = av_frame_alloc();
         }
     }
 
@@ -72,12 +71,12 @@ public class VideoFrame : MediaFrame
             if (width <= 0 || height <= 0) {
                 throw new ArgumentException("Invalid frame dimensions.");
             }
-            _handle = ffmpeg.av_frame_alloc();
+            _handle = av_frame_alloc();
             _handle->format = (int)fmt;
             _handle->width = width;
             _handle->height = height;
 
-            ffmpeg.av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
+            av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
         }
     }
     /// <summary> Wraps an existing <see cref="AVFrame"/> pointer. </summary>
@@ -145,15 +144,15 @@ public class VideoFrame : MediaFrame
             if (plane == 0) {
                 return size;
             }
-            var desc = ffmpeg.av_pix_fmt_desc_get(PixelFormat);
+            var desc = av_pix_fmt_desc_get(PixelFormat);
 
-            if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0) {
+            if (desc == null || (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) != 0) {
                 throw new InvalidOperationException();
             }
             for (uint i = 0; i < 4; i++) {
                 if (desc->comp[i].plane != plane) continue;
 
-                if ((i == 1 || i == 2) && (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_RGB) == 0) {
+                if ((i == 1 || i == 2) && (desc->flags & AV_PIX_FMT_FLAG_RGB) == 0) {
                     size.Width = CeilShr(size.Width, desc->log2_chroma_w);
                     size.Height = CeilShr(size.Height, desc->log2_chroma_h);
                 }
@@ -175,15 +174,15 @@ public class VideoFrame : MediaFrame
                 throw new InvalidOperationException("Cannot create mapping of non-hardware frame.");
             }
 
-            var mapping = ffmpeg.av_frame_alloc();
-            int result = ffmpeg.av_hwframe_map(mapping, _handle, (int)flags);
+            var mapping = av_frame_alloc();
+            int result = av_hwframe_map(mapping, _handle, (int)flags);
 
             if (result == 0) {
                 mapping->width = _handle->width;
                 mapping->height = _handle->height;
                 return new VideoFrame(mapping);
             }
-            ffmpeg.av_frame_free(&mapping);
+            av_frame_free(&mapping);
             return null;
         }
     }
@@ -193,7 +192,7 @@ public class VideoFrame : MediaFrame
         unsafe
         {
             ThrowIfDisposed();
-            ffmpeg.av_hwframe_transfer_data(dest.Handle, _handle, 0).CheckError("Failed to transfer data from hardware frame");
+            av_hwframe_transfer_data(dest.Handle, _handle, 0).CheckError("Failed to transfer data from hardware frame");
         }
     }
 
@@ -210,7 +209,7 @@ public class VideoFrame : MediaFrame
 
             AVPixelFormat* pFormats;
 
-            if (ffmpeg.av_hwframe_transfer_get_formats(_handle->hw_frames_ctx,
+            if (av_hwframe_transfer_get_formats(_handle->hw_frames_ctx,
                     (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
                 return ReadOnlySpan<AVPixelFormat>.Empty;
             }
@@ -218,7 +217,7 @@ public class VideoFrame : MediaFrame
             var formats =
                 FFHelper.GetSpanFromSentinelTerminatedPtr(pFormats, PixelFormats.None);
             
-            ffmpeg.av_freep(&pFormats);
+            av_freep(&pFormats);
 
             return formats;
         }
@@ -238,7 +237,7 @@ public class VideoFrame : MediaFrame
                     linesizes[i] = _handle->linesize[i];
                 }
             }
-            ffmpeg.av_image_fill_black(
+            av_image_fill_black(
                 ref *(byte_ptr4*)&_handle->data, linesizes,
                 PixelFormat, _handle->color_range, _handle->width, _handle->height
             ).CheckError("Failed to clear frame.");

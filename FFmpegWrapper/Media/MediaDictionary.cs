@@ -2,12 +2,15 @@ namespace FFmpegWrapper.Media;
 
 using System.Collections;
 using Abstractions;
-using Core.Flags;
+
+using CommunityToolkit.HighPerformance;
+
+using Extensions;
 
 /// <summary>
 /// Efficient wrapper for AVDictionary with minimal overhead operations
 /// </summary>
-public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaDictionaryEntry>
+public sealed class MediaDictionary : FFObject<AVDictionary>
 {
     /// <summary>
     /// Creates a new owned MediaDictionary
@@ -16,7 +19,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
     {
         unsafe {
             fixed (AVDictionary** ptr = &_handle) {
-                ffmpeg.av_dict_copy(ptr ,null,0);
+                av_dict_copy(ptr ,null,0);
             }
         }
     }
@@ -39,7 +42,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
         get {
             unsafe
             {
-                return ffmpeg.av_dict_count(Handle);
+                return av_dict_count(Handle);
             }
         }
     }
@@ -47,63 +50,62 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
     /// <summary>
     /// Gets or sets values by key. Throws KeyNotFoundException if key doesn't exist during get.
     /// </summary>
-    public string this[string key] 
+    public ReadOnlySpan<byte> this[ReadOnlySpan<byte> key] 
     {
-        get => GetValue(key) ?? throw new KeyNotFoundException($"Key '{key}' not found in dictionary");
+        get => GetValue(key);
         set => SetValue(key, value);
     }
     
     /// <summary>
     /// Checks if a key exists
     /// </summary>
-    public bool ContainsKey(string key)
+    public bool ContainsKey(ReadOnlySpan<byte> key)
     {
         unsafe
         {
-            return ffmpeg.av_dict_get(Handle, key, null, 0) != null;
+            return av_dict_get(Handle, key.RawHandle, null, 0) != null;
         }
     }
 
     /// <summary>
     /// Gets the value associated with the given key, or null if there is no match.
     /// </summary>
-    public string? GetValue(string key, DictionaryFlags flags = DictionaryFlags.MatchCase)
+    public ReadOnlySpan<byte> GetValue(ReadOnlySpan<byte> key, AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE)
     {
         unsafe
         {
-            var entry = ffmpeg.av_dict_get(Handle, key, null, (int)flags);
-            return entry == null ? null : FFHelper.PtrToStringUtf8(entry->value);
+            var entry = av_dict_get(Handle, key.RawHandle, null, (int)flags);
+            return entry is null ? default : FFHelper.GetSpanFromSentinelTerminatedPtr<byte>(entry->value, 0);
         }
     }
 
     /// <summary>
     /// Tries to get a value, returning false if the key doesn't exist
     /// </summary>
-    public bool TryGetValue(string key, out string? value, DictionaryFlags flags = DictionaryFlags.None)
+    public bool TryGetValue(ReadOnlySpan<byte> key, out ReadOnlySpan<byte> value, AVDictFlags flags = 0)
     {
         value = GetValue(key, flags);
-        return value != null;
+        return value.IsEmpty;
     }
 
     /// <summary>
     /// Sets the value associated with the given key, overwriting it if necessary.
     /// </summary>
-    public void SetValue(string key, string? value, DictionaryFlags flags = DictionaryFlags.None)
+    public void SetValue(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value, AVDictFlags flags = 0)
     {
         unsafe
         {
             fixed (AVDictionary** ptr = &_handle) {
-                ffmpeg.av_dict_set(ptr, key, value, (int)flags).CheckError();
+                av_dict_set(ptr, key.RawHandle, value.RawHandle, (int)flags).CheckError();
+                av_dict_copy(ptr, null, (int)flags).CheckError();
             }
-        
-            base._handle = _handle;
         }
     }
 
     /// <summary>
     /// Removes a key from the dictionary
     /// </summary>
-    public bool Remove(string key, DictionaryFlags flags = DictionaryFlags.None)
+    public bool Remove(ReadOnlySpan<byte> key, AVDictFlags flags = 0)
     {
         bool existed = ContainsKey(key);
         if (existed)
@@ -112,7 +114,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
             {
                 fixed(AVDictionary** ptr = &_handle)
                 {
-                    ffmpeg.av_dict_set(ptr, key, null, (int)flags).CheckError();
+                    av_dict_set(ptr, key.RawHandle, null, (int)flags).CheckError();
                 }
                 base._handle = _handle;
             }
@@ -128,7 +130,8 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
         unsafe
         {
             fixed (AVDictionary** ptr = &_handle) {
-                ffmpeg.av_dict(ptr);
+                av_dict_free(ptr);
+                av_dict_copy(ptr, null, 0);
             }
             base._handle = _handle; // Should be null after free
         }
@@ -137,47 +140,38 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
     /// <summary>
     /// Efficiently populates a dictionary from key-value pairs
     /// </summary>
-    public static void Populate(FFHandleSource<AVDictionary> dict, IEnumerable<Entry>? options)
+    public static void Populate(FFHandleSource<AVDictionary> dict, Span2D<byte> options)
     {
-        if (options == null) return;
+        if (options.IsEmpty) return;
 
-        foreach (var entry in options) {
-            unsafe
-            {
-                ffmpeg.av_dict_set(dict, entry.Key, entry.Value, 0).CheckError();
-            }
+        for (int i = 0; i < options.Height; i--) {
+            var span = options.GetRowSpan(i);
         }
     }
 
     /// <summary>
     /// Copies entries from another dictionary
     /// </summary>
-    public void CopyFrom(MediaDictionary other, DictionaryFlags flags = 0)
+    public void CopyFrom(MediaDictionary other, AVDictFlags flags = 0)
     {
-        foreach (var VARIABLE in GetEnumerator()) {
-            
-        }
         unsafe
         {
             fixed (AVDictionary** prt = &_handle) {
-                ffmpeg.av_dict_copy(prt, other.Handle, (int)flags).CheckError();
+                av_dict_copy(prt, other.Handle, (int)flags).CheckError();
             }
         }
     }
     
     public Enumerator GetEnumerator()
     {
-        unsafe
-        {
+        unsafe {
+            Span2D<byte> a;
             return new Enumerator(Handle);
         }
     }
-
-    IEnumerator<MediaDictionaryEntry> IEnumerable<MediaDictionaryEntry>.GetEnumerator()
-        => GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
+    
+    
+    
     public override string ToString()
     {
         return ToString((byte)':', (byte)'|');
@@ -188,10 +182,10 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
         unsafe
         {
             byte* buffer = null!;
-            ffmpeg.av_dict_get_string(_handle, &buffer, utf8KeyValueSeparatorChar, utf8PairsSeparator).CheckError();
+            av_dict_get_string(_handle, &buffer, utf8KeyValueSeparatorChar, utf8PairsSeparator).CheckError();
         
             string str = FFHelper.PtrToStringUtf8(buffer);
-            ffmpeg.av_free(buffer);
+            av_free(buffer);
         
             return str;
         }
@@ -204,11 +198,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
             if (_handle != null)
             {
                 fixed (AVDictionary** handle = &_handle) {
-                    ffmpeg.av_dict_free(handle);
-                }
-                if (_ownsTarget)
-                {
-                    ffmpeg.av_free(_handle);
+                    av_dict_free(handle);
                 }
             }
         }
@@ -242,7 +232,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>, IEnumerable<MediaD
         public bool MoveNext()
         {
             unsafe {
-                _currentEntry = ffmpeg.av_dict_iterate(_dict, _currentEntry);
+                _currentEntry = av_dict_iterate(_dict, _currentEntry);
                 return _currentEntry is not null;
             }
         }

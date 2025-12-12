@@ -2,6 +2,8 @@ namespace FFmpegWrapper.Codecs;
 
 using Configuration;
 
+using Extensions;
+
 public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
 {
     public FFHandle<AVCodec> Handle {
@@ -63,11 +65,11 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         }
     }
 
-    public MediaCodecCaps Capabilities {
+    public AVCodecCapabilities Capabilities {
         get {
             unsafe
             {
-                return (MediaCodecCaps)Raw->capabilities;
+                return (AVCodecCapabilities)Raw->capabilities;
             }
         }
     }
@@ -124,7 +126,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
             T* configs = null;
             int countValue = 0;
 
-            ffmpeg.avcodec_get_supported_config(
+            avcodec_get_supported_config(
                 null,
                 Raw,
                 config,
@@ -152,7 +154,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return ffmpeg.av_codec_is_encoder(Raw) != 0;
+                return av_codec_is_encoder(Raw) != 0;
             }
         }
     }
@@ -161,7 +163,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return ffmpeg.av_codec_is_decoder(Raw) != 0;
+                return av_codec_is_decoder(Raw) != 0;
             }
         }
     }
@@ -175,19 +177,19 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         }
     }
 
-    public static MediaCodec GetEncoder(string name)
+    public static MediaCodec GetEncoder(ReadOnlySpan<byte> name)
     {
         unsafe
         {
-            return WrapChecked(ffmpeg.avcodec_find_encoder_by_name(name), 0, name);
+            return WrapChecked(avcodec_find_encoder_by_name(name.RawHandle), 0, name);
         }
     }
 
-    public static MediaCodec GetDecoder(string name)
+    public static MediaCodec GetDecoder(ReadOnlySpan<byte> name)
     {
         unsafe
         {
-            return WrapChecked(ffmpeg.avcodec_find_decoder_by_name(name), 0, name);
+            return WrapChecked(avcodec_find_decoder_by_name(name.RawHandle), 0, name);
         }
     }
 
@@ -195,7 +197,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     {
         unsafe
         {
-            return WrapChecked(ffmpeg.avcodec_find_encoder(id), id);
+            return WrapChecked(avcodec_find_encoder(id), id);
         }
     }
 
@@ -203,34 +205,34 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     {
         unsafe
         {
-            return WrapChecked(ffmpeg.avcodec_find_decoder(id), id);
+            return WrapChecked(avcodec_find_decoder(id), id);
         }
     }
 
-    public static MediaCodec? TryGetEncoder(string name)
+    public static MediaCodec? TryGetEncoder(ReadOnlySpan<byte> name)
     {
         unsafe
         {
-            AVCodec* ptr = ffmpeg.avcodec_find_encoder_by_name(name);
+            AVCodec* ptr = avcodec_find_encoder_by_name(name.RawHandle);
             return ptr == null ? null : new MediaCodec(ptr);
         }
     }
-    public static MediaCodec? TryGetDecoder(string name)
+    public static MediaCodec? TryGetDecoder(ReadOnlySpan<byte> name)
     {
         unsafe
         {
-            AVCodec* ptr = ffmpeg.avcodec_find_decoder_by_name(name);
+            AVCodec* ptr = avcodec_find_decoder_by_name(name.RawHandle);
             return ptr == null ? null : new MediaCodec(ptr);
         }
     }
 
-    private static unsafe MediaCodec WrapChecked(AVCodec* ptr, AVCodecID id = 0, string? name = null)
+    private static unsafe MediaCodec WrapChecked(AVCodec* ptr, AVCodecID id = 0, ReadOnlySpan<byte> name = default)
     {
         if (ptr is not null) {
             return new MediaCodec(ptr);
         }
-        name ??= id.ToString();
-        throw new KeyNotFoundException($"No registered codec named '{name}'");
+        
+        throw new KeyNotFoundException($"No registered codec named '{name.ToStringUft8()}'");
     }
 
     public override string ToString() => LongName;
@@ -260,7 +262,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
             unsafe {
                 void* iterState = null;
                 AVCodec* codec;
-                while ((codec = ffmpeg.av_codec_iterate(&iterState)) != null) {
+                while ((codec = av_codec_iterate(&iterState)) != null) {
                     builder.Add(new MediaCodec(codec));
                 }
             }
