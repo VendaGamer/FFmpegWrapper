@@ -9,10 +9,7 @@ public static class FFmpegUtils
     private static av_log_set_callback_callback logCallback = null!;
     private static Action<AVLog, string> userCallback = null!;
     private static AVLog s_MinLevel;
-
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void av_log_set_callback_callback(void* avcl, int level, byte* fmt, int vl);
+    
     
     private const int DefaultBufferSize = 1024;
     
@@ -107,7 +104,7 @@ public static class FFmpegUtils
                 }
             }
 
-            unsafe static int EstimateLogLength(byte* fmt)
+            static int EstimateLogLength(byte* fmt)
             {
                 var span = FFHelper.GetSpanFromSentinelTerminatedPtr<byte>(fmt,0);
                 return span.Length * 2 + 256;

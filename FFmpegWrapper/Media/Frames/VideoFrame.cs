@@ -45,7 +45,14 @@ public class VideoFrame : MediaFrame
     }
 
     /// <summary> Whether the frame rows are flipped. Alias for <c>RowSize[0] &lt; 0</c>. </summary>
-    public bool IsVerticallyFlipped => Handle.Ref.linesize[0] < 0;
+    public bool IsVerticallyFlipped {
+        get {
+            unsafe
+            {
+                return Handle.Ref.linesize[0] < 0;
+            }
+        }
+    }
 
     /// <summary> Allocates an empty <see cref="AVFrame"/>. </summary>
     public VideoFrame()
@@ -145,7 +152,8 @@ public class VideoFrame : MediaFrame
                 return size;
             }
             var desc = av_pix_fmt_desc_get(PixelFormat);
-
+            
+            
             if (desc == null || (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) != 0) {
                 throw new InvalidOperationException();
             }

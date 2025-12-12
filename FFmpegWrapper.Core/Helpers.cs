@@ -93,7 +93,7 @@ public static class FFHelper
     public static unsafe string PtrToStringUtf8(byte* ptr)
     {
         int length = 0;
-        while (ptr.Raw[length] != 0)
+        while (ptr[length] is not 0)
             length++;
         
         return SpanToStringUtf8(new ReadOnlySpan<byte>(ptr, length));

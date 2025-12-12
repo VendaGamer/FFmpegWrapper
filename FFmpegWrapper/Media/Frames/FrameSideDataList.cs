@@ -1,6 +1,5 @@
 namespace FFmpegWrapper.Media.Frames;
 
-using System.Runtime.InteropServices;
 using System.Text;
 
 public unsafe struct FrameSideDataList
@@ -57,10 +56,15 @@ public unsafe struct FrameSideDataList
     }
 
     /// <summary> Returns the value of an <see cref="AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX"/> entry. </summary>
-    public int[]? GetDisplayMatrix()
+    public ReadOnlySpan<int> GetDisplayMatrix()
     {
-        var entry = Get(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX).Value.GetDataSpan<int>();
+        var martrix = Get(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX);
+
+        if (martrix is not null) {
+            return martrix.Value.GetDataSpan<int>();
+        }
         
+        return ReadOnlySpan<int>.Empty;
     }
 
     public override string ToString()
@@ -125,9 +129,9 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
 
     public override string ToString()
     {
-        unsafe
-        {
-            return $"{av_frame_side_data_name(Type)}: {_handle->size} bytes";
+        unsafe {
+            var sideDataName = av_frame_side_data_name(Type);
+            return $"{FFHelper.PtrToStringUtf8(sideDataName)}: {_handle->size} bytes";
         }
     }
 }
