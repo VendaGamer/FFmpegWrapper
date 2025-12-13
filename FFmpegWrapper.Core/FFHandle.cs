@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Core;
 
+using System.Numerics;
+
 /// <summary>
 /// TODO: Comment
 /// </summary>
@@ -90,6 +92,16 @@ public readonly ref struct FFHandle<T>
         {
             return Raw == other.Raw;
         }
+    }
+
+    public static bool operator == (FFHandle<T> a, FFHandle<T> b)
+    {
+        return a.Equals(b);
+    }
+
+    public static bool operator != (FFHandle<T> a, FFHandle<T> b)
+    {
+        return !(a == b);
     }
 
 

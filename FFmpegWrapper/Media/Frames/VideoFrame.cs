@@ -92,7 +92,7 @@ public class VideoFrame : MediaFrame
     {
         unsafe
         {
-            if (frame == null) {
+            if (frame.IsNull) {
                 throw new ArgumentNullException(nameof(frame));
             }
             _handle = frame;

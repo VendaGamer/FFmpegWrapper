@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Tests;
 
-using FFmpeg.Wrapper;
+using Media.Formats;
 
 using Xunit.Abstractions;
 

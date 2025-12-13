@@ -5,7 +5,7 @@ namespace FFmpegWrapper.Containers;
 
 using Extensions;
 
-public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquatable<OutputFormat>
+public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
 {
     public FFHandle<AVOutputFormat> Handle {
         get {
@@ -221,17 +221,12 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>, IEquata
 
     // Check if format supports specific features
     
-    public unsafe bool SupportsGlobalHeader => (Flags & (int)AVFormatCapabilityFlags.AVFMT_GLOBALHEADER) != 0;
+    public bool SupportsGlobalHeader => (Flags & (int)AVFormatCapabilityFlags.AVFMT_GLOBALHEADER) != 0;
     
-    public unsafe bool SupportsSeek => (Flags & (int)AVFormatCapabilityFlags.AVFMT_SEEK_TO_PTS) != 0;
+    public bool SupportsSeek => (Flags & (int)AVFormatCapabilityFlags.AVFMT_SEEK_TO_PTS) != 0;
     
-    public unsafe bool RequiresFilename => (Flags & (int)AVFormatCapabilityFlags.AVFMT_NOFILE) == 0;
-
-    // Equality implementation
-    public unsafe bool Equals(OutputFormat other)
-    {
-        return Handle == other.Handle;
-    }
+    public bool RequiresFilename => (Flags & (int)AVFormatCapabilityFlags.AVFMT_NOFILE) == 0;
+    
 
     public override unsafe bool Equals(object? obj)
     {

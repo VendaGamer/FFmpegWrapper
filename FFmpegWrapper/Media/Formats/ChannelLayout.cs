@@ -36,7 +36,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
     
 
     /// <summary> Get the default channel layout for a given number of channels. </summary>
-    internal static ChannelLayout GetDefault(int numChannels)
+    public static ChannelLayout GetDefault(int numChannels)
     {
         unsafe
         {
@@ -61,7 +61,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
     }
     
     
-    internal static ChannelLayout FromString(ReadOnlySpan<byte> str)
+    public static ChannelLayout FromString(ReadOnlySpan<byte> str)
     {
         unsafe
         {

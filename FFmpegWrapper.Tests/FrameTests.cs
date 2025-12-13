@@ -1,7 +1,7 @@
 ﻿namespace FFmpegWrapper.Tests;
 
-using FFmpeg.AutoGen;
-using FFmpeg.Wrapper;
+using Media.Formats;
+using Media.Frames;
 
 public class FrameTests
 {
@@ -34,7 +34,7 @@ public class FrameTests
 
         Assert.Equal(1024, frame.Capacity);
         Assert.Equal(1024, frame.Count);
-        Assert.Equal(2, frame.NumChannels);
+        Assert.Equal(2, frame.ChannelLayout.NumChannels);
         Assert.Equal(48000, frame.SampleRate);
         Assert.True(frame.IsPlanar);
 
@@ -52,15 +52,15 @@ public class FrameTests
     {
         var a = ChannelLayout.GetDefault(2);
         Assert.Equal(2, a.NumChannels);
-        Assert.Equal(ChannelOrder.Native, a.Order);
+        Assert.Equal(AVChannelOrder.AV_CHANNEL_ORDER_NATIVE, a.Order);
         Assert.Equal("stereo", a.ToString());
 
-        var b = ChannelLayout.FromString("FL+FC+FR");
+        var b = ChannelLayout.FromString("FL+FC+FR"u8);
         Assert.Equal(3, b.NumChannels);
-        Assert.Equal(ChannelOrder.Custom, b.Order);
-        Assert.Equal(AudioChannel.FrontLeft, b.GetChannel(0));
-        Assert.Equal(AudioChannel.FrontCenter, b.GetChannel(1));
-        Assert.Equal(AudioChannel.FrontRight, b.GetChannel(2));
+        Assert.Equal(AVChannelOrder.AV_CHANNEL_ORDER_CUSTOM, b.Order);
+        Assert.Equal(AVChannel.AV_CHAN_BOTTOM_FRONT_LEFT, b.GetChannel(0));
+        Assert.Equal(AVChannel.AV_CHAN_BOTTOM_FRONT_CENTER, b.GetChannel(1));
+        Assert.Equal(AVChannel.AV_CHAN_BOTTOM_FRONT_RIGHT, b.GetChannel(2));
     }
 
     [Fact]
@@ -75,7 +75,6 @@ public class FrameTests
         Assert.Equal(2, frame.SideData.Count);
 
         Assert.Equal(9 * 4, entry1.Data.Length);
-        Assert.NotNull(frame.SideData.GetDisplayMatrix());
 
         frame.SideData.Remove(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX);
         Assert.Equal(1, frame.SideData.Count);

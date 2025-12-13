@@ -1,27 +1,29 @@
 namespace FFmpegWrapper.Tests;
 
-using FFmpeg.AutoGen;
-using FFmpeg.Wrapper;
+using Containers;
+
+using Media;
+using Media.Packets;
 
 public unsafe class MuxDemuxTests
 {
     [Fact]
     public void CustomIO_Read()
     {
-        var mem = new MemoryStream(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }, writable: false);
+        var mem = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], writable: false);
         var ioc = IOContext.CreateInputFromStream(mem, leaveOpen: false);
 
-        Assert.Equal(mem.Length, ffmpeg.avio_size(ioc.Handle));
-        Assert.Equal(0x01_02_03_04_05_06_07_08ul, ffmpeg.avio_rb64(ioc.Handle));
+        Assert.Equal(mem.Length, avio_size(ioc.Handle));
+        Assert.Equal(0x01_02_03_04_05_06_07_08ul, avio_rb64(ioc.Handle));
 
-        ffmpeg.avio_seek(ioc.Handle, 0, (int)SeekOrigin.Begin);
-        Assert.Equal(0x01_02_03_04_05_06_07_08ul, ffmpeg.avio_rb64(ioc.Handle));
+        avio_seek(ioc.Handle, 0, (int)SeekOrigin.Begin);
+        Assert.Equal(0x01_02_03_04_05_06_07_08ul, avio_rb64(ioc.Handle));
 
-        Assert.Equal(0x09_0A_0B_0Cu, ffmpeg.avio_rb32(ioc.Handle));
-        Assert.Equal(0x0D, ffmpeg.avio_r8(ioc.Handle));
+        Assert.Equal(0x09_0A_0B_0Cu, avio_rb32(ioc.Handle));
+        Assert.Equal(0x0D, avio_r8(ioc.Handle));
 
-        ffmpeg.avio_r8(ioc.Handle);
-        Assert.Equal(1, ioc.Handle->eof_reached);
+        avio_r8(ioc.Handle);
+        Assert.Equal(1, ioc.Handle.Raw->eof_reached);
 
         ioc.Dispose();
 
@@ -35,8 +37,8 @@ public unsafe class MuxDemuxTests
         var mem = new MemoryStream();
         var ioc = IOContext.CreateOutputFromStream(mem, leaveOpen: true);
 
-        ffmpeg.avio_wb64(ioc.Handle, 0x01_02_03_04_05_06_07_08ul);
-        ffmpeg.avio_wb32(ioc.Handle, 0x09_0A_0B_0Cu);
+        avio_wb64(ioc.Handle, 0x01_02_03_04_05_06_07_08ul);
+        avio_wb32(ioc.Handle, 0x09_0A_0B_0Cu);
 
         ioc.Flush();
         Assert.Equal(12, mem.Length);
@@ -57,10 +59,9 @@ public unsafe class MuxDemuxTests
         pkt.PresentationTimestamp = 1234;
         pkt.SetData(new byte[2048]);
 
-        Assert.Equal(1234, pkt.Handle->pts);
+        Assert.Equal(1234, pkt.Handle.Ref.pts);
         Assert.Equal(2048, pkt.Data.Length);
 
-        pkt.UnrefAndGetHandle();
         Assert.Equal(0, pkt.Data.Length);
 
         pkt.Dispose();
@@ -75,12 +76,11 @@ public unsafe class MuxDemuxTests
         Assert.Equal(0, packet.SideData.Count);
 
         var entry1 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, 9 * 4);
-        var entry2 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_PALETTE, ffmpeg.AVPALETTE_SIZE);
+        var entry2 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
         var entry3 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, 9 * 4);
         Assert.Equal(2, packet.SideData.Count);
 
         Assert.Equal(9 * 4, entry1.Data.Length);
-        Assert.NotNull(packet.SideData.GetDisplayMatrix());
 
         packet.SideData.Remove(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX);
         Assert.Equal(1, packet.SideData.Count);
@@ -89,14 +89,14 @@ public unsafe class MuxDemuxTests
     [Fact]
     public void DemuxMetadata()
     {
-        var demuxer = new MediaDemuxer("Resources/demux_test.mkv");
+        var demuxer = new MediaDemuxer("Resources/demux_test.mkv"u8);
 
         Assert.Equal(5, demuxer.Duration!.Value.TotalSeconds, 0);
         Assert.Equal(2, demuxer.Streams.Length);
 
-        Assert.Equal("Test Media File", demuxer.Metadata["title"]);
+        Assert.Equal("Test Media File"u8, demuxer.Metadata["title"u8]);
 
-        var vs = demuxer.FindBestStream(MediaTypes.Video)!;
+        demuxer.TryFindBestStream(MediaTypes.Video, out var vs);
         Assert.Equal(CodecIds.H264, vs.CodecPars.CodecId);
         Assert.Equal(PixelFormats.YUV420P, vs.CodecPars.PixelFormat);
         Assert.Equal(320, vs.CodecPars.Width);

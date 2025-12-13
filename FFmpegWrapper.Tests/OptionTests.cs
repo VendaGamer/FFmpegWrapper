@@ -1,14 +1,11 @@
 namespace FFmpegWrapper.Tests;
 
-using FFmpeg.AutoGen;
-using FFmpeg.Wrapper;
-
 public class OptionTests
 {
     [Fact]
     public void GetOptions()
     {
-        var options = MediaCodec.GetEncoder("libx264").GetOptions(removeAliases: false);
+        var options = MediaCodec.GetEncoder("libx264"u8).GetOptions(removeAliases: false);
         Assert.NotEmpty(options);
 
         var mestOpt = options.First(o => o.Name == "me_method");

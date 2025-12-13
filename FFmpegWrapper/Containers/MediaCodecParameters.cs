@@ -148,7 +148,10 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
 
     public bool Equals(MediaCodecParameters other)
     {
-        return Handle == other.Handle;
+        unsafe
+        {
+            return Handle.Raw == other.Handle.Raw;
+        }
     }
     
     protected override unsafe void Free()

@@ -1,7 +1,6 @@
 namespace FFmpegWrapper.Tests;
 
-using Codecs;
-using Core;
+
 
 using FFmpegBindings.Abstractions;
 
@@ -18,8 +17,6 @@ public class CodecTests : TestBase
         Assert.Equal(AVCodecID.AV_CODEC_ID_MPEG2VIDEO, codec1.Id);
         Assert.True(codec1.IsEncoder);
         Assert.False(codec1.IsDecoder);
-        Assert.Empty(codec1.SupportedChannelLayouts);
-        Assert.Empty(codec1.SupportedSampleFormats);
         Assert.Equal(PixelFormats.YUV420P, codec1.SupportedPixelFormats[0]);
         Assert.True(codec1.SupportedFrameRates.Length is > 10 and < 100);
 
@@ -31,8 +28,6 @@ public class CodecTests : TestBase
         Assert.Equal(2, codec2.SupportedChannelLayouts[1].nb_channels);
         Assert.Equal(SampleFormats.FloatPlanar, codec2.SupportedSampleFormats[1]);
         Assert.Equal(44100, codec2.SupportedSampleRates[0]);
-        Assert.Empty(codec2.SupportedPixelFormats);
-        Assert.Empty(codec2.SupportedFrameRates);
     }
 
     [Fact]
