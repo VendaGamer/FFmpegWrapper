@@ -1,7 +1,7 @@
 <Project>
     
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -15,5 +15,8 @@
     <ItemGroup>
         <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
     </ItemGroup>
-    
+
+    <Import Project="../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.projitems"/>
+
+
 </Project>

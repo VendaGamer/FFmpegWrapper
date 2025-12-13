@@ -8,6 +8,7 @@ using Hardware;
 
 public abstract class CodecBase : FFObject<AVCodecContext>
 {
+    
     public bool IsOpen {
         get {
             unsafe
@@ -90,6 +91,15 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         unsafe
         {
             _handle = ctx;
+        }
+    }
+
+    public FFHandle<AVCodec> Codec {
+        get {
+            unsafe
+            {
+                return Handle.Ref.codec;
+            }
         }
     }
 

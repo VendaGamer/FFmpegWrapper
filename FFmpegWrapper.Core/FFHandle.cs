@@ -55,7 +55,7 @@ public readonly ref struct FFHandle<T>
     /// <param name="raw"></param>
     public unsafe FFHandle(T* raw)
     {
-        if (Raw is null) {
+        if (raw is null) {
             throw new ArgumentNullException(nameof(raw));
         }
         
@@ -69,10 +69,6 @@ public readonly ref struct FFHandle<T>
     /// <returns></returns>
     public static unsafe implicit operator T*(FFHandle<T> handle)
     {
-        if (handle.Raw is null) {
-            throw new ArgumentNullException(nameof(handle.Raw));
-        }
-        
         return handle.Raw;
     }
 

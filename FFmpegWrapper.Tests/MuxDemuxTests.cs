@@ -98,9 +98,9 @@ public unsafe class MuxDemuxTests
 
         demuxer.TryFindBestStream(MediaTypes.Video, out var vs);
         Assert.Equal(CodecIds.H264, vs.CodecPars.CodecId);
-        Assert.Equal(PixelFormats.YUV420P, vs.CodecPars.PixelFormat);
-        Assert.Equal(320, vs.CodecPars.Width);
-        Assert.Equal(240, vs.CodecPars.Height);
+        Assert.Equal(PixelFormats.YUV420P, vs.CodecPars.PictureFormat.PixelFormat);
+        Assert.Equal(320, vs.CodecPars.PictureFormat.Width);
+        Assert.Equal(240, vs.CodecPars.PictureFormat.Height);
 
         demuxer.Dispose();
         Assert.Throws<ObjectDisposedException>(() => _ = demuxer.Handle);

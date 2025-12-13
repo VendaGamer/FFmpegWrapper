@@ -53,7 +53,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <c>protocol_whitelist=file</c> option.
     /// </remarks>
     public unsafe MediaDemuxer(ReadOnlySpan<byte> url)
-        : this(CreateContext(url, null, null)) { }
+        : this(CreateContext(url, default, null)) { }
 
     /// <inheritdoc />
     public MediaDemuxer(IFFHandleOwner<AVIOContext> inputOutputContextOwner)

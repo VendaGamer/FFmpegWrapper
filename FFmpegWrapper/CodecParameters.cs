@@ -12,11 +12,13 @@ public readonly struct CodecParameters : IFFHandleObserver<AVCodecParameters>
         }
     }
 
-    public AVCodecID CodecId => Handle.Ref.codec_id;
-    public AVPixelFormat PixelFormat => (AVPixelFormat)Handle.Ref.format;
-    
-    public int Width => Handle.Ref.width;
-    public int Height => Handle.Ref.height;
+    public PictureFormat PictureFormat {
+        get {
+            var handle = Handle.Ref;
+
+            return new PictureFormat(handle.width, handle.height, (AVPixelFormat)handle.format,handle.sample_aspect_ratio);
+        }
+    }
     
     public MediaType MediaType => (MediaType)Handle.Ref.codec_type;
 
