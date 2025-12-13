@@ -182,7 +182,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
             try {
                 if (!ignoreUnknownOptions && av_dict_count(rawOpts) > 0) {
-                    string invalidKeys = string.Join("', '", new MediaDictionary(rawOpts).Select(e => e.Key));
+                    string invalidKeys = string.Join("', '", new MediaDictionary(rawOpts));
                     throw new InvalidOperationException($"Unknown or invalid muxer options (keys: '{invalidKeys}')");
                 }
             } finally {
@@ -233,8 +233,9 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         
         _tempPacket ??= new MediaPacket();
 
-        encoder.SendFrame(frame?.Handle ?? null);
-        
+        encoder.SendFrame(frame is not null ? frame.Handle : null);
+
+
         while (encoder.ReceivePacket(_tempPacket)) {
             unsafe
             {

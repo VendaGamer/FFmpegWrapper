@@ -213,7 +213,8 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
     {
         unsafe {
             var colorSpaceName = FFHelper.PtrToStringUtf8(av_color_space_name(Matrix));
-            return $"{colorSpaceName}, {av_color_space_name(Matrix)}/{av_color_primaries_name(Primaries)}/{av_color_transfer_name(Transfer)}";
+            //TODO
+            return "";
         }
         
     }

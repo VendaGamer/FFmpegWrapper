@@ -1,7 +1,6 @@
 ﻿namespace FFmpegWrapper.Processing;
 
 using CommunityToolkit.HighPerformance;
-
 using Media;
 
 public sealed class SwScaler : FFObject<SwsContext>

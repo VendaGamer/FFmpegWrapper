@@ -17,7 +17,7 @@ public sealed class CustomChannelLayout : CriticalFinalizerObject, IDisposable
         return new CustomChannelLayout(ChannelLayout.GetDefault(numChannels));
     }
 
-    public static CustomChannelLayout FromString(string str)
+    public static CustomChannelLayout FromString(ReadOnlySpan<byte> str)
     {
         return new CustomChannelLayout(ChannelLayout.FromString(str));
     }

@@ -10,11 +10,12 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     
+    <Import Project="../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.projitems"/>
+    
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
         <PackageReference Include="xunit" />
         <ProjectReference Include="../FFmpegWrapper/FFmpegWrapper.csproj" />
-        <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" />
         
         <Content Include="Resources/**/*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

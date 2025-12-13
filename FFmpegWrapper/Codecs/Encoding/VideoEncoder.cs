@@ -4,24 +4,30 @@ using Hardware;
 
 using Media;
 
-public unsafe class VideoEncoder : MediaEncoder
+public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
 {
     public int Width {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.width;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfDisposed();
             Handle.Ref.width = value;
         }
     }
     public int Height {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.height;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             Handle.Ref.height = value;
         }
     }
     public AVPixelFormat PixelFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.pix_fmt;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             Handle.Ref.pix_fmt = value;
@@ -29,16 +35,22 @@ public unsafe class VideoEncoder : MediaEncoder
     }
 
     public PictureFormat FrameFormat {
-        get => new(Width, Height, PixelFormat, _handle->sample_aspect_ratio);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new(Width, Height, PixelFormat, Handle.Ref.sample_aspect_ratio);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
+
             ThrowIfOpen();
-            _handle->width = value.Width;
-            _handle->height = value.Height;
-            _handle->pix_fmt = value.PixelFormat;
+            ref var handle = ref Handle.Ref;
+            
+            handle.width = value.Width;
+            handle.height = value.Height;
+            handle.pix_fmt = value.PixelFormat;
         }
     }
 
     public PictureColorspace Colorspace {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             ref var handle = ref Handle.Ref;
             
@@ -46,6 +58,7 @@ public unsafe class VideoEncoder : MediaEncoder
                 handle.color_trc, handle.color_range);
             
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             ref var handle = ref Handle.Ref;
@@ -58,7 +71,9 @@ public unsafe class VideoEncoder : MediaEncoder
 
     /// <inheritdoc cref="AVCodecContext.gop_size"/>
     public int GopSize {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.gop_size;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             
@@ -69,17 +84,29 @@ public unsafe class VideoEncoder : MediaEncoder
     }
     /// <inheritdoc cref="AVCodecContext.max_b_frames"/>
     public int MaxBFrames {
-        get => _handle->max_b_frames;
-        set => SetOrThrowIfOpen(ref _handle->max_b_frames, value);
+        get => Handle.Ref.max_b_frames;
+        set {
+            ThrowIfOpen();
+            
+            Handle.Ref.max_b_frames = value;
+        }
     }
 
     public int MinQuantizer {
-        get => _handle->qmin;
-        set => SetOrThrowIfOpen(ref _handle->qmin, value);
+        get => Handle.Ref.qmin;
+        set {
+            ThrowIfOpen();
+            
+            Handle.Ref.qmin = value;
+        }
     }
     public int MaxQuantizer {
-        get => _handle->qmax;
-        set => SetOrThrowIfOpen(ref _handle->qmax, value);
+        get => Handle.Ref.qmax;
+        set {
+            ThrowIfOpen();
+            
+            Handle.Ref.qmax = value;
+        }
     }
 
     public VideoEncoder(AVCodecID codecId, in PictureFormat format, Rational frameRate, int bitrate = 0)
@@ -98,11 +125,6 @@ public unsafe class VideoEncoder : MediaEncoder
         : this(config.Codec, in format, frameRate)
     {
         SetHardwareContext(config, device, framePool);
-    }
-
-    public VideoEncoder(FFHandle<AVCodecContext> ctx) : base(ctx)
-    {
-        
     }
 
     /// <summary> Returns the correct <see cref="MediaFrame.PresentationTimestamp"/> for the given frame number, in respect to <see cref="CodecBase.FrameRate"/> and <see cref="CodecBase.TimeBase"/>. </summary>

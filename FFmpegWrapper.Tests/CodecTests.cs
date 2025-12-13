@@ -1,14 +1,17 @@
 namespace FFmpegWrapper.Tests;
 
 using Codecs;
+using Core;
+
+using FFmpegBindings.Abstractions;
 
 public class CodecTests : TestBase
 {
     [Fact]
     public void AVCodec_Props()
     {
-        var codec1 = MediaCodec.GetEncoder("mpeg2video");
-        var codec2 = MediaCodec.GetEncoder("libmp3lame");
+        var codec1 = MediaCodec.GetEncoder("mpeg2video"u8);
+        var codec2 = MediaCodec.GetEncoder("libmp3lame"u8);
 
         Assert.Equal("mpeg2video", codec1.Name);
         Assert.Equal(MediaTypes.Video, codec1.Type);

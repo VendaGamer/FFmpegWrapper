@@ -1,7 +1,6 @@
 namespace FFmpegWrapper.Codecs;
 
 using Configuration;
-
 using Extensions;
 
 public readonly struct MediaCodec : IFFHandleObserver<AVCodec>

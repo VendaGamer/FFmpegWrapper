@@ -102,8 +102,8 @@ public class MediaDemuxer : FFObject<AVFormatContext>
 
         try {
             if (av_dict_count(rawOpts) > 0) {
-                string invalidKeys = string.Join("', '", new MediaDictionary(rawOpts).Select(e => e.Key));
-                throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '{invalidKeys}')");
+                //TODO
+                throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '')");
             }
         } finally {
             av_dict_free(&rawOpts);
@@ -194,7 +194,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <exception cref="InvalidOperationException">If the underlying IO context doesn't support seeks.</exception>
     /// <exception cref="ArgumentException">If <paramref name="stream"/> is not owned by the demuxer.</exception>
     /// <returns>true if succeeded</returns>
-    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options, MediaStream? stream = null)
+    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options = 0, MediaStream? stream = null)
     {
         ThrowIfDisposed();
 

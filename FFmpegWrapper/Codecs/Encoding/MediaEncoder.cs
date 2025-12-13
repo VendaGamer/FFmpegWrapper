@@ -4,7 +4,7 @@ using Extensions;
 
 using Media;
 
-public abstract class MediaEncoder : CodecBase
+public abstract class MediaEncoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx)
 {
 
     /// <inheritdoc cref="AVCodecContext.bit_rate" />
@@ -34,28 +34,22 @@ public abstract class MediaEncoder : CodecBase
         }
     }
 
-    public MediaEncoder(FFHandle<AVCodecContext> ctx)
-        : base(ctx)
-    {
-        
-    }
-
     /// <summary> Sets a codec specific option. If it doesn't exist, throws <see cref="InvalidOperationException"/>. </summary>
-    public void SetOption(string name, string value)
+    public void SetOption(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
     {
         unsafe
         {
-            av_opt_set(Handle.Ref.priv_data, name, value, 0).CheckError();
+            av_opt_set(Handle.Ref.priv_data, name.RawHandle, value.RawHandle, 0).CheckError();
         }
     }
 
     /// <summary> Sets the value for a generic codec option. Note that these values may be ignored or unbalanced for some codecs. </summary>
     /// <remarks> https://ffmpeg.org/ffmpeg-codecs.html#Codec-Options </remarks>
-    public void SetGlobalOption(string name, string value)
+    public void SetGlobalOption(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
     {
         unsafe
         {
-            av_opt_set(Handle, name, value, 0).CheckError();
+            av_opt_set(Handle, name.RawHandle, value.RawHandle, 0).CheckError();
         }
     }
 
@@ -71,11 +65,11 @@ public abstract class MediaEncoder : CodecBase
             return result >= 0;
         }
     }
-    public bool SendFrame(FFHandle<AVFrame>? frame)
+    public bool SendFrame(FFHandle<AVFrame> frame)
     {
         unsafe
         {
-            var result = (LavResult)avcodec_send_frame(Handle, frame ?? null);
+            var result = (LavResult)avcodec_send_frame(Handle, frame.Raw);
 
             if (result != LavResult.Success && result != LavResult.EndOfFile) {
                 result.ThrowIfError("Could not encode frame");

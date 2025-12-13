@@ -7,8 +7,6 @@ public partial class MediaFilterPipeline : IDisposable
     private readonly Dictionary<string, MediaBufferSource> _sources = new();
     private readonly Dictionary<string, MediaBufferSink> _sinks = new();
 
-    public static Builder CreateBuilder() => new();
-
     /// <summary> Apply filters to the given frame frame from the default input and output ports. </summary>
     /// <remarks> This assumes that the filter pipeline outputs exactly one frame per input. The the Send/Receive APIs must be used otherwise. </remarks> 
     /// <param name="dest"> Filter output destination. If null, will overwrite <paramref name="source"/>. </param>

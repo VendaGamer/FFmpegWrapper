@@ -1,10 +1,9 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
-public abstract class MediaDecoder : CodecBase
+using Extensions;
+
+public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx)
 {
-    public unsafe MediaDecoder(FFHandle<AVCodecContext> ctx, AVMediaType expectedType)
-        : base(ctx, expectedType) { }
-    
     public void SendPacket(MediaPacket? packet)
     {
         unsafe
@@ -43,10 +42,10 @@ public abstract class MediaDecoder : CodecBase
             // Fast path for success (most common case)
             if (result == 0) return true;
         
-            // Fast path for common non-error cases
-            if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) {
-                return false;
-            }
+            // // Fast path for common non-error cases
+            // if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) {
+            //     return false;
+            // }
         
             // Only throw for actual errors
             ((LavResult)result).ThrowIfError("Could not decode frame");
@@ -60,7 +59,7 @@ public abstract class MediaDecoder : CodecBase
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int ProcessPackets(ReadOnlySpan<MediaPacket> packets, Span<MediaFrame> frames)
     {
-        int framesDecoded = 0;
+        /*int framesDecoded = 0;
         
         foreach (var packet in packets) {
             unsafe
@@ -87,9 +86,9 @@ public abstract class MediaDecoder : CodecBase
                     }
                 }
             }
-        }
+        }*/
         
-        return framesDecoded;
+        return 0;
     }
     
 }

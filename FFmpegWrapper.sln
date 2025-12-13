@@ -42,6 +42,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bindings", "Bindings", "{FB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegBindings.Abstractions", "Bindings\FFmpegBindings.Abstractions\FFmpegBindings.Abstractions.csproj", "{34CF9B46-B97D-4E28-8C26-D8296B5D67E8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegBindings.Linked", "Bindings\FFmpegBindings.Linked\FFmpegBindings.Linked.csproj", "{E3BEDA31-A337-4B3F-B9D5-98E5657D382D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -108,6 +110,10 @@ Global
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3BEDA31-A337-4B3F-B9D5-98E5657D382D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3BEDA31-A337-4B3F-B9D5-98E5657D382D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3BEDA31-A337-4B3F-B9D5-98E5657D382D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3BEDA31-A337-4B3F-B9D5-98E5657D382D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -124,6 +130,7 @@ Global
 		{74D7AF51-9D93-494A-9B4A-C700E92ED875} = {3405D988-1D8F-40D1-A490-310A539EC88B}
 		{666F9C5C-46EC-4788-B4E3-32D751C12858} = {3405D988-1D8F-40D1-A490-310A539EC88B}
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8} = {FB6991D2-06DB-4A65-8FF0-42670F2072B3}
+		{E3BEDA31-A337-4B3F-B9D5-98E5657D382D} = {FB6991D2-06DB-4A65-8FF0-42670F2072B3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FBB6A4C7-BCD6-45BD-A659-7BADD859E7D4}

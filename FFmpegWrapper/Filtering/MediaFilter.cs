@@ -1,10 +1,8 @@
 namespace FFmpegWrapper.Filtering;
 
 using System.Collections.Generic;
-
 using Configuration;
-
-using Core.Flags;
+using Extensions;
 
 public unsafe readonly struct MediaFilter
 {
@@ -12,20 +10,20 @@ public unsafe readonly struct MediaFilter
 
     public string Name => FFHelper.PtrToStringUtf8(Handle->name)!;
     public string? Description => FFHelper.PtrToStringUtf8(Handle->description)!;
-    public MediaFilterFlags Flags => (MediaFilterFlags)Handle->flags;
+    public AVFILTER_FLAGS Flags => (AVFILTER_FLAGS)Handle->flags;
 
     public int NumInputs => (int)avfilter_filter_pad_count(Handle, 0);
     public int NumOutputs => (int)avfilter_filter_pad_count(Handle, 1);
 
     public MediaFilter(AVFilter* handle) => Handle = handle;
 
-    public static MediaFilter Get(string name)
+    public static MediaFilter Get(ReadOnlySpan<byte> name)
     {
-        var ptr = avfilter_get_by_name(name);
-        if (ptr == null) {
-            throw new KeyNotFoundException("Unknown filter '" + name + "'");
-        }
-        return new MediaFilter(ptr);
+        var ptr = avfilter_get_by_name(name.RawHandle);
+        
+        return ptr is null ?
+            throw new KeyNotFoundException($"Unknown filter named: {FFHelper.SpanToStringUtf8(name)}") :
+            new MediaFilter(ptr);
     }
 
     /// <summary> Returns a list of parameters accepted during initialization of an instance of this filter. </summary>

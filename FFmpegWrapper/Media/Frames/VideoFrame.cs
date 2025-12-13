@@ -153,19 +153,20 @@ public class VideoFrame : MediaFrame
             }
             var desc = av_pix_fmt_desc_get(PixelFormat);
             
-            
-            if (desc == null || (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) != 0) {
+            /*if (desc == null || (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) is not 0) {
                 throw new InvalidOperationException();
             }
+            
             for (uint i = 0; i < 4; i++) {
                 if (desc->comp[i].plane != plane) continue;
-
-                if ((i == 1 || i == 2) && (desc->flags & AV_PIX_FMT_FLAG_RGB) == 0) {
+                
+                if (i is 1 or 2 && (desc->flags & AV_PIX_FMT_FLAG_RGB) is 0) {
                     size.Width = CeilShr(size.Width, desc->log2_chroma_w);
                     size.Height = CeilShr(size.Height, desc->log2_chroma_h);
                 }
                 return size;
-            }
+            }*/
+            
             throw new ArgumentOutOfRangeException(nameof(plane));
 
             static int CeilShr(int x, int s) => (x + (1 << s) - 1) >> s;
@@ -173,7 +174,7 @@ public class VideoFrame : MediaFrame
     }
 
     /// <summary> Attempts to create a hardware frame memory mapping. Returns null if the backing device does not support frame mappings. </summary>
-    public VideoFrame? Map(HardwareFrameMapping flags)
+    public VideoFrame? Map(AV_HWFRAME_MAP flags)
     {
         unsafe
         {
@@ -205,7 +206,7 @@ public class VideoFrame : MediaFrame
     }
 
     /// <summary> Gets an array of possible source or dest formats usable in <see cref="TransferTo(VideoFrame)"/>. </summary>
-    public ReadOnlySpan<AVPixelFormat> GetHardwareTransferFormats(HardwareFrameTransferDirection direction)
+    public ReadOnlySpan<AVPixelFormat> GetHardwareTransferFormats(AVHWFrameTransferDirection direction)
     {
         unsafe
         {
@@ -218,7 +219,7 @@ public class VideoFrame : MediaFrame
             AVPixelFormat* pFormats;
 
             if (av_hwframe_transfer_get_formats(_handle->hw_frames_ctx,
-                    (AVHWFrameTransferDirection)direction, &pFormats, 0) < 0) {
+                    direction, &pFormats, 0) < 0) {
                 return ReadOnlySpan<AVPixelFormat>.Empty;
             }
             
@@ -234,20 +235,13 @@ public class VideoFrame : MediaFrame
     /// <summary> Fills this frame with black pixels. </summary>
     public void Clear()
     {
-        unsafe
-        {
-            ThrowIfDisposed();
-            var linesizes = new long4();
-
-            for (uint i = 0; i < 4; i++) {
-                unsafe
-                {
-                    linesizes[i] = _handle->linesize[i];
-                }
-            }
+        unsafe {
+            var handle = Handle.Raw;
+            
             av_image_fill_black(
-                ref *(byte_ptr4*)&_handle->data, linesizes,
-                PixelFormat, _handle->color_range, _handle->width, _handle->height
+                handle->data, (nint*)handle->linesize,
+                (AVPixelFormat)handle->format, handle->color_range,
+                handle->width, handle->height
             ).CheckError("Failed to clear frame.");
         }
     }
@@ -282,8 +276,9 @@ public class VideoFrame : MediaFrame
 
                 // This seems to be redundant, but keeping for good sake.
                 rgbFrame.Colorspace = new PictureColorspace(AVColorSpace.AVCOL_SPC_RGB, AVColorPrimaries.AVCOL_PRI_BT470M, AVColorTransferCharacteristic.AVCOL_TRC_GAMMA22, AVColorRange.AVCOL_RANGE_JPEG);
-
-                SwScaler.Shared.Reinit(Format, rgbFrame.Format, InterpolationMode.Bilinear | InterpolationMode.HighQuality);
+                
+                // TODO high quality
+                SwScaler.Shared.Reinit(Format, rgbFrame.Format, SWSFlags.SWS_BILINEAR);
                 SwScaler.Shared.SetColorspace(Colorspace, rgbFrame.Colorspace);
                 SwScaler.Shared.Convert(Handle, rgbFrame.Handle);
             
@@ -310,7 +305,7 @@ public class VideoFrame : MediaFrame
         
             encoder.Open();
 
-            var scalerMode = quality >= 80 ? InterpolationMode.Bicubic | InterpolationMode.HighQuality : InterpolationMode.Bilinear;
+            var scalerMode = quality >= 80 ? SWSFlags.SWS_BICUBIC : SWSFlags.SWS_BILINEAR;
         
             SwScaler.Shared.Reinit(Format, tempFrame.Format, scalerMode);
             SwScaler.Shared.SetColorspace(this.Colorspace, tempFrame.Colorspace);
@@ -337,7 +332,7 @@ public class VideoFrame : MediaFrame
 
     /// <summary> Decodes a single frame from the specified image or video file. </summary>
     /// <remarks> This method may be susceptible to DoS attacks. Do not use with untrusted inputs. </remarks>
-    public static VideoFrame Load(string filename, TimeSpan? position = null)
+    public static VideoFrame Load(ReadOnlySpan<byte> filename, TimeSpan? position = null)
     {
         using var demuxer = new MediaDemuxer(filename);
         
@@ -350,9 +345,9 @@ public class VideoFrame : MediaFrame
 
         var frame = new VideoFrame();
 
-        if (position != null && !demuxer.Seek(position.Value, SeekOptions.None)) {
+        if (position is not null && !demuxer.Seek(position.Value)) {
             //Position is past the stream duration, go back to the start or we won't get anything.
-            demuxer.Seek(TimeSpan.Zero, SeekOptions.Backward);
+            demuxer.Seek(TimeSpan.Zero, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD);
         }
 
         while (demuxer.Read(packet)) {

@@ -114,7 +114,7 @@ public struct FrameSideDataList : IFFHandleObserver<AVFrame>
     
 }
 
-public struct FrameSideData(FFHandle<AVFrameSideData> handle)
+public readonly struct FrameSideData(FFHandle<AVFrameSideData> handle)
 {
     public FFHandle<AVFrameSideData> Handle {
         get {
@@ -123,8 +123,6 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
             }
         }
     }
-    
-    private unsafe AVFrameSideData* _handle;
 
     public Span<byte> Data {
         get {
@@ -143,6 +141,8 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
             }
         }
     }
+    
+    internal readonly unsafe AVFrameSideData* _handle = handle;
 
     public AVFrameSideDataType Type => Handle.Ref.type;
 
@@ -153,8 +153,9 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
     public ReadOnlySpan<T> GetDataSpan<T>() where T : unmanaged
     {
         unsafe {
+            var handle = Handle.Raw;
             if (_handle->size % (nuint)sizeof(T) is 0) {
-                return new ReadOnlySpan<T>(handle.Raw->data, (int)handle.Raw->size);
+                return new ReadOnlySpan<T>(handle->data, (int)handle->size);
             }
 
             return ReadOnlySpan<T>.Empty;

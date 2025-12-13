@@ -103,6 +103,8 @@ public abstract class CodecBase : FFObject<AVCodecContext>
 
     /// <summary> Initializes the codec if not already. </summary>
     /// <returns>false if already open</returns>
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Open()
     {
         if (IsOpen)
@@ -160,6 +162,8 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     }
 
     /// <summary> Reset the decoder state / flush internal buffers. </summary>
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual void Flush()
     {
         unsafe
@@ -188,23 +192,24 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         unsafe
         {
             ThrowIfOpen();
-            ThrowIfDisposed();
-            
             _extraData?.Dispose();
             var span = owner.Memory.Span;
+            ref var handle = ref Handle.Ref; 
             
             if (span.IsEmpty) {
-                _handle->extradata = null;
-                _handle->extradata_size = 0;
+                handle.extradata = null;
+                handle.extradata_size = 0;
                 return;
             }
 
             _extraData = owner;
-            _handle->extradata = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
-            _handle->extradata_size = span.Length;
+            
+            handle.extradata = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            handle.extradata_size = span.Length;
         }
     }
-
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void ThrowIfOpen()
     {
         if (IsOpen)

@@ -1,34 +1,67 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
+using System.Runtime.InteropServices;
+
 using Hardware;
 using Media;
 
-public unsafe class VideoDecoder : MediaDecoder
+public class VideoDecoder(MediaCodec codec) : MediaDecoder(AllocContext(codec))
 {
-    public int Width => Handle->width;
-    public int Height => Handle->height;
-    public AVPixelFormat PixelFormat => Handle->pix_fmt;
-    public PictureFormat FrameFormat => new(Width, Height, PixelFormat, Handle->sample_aspect_ratio);
+    public int Width {
+        get {
+            unsafe
+            {
+                return Handle.Raw->width;
+            }
+        }
+    }
+
+    public int Height {
+        get {
+            unsafe
+            {
+                return Handle.Raw->height;
+            }
+        }
+    }
+
+    public AVPixelFormat PixelFormat {
+        get {
+            unsafe
+            {
+                return Handle.Raw->pix_fmt;
+            }
+        }
+    }
+
+    public PictureFormat FrameFormat {
+        get {
+            unsafe
+            {
+                return new PictureFormat(Width, Height, PixelFormat, Handle.Raw->sample_aspect_ratio);
+            }
+        }
+    }
+
     public PictureColorspace Colorspace {
         get {
-            ThrowIfDisposed();
+            unsafe
+            {
+                ThrowIfDisposed();
             
-            return new PictureColorspace(_handle->colorspace, _handle->color_primaries,
-                _handle->color_trc, _handle->color_range);
+                return new PictureColorspace(_handle->colorspace, _handle->color_primaries,
+                    _handle->color_trc, _handle->color_range);
+            }
         }
     }
 
     public VideoDecoder(AVCodecID codecId)
-        : this(MediaCodec.GetDecoder(codecId)) { }
+        : this(MediaCodec.GetDecoder(codecId))
+    {
+        
+    }
 
-    public VideoDecoder(MediaCodec codec)
-        : this(AllocContext(codec), takeOwnership: true) { }
-
-    public VideoDecoder(AVCodecContext* ctx, bool takeOwnership)
-        : base(ctx, MediaTypes.Video, takeOwnership) { }
-
-    //Used to prevent callback pointer from being GC collected
-    AVCodecContext_get_format? _chooseHwPixelFmt;
+    AVCodecContext.AVCodecContext_get_format? _chooseHwPixelFmt;
 
     /// <summary>
     /// Before the decoder is open, setups hardware acceleration via the specified device. 
@@ -36,20 +69,26 @@ public unsafe class VideoDecoder : MediaDecoder
     /// </summary>
     public void SetupHardwareAccelerator(CodecHardwareConfig config, HardwareDevice device)
     {
-        ThrowIfOpen();
-        ThrowIfDisposed();
+        unsafe
+        {
+            ThrowIfOpen();
+            ThrowIfDisposed();
         
-        SetHardwareContext(config, device, null);
-        //TODO: support custom decoder negotiation and hw_frames_ctx
-
-        _handle->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) => {
-            for (var pFmt = pAvailFmts; *pFmt != PixelFormats.None; pFmt++) {
-                if (*pFmt == config.PixelFormat) {
-                    return *pFmt;
+            SetHardwareContext(config, device, null);
+            //TODO: support custom decoder negotiation and hw_frames_ctx
+ 
+            _chooseHwPixelFmt = (ctx, pAvailFmts) => {
+                for (var pFmt = pAvailFmts; *pFmt != PixelFormats.None; pFmt++) {
+                    if (*pFmt == config.PixelFormat) {
+                        return *pFmt;
+                    }
                 }
-            }
-            return ctx->sw_pix_fmt;
-        };
+                return ctx->sw_pix_fmt;
+            };
+
+            _handle->get_format = (delegate* unmanaged[Cdecl]<AVCodecContext*, AVPixelFormat*, AVPixelFormat>)
+                Marshal.GetFunctionPointerForDelegate(_chooseHwPixelFmt);
+        }
     }
     
 }

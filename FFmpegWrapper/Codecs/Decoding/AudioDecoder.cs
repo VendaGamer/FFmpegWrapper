@@ -35,9 +35,15 @@ public class AudioDecoder : MediaDecoder
         
     }
 
-    public unsafe AudioDecoder(MediaCodec codec)
-        : this(AllocContext(codec)) { }
+    public AudioDecoder(MediaCodec codec)
+        : this(AllocContext(codec))
+    {
+        
+    }
 
     public AudioDecoder(FFHandle<AVCodecContext> ctx)
-        : base(ctx, MediaTypes.Audio) { }
+        : base(ctx)
+    {
+        
+    }
 }

@@ -144,9 +144,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
     {
         if (options.IsEmpty) return;
 
-        for (int i = 0; i < options.Height; i--) {
-            var span = options.GetRowSpan(i);
-        }
+
     }
 
     /// <summary>

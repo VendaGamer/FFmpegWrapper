@@ -1,31 +1,38 @@
 ﻿namespace FFmpegWrapper.Filtering;
 
-public unsafe class MediaBufferSource : MediaFilterNode
+using Extensions;
+
+public class MediaBufferSource : MediaFilterNode
 {
-    internal MediaBufferSource(AVFilterContext* handle)
+    internal MediaBufferSource(FFHandle<AVFilterContext> handle)
         : base(handle) { }
 
     public void SendFrame(MediaFrame? frame)
     {
         ThrowIfDisposed();
-        av_buffersrc_write_frame(Handle, frame?.Handle ?? null).CheckError();
+        
+        unsafe {
+            if (frame is not null) {
+                av_buffersrc_write_frame(Handle, frame.Handle).CheckError();
+            }
+            
+            av_buffersrc_write_frame(Handle, null).CheckError();
+        }
     }
 }
 
-public abstract unsafe class MediaBufferSink : MediaFilterNode
+public abstract unsafe class MediaBufferSink(FFHandle<AVFilterContext> handle) : MediaFilterNode(handle)
 {
-    protected MediaBufferSink(AVFilterContext* handle)
-        : base(handle) { }
-
     public Rational TimeBase => av_buffersink_get_time_base(Handle);
 
     /// <summary> Gets a frame with filtered data from the sink, if one is available. </summary>
     /// <param name="onlyIfBuffered"> If true, don't run the filter graph and return a null frame if there are none buffered in the sink. </param> 
-    protected AVFrame* ReceiveFrame(bool onlyIfBuffered)
+    protected AVFrame* ReceiveFrame(AV_BUFFERSINK_FLAGS flags = 0)
     {
         // NOTE: av_buffersink_get_frame() will leak memory if the output frame is not empty.
         var frame = av_frame_alloc();
-        var result = (LavResult)av_buffersink_get_frame_flags(Handle, frame, onlyIfBuffered ? AV_BUFFERSINK_FLAG_NO_REQUEST : 0);
+        
+        var result = (LavResult)av_buffersink_get_frame_flags(Handle, frame, (int)flags);
 
         if (result < 0) {
             av_frame_free(&frame);
@@ -38,12 +45,12 @@ public abstract unsafe class MediaBufferSink : MediaFilterNode
 
     /// <summary> Gets a frame with filtered data from the sink, if one is available. </summary>
     /// <param name="onlyIfBuffered"> If true, don't run the filter graph and return a null frame if there are none buffered in the sink. </param> 
-    public bool ReceiveFrame(MediaFrame frame, bool onlyIfBuffered = false)
+    public bool ReceiveFrame(MediaFrame frame, AV_BUFFERSINK_FLAGS flags = 0)
     {
         // NOTE: av_buffersink_get_frame() will leak memory if the output frame is not empty.
         var handle = frame.Handle;
         av_frame_unref(handle);
-        var result = (LavResult)av_buffersink_get_frame_flags(Handle, handle, onlyIfBuffered ? AV_BUFFERSINK_FLAG_NO_REQUEST : 0);
+        var result = (LavResult)av_buffersink_get_frame_flags(Handle, handle, (int)flags);
         return result.IsSuccess();
     }
 }
@@ -69,10 +76,10 @@ public unsafe class AudioBufferSink : MediaBufferSink
 
     /// <inheritdoc cref="MediaBufferSink.ReceiveFrame(bool)"/>
     [Obsolete("Prefer to use `MediaBufferSink.ReceiveFrame(MediaFrame, bool)` instead.")]
-    public new AudioFrame? ReceiveFrame(bool onlyIfBuffered = false)
+    public new AudioFrame? ReceiveFrame(AV_BUFFERSINK_FLAGS flags = 0)
     {
-        var frame = base.ReceiveFrame(onlyIfBuffered);
-        return frame == null ? null : new AudioFrame(frame, takeOwnership: true);
+        var frame = base.ReceiveFrame(flags);
+        return frame is null ? null : new AudioFrame(frame);
     }
 }
 
@@ -99,9 +106,9 @@ public unsafe class VideoBufferSink : MediaBufferSink
 
     /// <inheritdoc cref="MediaBufferSink.ReceiveFrame(bool)"/>
     [Obsolete("Prefer to use `MediaBufferSink.ReceiveFrame(MediaFrame, bool)` instead.")]
-    public new VideoFrame? ReceiveFrame(bool onlyIfBuffered = false)
+    public new VideoFrame? ReceiveFrame(AV_BUFFERSINK_FLAGS flags = 0)
     {
-        var frame = base.ReceiveFrame(onlyIfBuffered);
-        return frame == null ? null : new VideoFrame(frame, takeOwnership: true);
+        var frame = base.ReceiveFrame(flags);
+        return frame is null ? null : new VideoFrame(frame);
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
-public class AudioEncoder : MediaEncoder
+public class AudioEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
 {
     public AVSampleFormat SampleFormat {
         get => Handle.Ref.sample_fmt;

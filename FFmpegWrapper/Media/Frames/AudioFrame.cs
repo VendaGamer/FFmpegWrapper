@@ -20,10 +20,13 @@ public class AudioFrame : MediaFrame
 
     public int Stride {
         get {
-            
+            unsafe
+            {
+                return Handle.Ref.linesize[0];
+            }
         }
     }
-    
+
 
     public bool IsPlanar => av_sample_fmt_is_planar(SampleFormat) is not 0;
     /// <summary>

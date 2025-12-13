@@ -2,6 +2,8 @@ namespace FFmpegWrapper.Media.Formats;
 
 using System.Runtime.ConstrainedExecution;
 
+using Extensions;
+
 public readonly struct ChannelLayout : IEquatable<ChannelLayout>
 {
     internal unsafe AVChannelLayout* Handle {
@@ -13,17 +15,17 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
     }
     
     public readonly AVChannelLayout Native;
-    public ChannelOrder Order => (ChannelOrder)Native.order;
+    public AVChannelOrder Order => Native.order;
 
     /// <summary>number of channels</summary>
     public int NumChannels => Native.nb_channels;
 
     /// <inheritdoc cref="ffmpeg.av_channel_layout_channel_from_index"/>
-    public AudioChannel GetChannel(uint index)
+    public AVChannel GetChannel(uint index)
     {
         unsafe
         {
-            return (AudioChannel)av_channel_layout_channel_from_index(Handle, index);
+            return av_channel_layout_channel_from_index(Handle, index);
         }
     }
 
@@ -59,12 +61,12 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
     }
     
     
-    internal static ChannelLayout FromString(string str)
+    internal static ChannelLayout FromString(ReadOnlySpan<byte> str)
     {
         unsafe
         {
             ChannelLayout layout = default;
-            if (av_channel_layout_from_string(layout.Handle, str) < 0) {
+            if (av_channel_layout_from_string(layout.Handle, str.RawHandle) < 0) {
                 throw new ArgumentException();
             }
             return layout;
@@ -102,7 +104,7 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
             Span<byte> buf = stackalloc byte[requiredSize];
             
             fixed (byte* ptr = buf) {
-                av_channel_layout_describe(Handle, ptr, (ulong)requiredSize).CheckError();
+                av_channel_layout_describe(Handle, ptr, (nuint)requiredSize).CheckError();
             }
             
             return FFHelper.SpanToStringUtf8(buf);

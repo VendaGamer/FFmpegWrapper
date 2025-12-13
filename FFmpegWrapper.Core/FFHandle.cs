@@ -17,6 +17,7 @@ public readonly ref struct FFHandle<T>
     /// </summary>
     public ref T Ref
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
             unsafe {
@@ -26,6 +27,7 @@ public readonly ref struct FFHandle<T>
     }
 
     public bool IsNull {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
                 return Raw is null;

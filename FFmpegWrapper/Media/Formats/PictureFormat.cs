@@ -121,7 +121,10 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// <returns>A string in the format "WIDTHxHEIGHT PIXEL_FORMAT_NAME".</returns>
     public override string ToString()
     {
-        return $"{Width}x{Height} {av_get_pix_fmt_name(PixelFormat)}";
+        unsafe
+        {
+            return $"{Width}x{Height} {FFHelper.PtrToStringUtf8(av_get_pix_fmt_name(PixelFormat))}";
+        }
     }
     
     /// <summary>

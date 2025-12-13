@@ -1,12 +1,11 @@
 namespace FFmpegWrapper.Tests;
 
-using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
+using FFmpegBindings.DynamicallyLinked;
 
 public abstract class TestBase
 {
     protected TestBase()
     {
-        DynamicallyLoadedBindings.LibrariesPath = @"C:\ffmpeg\";
-        DynamicallyLoadedBindings.Initialize();
+        FFmpegLinked.Init();
     }
 }

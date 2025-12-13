@@ -1,10 +1,9 @@
 namespace FFmpegWrapper.Configuration;
 
 using System.Collections.Generic;
-
 using Core;
 
-using static AVOptionType;
+using Extensions;
 
 /// <summary> Represents an option accepted by a ffmpeg object. </summary>
 public readonly struct ContextOption
@@ -17,8 +16,6 @@ public readonly struct ContextOption
         }
     }
 
-
-
     public readonly string Name;
     public readonly string Description;
     public AVOptionType Type => Handle.Ref.type;
@@ -28,8 +25,15 @@ public readonly struct ContextOption
     /// <summary> Offset to the field containing this option, relative to the object pointer. </summary>
     public int Offset => Handle.Ref.offset;
 
-    public OptionValue? DefaultValue => Handle.Ref.u;
-    
+    public OptionValue? DefaultValue {
+        get {
+            unsafe {
+                var handle = Handle.Raw;
+                return new OptionValue(&handle->u, handle->type);
+            }
+        }
+    }
+
     private readonly unsafe AVOption* _handle;
 
     //TODO: Expose Option.DefaultValue
@@ -58,7 +62,7 @@ public readonly struct ContextOption
             //The AVOption documentation says that AVClass options must be declared in
             //a static null terminated array, so this should be mostly fine.
             for (AVOption* opt = _handle + 1; opt->name != null; opt++) {
-                if (opt->type == AV_OPT_TYPE_CONST && opt->unit == _handle->unit) {
+                if (opt->type == AVOptionType.AV_OPT_TYPE_CONST && opt->unit == _handle->unit) {
                     list.Add(new ContextOption(opt));
                 }
             }
@@ -81,44 +85,33 @@ public readonly struct ContextOption
     /// <param name="obj"> A struct whose first element is a pointer to an AVClass. </param>
     /// <param name="name"> The name of the field to set. </param>
     /// <param name="value"></param>
-    public static unsafe void Set(void* obj, string name, OptionValue value, bool searchChildren)
+    public static unsafe void Set(void* obj, ReadOnlySpan<byte> name, OptionValue value, AVOptionSearchFlags flags = AVOptionSearchFlags.AV_OPT_SEARCH_CHILDREN)
     {
-        int flags = searchChildren ? AV_OPT_SEARCH_CHILDREN : 0;
+        var namePtr = name.RawHandle;
         
-        int ret = value.BoxedValue switch {
-            string v    => av_opt_set(obj, name, v, flags),
-            long v      => av_opt_set_int(obj, name, v, flags),
-            double v    => av_opt_set_double(obj, name, v, flags),
-            Rational v  => av_opt_set_q(obj, name, v, flags),
-            ChannelLayout v => av_opt_set_chlayout(obj, name, &v.Native, flags),
-            AVPixelFormat v => av_opt_set_pixel_fmt(obj, name, v, flags),
-            AVSampleFormat v => av_opt_set_sample_fmt(obj, name, v, flags),
-            byte[] v        => SetBinary(v),
-            _ => throw new ArgumentOutOfRangeException()
+        //TODO
+        int ret = value.ValueType switch {
+            AVOptionType.AV_OPT_TYPE_STRING => av_opt_set(obj, namePtr, value._handle->str, (int)flags),
+            AVOptionType.AV_OPT_TYPE_INT => av_opt_set_int(obj, namePtr, value._handle->i64, (int)flags),
+            AVOptionType.AV_OPT_TYPE_DOUBLE => av_opt_set_double(obj, namePtr, value._handle->dbl, (int)flags),
+            AVOptionType.AV_OPT_TYPE_RATIONAL => av_opt_set_q(obj, namePtr, value._handle->q, (int)flags),
+
         };
         
         if (ret < 0) {
-            string className = FFHelper.PtrToStringUtf8((*(AVClass**)obj)->class_name)!;
-            ret.ThrowError($"Invalid option for {className} (trying to set {name} to {value.Type})");
-        }
-
-        int SetBinary(byte[] data)
-        {
-            fixed (byte* pData = data) {
-                return av_opt_set_bin(obj, name, pData, data.Length, flags);
-            }
+            string className = FFHelper.PtrToStringUtf8((*(AVClass**)obj)->class_name);
+            string strName = FFHelper.PtrToStringUtf8(namePtr);
+            ret.ThrowError($"Invalid option for {className} (trying to set {strName} to {value.ValueType})");
         }
     }
 
     /// <summary> Gets the value of an option in <paramref name="obj"/> as a string. </summary>
-    public static string? GetAsString(void* obj, string name, bool searchChildren)
+    public static unsafe string GetAsString(void* obj, FFHandle<byte> name, AVOptionSearchFlags flags = 0)
     {
-        int flags = searchChildren ? AV_OPT_SEARCH_CHILDREN : 0;
-
         byte* value;
-        av_opt_get(obj, name, flags, &value);
+        av_opt_get(obj, name.Raw, (int)flags, &value);
 
-        string? str = FFHelper.PtrToStringUtf8(value);
+        string str = FFHelper.PtrToStringUtf8(value);
         av_free(value);
         return str;
     }
@@ -126,12 +119,14 @@ public readonly struct ContextOption
     /// <summary> Returns a list of options accepted by the specified ffmpeg object. </summary>
     /// <param name="removeAliases">Remove options that are short aliases to another.</param>
     /// <param name="skipDefaults"> Skip options whose value in <paramref name="obj"/> are set to default. </param>
-    public static IReadOnlyList<ContextOption> GetOptions(void* obj, bool removeAliases = true, bool skipDefaults = false)
+    public static unsafe IReadOnlyList<ContextOption> GetOptions(void* obj, bool removeAliases = true, bool skipDefaults = false)
     {
         var opts = new List<ContextOption>();
         AVOption* iter = null;
         while ((iter = av_opt_next(obj, iter)) != null) {
-            if (iter->type == AV_OPT_TYPE_CONST || (skipDefaults && av_opt_is_set_to_default(obj, iter) != 0)) continue;
+            
+            if (iter->type is AVOptionType.AV_OPT_TYPE_CONST || (skipDefaults && av_opt_is_set_to_default(obj, iter) is not 0)) 
+                continue;
 
             opts.Add(new ContextOption(iter));
         }
@@ -151,7 +146,7 @@ public readonly struct ContextOption
             while (i + 1 < opts.Count && opts[i + 1].Offset == opt.Offset) {
                 var aliasOpt = opts[i + 1];
 
-                if (aliasOpt.Type == AV_OPT_TYPE_IMAGE_SIZE || aliasOpt.Name.Length > opt.Name.Length) {
+                if (aliasOpt.Type == AVOptionType.AV_OPT_TYPE_IMAGE_SIZE || aliasOpt.Name.Length > opt.Name.Length) {
                     opt = aliasOpt;
                 }
                 i++;
@@ -159,7 +154,7 @@ public readonly struct ContextOption
 
             if (opt.Offset == nextIgnoredOffset) continue;
 
-            if (opt.Type == AV_OPT_TYPE_IMAGE_SIZE) {
+            if (opt.Type == AVOptionType.AV_OPT_TYPE_IMAGE_SIZE) {
                 nextIgnoredOffset = opt.Offset + 4; //Ignore next height option
             }
             opts[j++] = opt;
