@@ -4,7 +4,7 @@ namespace FFmpegWrapper.Core;
 /// TODO: Comment
 /// </summary>
 /// <typeparam name="T">Okay</typeparam>
-public readonly struct FFHandle<T>
+public readonly ref struct FFHandle<T>
     where T : unmanaged
 {
     /// <summary>

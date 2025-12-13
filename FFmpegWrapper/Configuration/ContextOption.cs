@@ -28,7 +28,7 @@ public readonly struct ContextOption
     /// <summary> Offset to the field containing this option, relative to the object pointer. </summary>
     public int Offset => Handle.Ref.offset;
 
-    public OptionValue? DefaultValue => Handle.Ref.default_val;
+    public OptionValue? DefaultValue => Handle.Ref.u;
     
     private readonly unsafe AVOption* _handle;
 

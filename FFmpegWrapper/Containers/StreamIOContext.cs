@@ -5,7 +5,7 @@ internal class StreamIOContext : IOContext
     readonly Stream _stream;
     readonly bool _leaveOpen;
 
-    public StreamIOContext(Stream stream, bool read, bool leaveOpen, int bufferSize)
+    public StreamIOContext(Stream stream, bool read, bool leaveOpen, nuint bufferSize)
         : base(bufferSize, canRead: read, canWrite: !read, stream.CanSeek)
     {
         _stream = stream;

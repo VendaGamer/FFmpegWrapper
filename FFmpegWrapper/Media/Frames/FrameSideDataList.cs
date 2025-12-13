@@ -2,56 +2,90 @@ namespace FFmpegWrapper.Media.Frames;
 
 using System.Text;
 
-public unsafe struct FrameSideDataList
+public struct FrameSideDataList : IFFHandleObserver<AVFrame>
 {
-    readonly AVFrame* _frame;
-
-    public AVFrame* Frame => _frame;
-    public int Count => _frame->nb_side_data;
-
-    public FrameSideData this[int index] {
+    public FFHandle<AVFrame> Handle {
         get {
-            if ((uint)index > (uint)Count) {
-                throw new ArgumentOutOfRangeException();
+            unsafe {
+                return _handle;
             }
-            return new(_frame->side_data[index]);
         }
     }
 
-    public FrameSideDataList(AVFrame* frame)
+    internal unsafe AVFrame* _handle;
+    public int Count {
+        get {
+            unsafe
+            {
+                return Handle.Raw->nb_side_data;
+            }
+        }
+    }
+
+    public FrameSideData this[int index] {
+        get {
+            if (index > Count || index < 0) {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            unsafe {
+                return new FrameSideData(Handle.Raw->side_data[index]);
+            }
+        }
+    }
+
+    public FrameSideDataList(FFHandle<AVFrame> handle)
     {
-        _frame = frame;
+        unsafe
+        {
+            _handle = handle;
+        }
     }
 
     /// <summary> Returns the side data entry for the given type, or null if not present. </summary>
     public FrameSideData? Get(AVFrameSideDataType type)
     {
-        AVFrameSideData* entry = av_frame_get_side_data(_frame, type);
-        return entry != null ? new FrameSideData(entry) : null;
+        unsafe
+        {
+            AVFrameSideData* entry = av_frame_get_side_data(Handle, type);
+            return entry != null ? new FrameSideData(entry) : null;
+        }
     }
 
     /// <summary> Allocates and adds a new a side data entry. </summary>
     public FrameSideData Add(AVFrameSideDataType type, nuint size)
     {
-        var entry = av_frame_new_side_data(_frame, type, size);
-        if (entry == null) {
-            throw new OutOfMemoryException();
+        unsafe
+        {
+            var entry = av_frame_new_side_data(Handle, type, size);
+            if (entry == null) {
+                throw new OutOfMemoryException();
+            }
+            return new FrameSideData(entry);
         }
-        return new FrameSideData(entry);
     }
     
     public bool Remove(AVFrameSideDataType type)
     {
-        int prevCount = Count;
-        av_frame_remove_side_data(_frame, type);
-        return Count != prevCount;
+        unsafe
+        {
+            int prevCount = Count;
+            av_frame_remove_side_data(Handle, type);
+            return Count != prevCount;
+        }
     }
 
     public void Clear()
     {
-        // https://github.com/FFmpeg/FFmpeg/blob/4e120fbbbd087c3acbad6ce2e8c7b1262a5c8632/libavfilter/f_sidedata.c#L117
-        while (_frame->nb_side_data != 0) {
-            av_frame_remove_side_data(_frame, _frame->side_data[0]->type);
+        unsafe
+        {
+            // https://github.com/FFmpeg/FFmpeg/blob/4e120fbbbd087c3acbad6ce2e8c7b1262a5c8632/libavfilter/f_sidedata.c#L117
+
+            var handle = Handle.Raw;
+        
+            while (handle->nb_side_data is not 0) {
+                av_frame_remove_side_data(handle, handle->side_data[0]->type);
+            }
         }
     }
 
@@ -77,6 +111,7 @@ public unsafe struct FrameSideDataList
         }
         return sb.Append(']').ToString();
     }
+    
 }
 
 public struct FrameSideData(FFHandle<AVFrameSideData> handle)
@@ -130,8 +165,7 @@ public struct FrameSideData(FFHandle<AVFrameSideData> handle)
     public override string ToString()
     {
         unsafe {
-            var sideDataName = av_frame_side_data_name(Type);
-            return $"{FFHelper.PtrToStringUtf8(sideDataName)}: {_handle->size} bytes";
+            return $"{FFHelper.PtrToStringUtf8(av_frame_side_data_name(Type))}: {_handle->size} bytes";
         }
     }
 }

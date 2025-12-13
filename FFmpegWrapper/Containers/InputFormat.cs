@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Containers;
 
-using Core.Flags;
+using Core;
 
 public readonly struct InputFormat : IFFHandleObserver<AVInputFormat>
 {
@@ -13,7 +13,7 @@ public readonly struct InputFormat : IFFHandleObserver<AVInputFormat>
         }
     }
 
-    public MediaFormatFlags Flags => (MediaFormatFlags)Handle.Ref.flags;
+    public AVFormatFlags Flags => (AVFormatFlags)Handle.Ref.flags;
 
     public readonly string Extensions;
     public readonly string Name;

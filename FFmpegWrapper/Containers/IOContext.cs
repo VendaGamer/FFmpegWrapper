@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Containers;
 
+using System.Runtime.InteropServices;
+
 using Abstractions;
 
 public abstract unsafe class IOContext : FFObject<AVIOContext>
@@ -7,32 +9,42 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
     public bool CanRead => _readFn != null;
     public bool CanWrite => _writeFn != null;
     public bool CanSeek => _seekFn != null;
-
-    //Keep lambda refs to prevent them from being GC collected
+    
     private avio_alloc_context_read_packet? _readFn;
     private avio_alloc_context_write_packet? _writeFn;
     private avio_alloc_context_seek? _seekFn;
 
-    public IOContext(int bufferSize, bool canRead, bool canWrite, bool canSeek)
+    protected IOContext(nuint bufferSize, bool canRead, bool canWrite, bool canSeek)
     {
         if (!(canRead ^ canWrite)) {
             throw new InvalidOperationException("IOContext must be either readable or writeable");
         }
-        var buffer = (byte*)av_mallocz((ulong)bufferSize);
+        var buffer = (byte*)av_mallocz(bufferSize);
         
         _readFn = canRead ? ReadBridge : null;
         _writeFn = canWrite ? WriteBridge : null;
         _seekFn = canSeek ? SeekBridge : null;
 
+        var readPtr = (delegate* unmanaged[Cdecl]<void*, byte*, int, int>)
+            Marshal.GetFunctionPointerForDelegate(_readFn);
+
+        var writePtr = (delegate* unmanaged[Cdecl]<void*, byte*, int, int>)
+            Marshal.GetFunctionPointerForDelegate(_writeFn);
+
+        var seekPtr = (delegate* unmanaged[Cdecl]<void*, long, int, long>)
+            Marshal.GetFunctionPointerForDelegate(_writeFn);
+        
+        
         _handle = avio_alloc_context(
-            buffer, bufferSize, canWrite ? 1 : 0, null,
-            _readFn, _writeFn, _seekFn
+            buffer, (int)bufferSize, canWrite ? 1 : 0, null,
+            readPtr, writePtr, seekPtr
         );
+        return;
 
         int ReadBridge(void* opaque, byte* buffer, int length)
         {
             int bytesRead = Read(new Span<byte>(buffer, length));
-            return bytesRead > 0 ? bytesRead : AVERROR_EOF;
+            return bytesRead > 0 ? bytesRead : (int)AVError.AVERROR_EOF;
         }
         int WriteBridge(void* opaque, byte* buffer, int length)
         {
@@ -42,7 +54,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
         long SeekBridge(void* opaque, long offset, int whence)
         {
             if (whence == AVSEEK_SIZE) {
-                return GetLength() ?? AVERROR(38); //ENOSYS
+                return GetLength() ?? -38; //ENOSYS
             }
             return Seek(offset, (SeekOrigin)whence);
         }
@@ -60,7 +72,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
     /// <summary> Creates an IOContext that reads from the given stream. </summary>
     /// <param name="leaveOpen"> If true, don't dispose the stream along with the IOContext. </param>
     /// <param name="bufferSize"> IOContext internal buffer size. </param>
-    public static IOContext CreateInputFromStream(Stream stream, bool leaveOpen = false, int bufferSize = 4096)
+    public static IOContext CreateInputFromStream(Stream stream, bool leaveOpen = false, nuint bufferSize = 4096)
     {
         if (!stream.CanRead) {
             throw new InvalidOperationException("Stream must be readable.");
@@ -71,7 +83,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
     /// <summary> Creates an IOContext that writes to the given stream. </summary>
     /// <param name="leaveOpen"> If true, don't dispose the stream along with the IOContext. </param>
     /// <param name="bufferSize"> IOContext internal buffer size. </param>
-    public static IOContext CreateOutputFromStream(Stream stream, bool leaveOpen = false, int bufferSize = 4096)
+    public static IOContext CreateOutputFromStream(Stream stream, bool leaveOpen = false, nuint bufferSize = 4096)
     {
         if (!stream.CanWrite) {
             throw new InvalidOperationException("Stream must be writeable.");

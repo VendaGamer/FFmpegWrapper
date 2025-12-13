@@ -2,6 +2,8 @@ namespace FFmpegWrapper.Containers;
 
 using Abstractions;
 
+using Extensions;
+
 using Media;
 
 public abstract class FormatContext : FFObject<AVFormatContext>
@@ -47,10 +49,10 @@ public abstract class FormatContext : FFObject<AVFormatContext>
         
     }
 
-    private unsafe FormatContext(AVOutputFormat* outputFormat, string? formatName, string? filename)
+    private unsafe FormatContext(AVOutputFormat* outputFormat, ReadOnlySpan<byte> formatName, ReadOnlySpan<byte> filename)
     {
         fixed (AVFormatContext** ptr = &_handle) {
-            avformat_alloc_output_context2(ptr, outputFormat, formatName, filename);
+            avformat_alloc_output_context2(ptr, outputFormat, formatName.RawHandle, filename.RawHandle);
         }
     }
 
