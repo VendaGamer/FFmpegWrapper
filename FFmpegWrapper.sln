@@ -44,6 +44,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegBindings.Abstractions
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegBindings.Linked", "Bindings\FFmpegBindings.Linked\FFmpegBindings.Linked.csproj", "{E3BEDA31-A337-4B3F-B9D5-98E5657D382D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Props", "Props", "{61B40844-1AC9-4DD8-8D0F-204E85E59A6B}"
+	ProjectSection(SolutionItems) = preProject
+		Samples\Directory.Build.props = Samples\Directory.Build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -131,6 +136,7 @@ Global
 		{666F9C5C-46EC-4788-B4E3-32D751C12858} = {3405D988-1D8F-40D1-A490-310A539EC88B}
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8} = {FB6991D2-06DB-4A65-8FF0-42670F2072B3}
 		{E3BEDA31-A337-4B3F-B9D5-98E5657D382D} = {FB6991D2-06DB-4A65-8FF0-42670F2072B3}
+		{61B40844-1AC9-4DD8-8D0F-204E85E59A6B} = {3405D988-1D8F-40D1-A490-310A539EC88B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FBB6A4C7-BCD6-45BD-A659-7BADD859E7D4}

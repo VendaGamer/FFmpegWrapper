@@ -187,7 +187,7 @@ public sealed class FFMpegService
             {
                 if (packet.StreamIndex != stream.Index) continue; //Ignore packets from other streams
 
-                if (decoder.TrySendPacket(packet) == LavResult.Success)
+                if (decoder.TrySendPacket(packet) is LavResult.Success)
                 {
                     if (decoder.ReceiveFrame(frame))
                     {

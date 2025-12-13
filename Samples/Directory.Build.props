@@ -10,6 +10,7 @@
         <InvariantGlobalization>true</InvariantGlobalization>
         <IsPackable>false</IsPackable>
         <BaseOutputPath>../build</BaseOutputPath>
+        <DefineConstants>LIBS_LINUX</DefineConstants>
     </PropertyGroup>
   
     <ItemGroup>

@@ -42,10 +42,10 @@ public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
             // Fast path for success (most common case)
             if (result == 0) return true;
         
-            // // Fast path for common non-error cases
-            // if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) {
-            //     return false;
-            // }
+            // Fast path for common non-error cases
+            if (result is -11 or (int)AVError.AVERROR_EOF) {
+                return false;
+            }
         
             // Only throw for actual errors
             ((LavResult)result).ThrowIfError("Could not decode frame");

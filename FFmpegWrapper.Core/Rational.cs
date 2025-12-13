@@ -8,22 +8,17 @@ namespace FFmpegWrapper.Core;
 /// timestamps. This struct serves as a generic interface for manipulating 
 /// rational numbers as pairs of numerators and denominators.
 /// </remarks>
-public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, IEqualityComparer<Rational>
+public readonly struct Rational(int num, int den)
+    : IEquatable<Rational>, IComparable<Rational>, IEqualityComparer<Rational>
 {
+    public readonly int Num = num;
+    public readonly int Den = den;
+    
     public static Rational Zero => new(0, 1);
     public static Rational One => new(1, 1);
     public static Rational MaxValue => new(int.MaxValue, int.MaxValue);
     public static Rational MinValue => new(int.MinValue, int.MinValue);
-    
-    public readonly int Num;
-    public readonly int Den;
     public bool IsValidFrameRate => Num > 0 && Den > 0;
-
-    public Rational(int num, int den)
-    {
-        Num = num;
-        Den = den;
-    }
 
     /// <summary> Returns the reciprocal of this rational, <c>1/q</c>. </summary>
     public Rational Reciprocal() => new(Den, Num);
@@ -55,7 +50,7 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
     public static bool operator >=(Rational a, Rational b) => a.CompareTo(b) is 0 or +1;
     public static bool operator <=(Rational a, Rational b) => a.CompareTo(b) is 0 or -1;
 
-    public static explicit operator double(Rational q) => av_q2d(q);
+    public static explicit operator double(Rational q) => q.Num / (double) q.Den;
 
     public static implicit operator Rational(int num) => new(num, 1);
     public static implicit operator Rational(AVRational q) => new(q.num, q.den);
@@ -71,7 +66,19 @@ public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>, I
     public bool Equals(Rational other) => other == this || ((other.Den | Den) == 0 && (other.Num ^ Num) >= 0);
 
     /// <inheritdoc />
-    public int CompareTo(Rational other) => av_cmp_q(this, other);
+    public int CompareTo(Rational other)
+    {
+        long tmp = Num * (long)other.Den - other.Num * (long)Den;
+ 
+        if (tmp is not 0)
+            return (int)((tmp ^ Den ^ other.Den) >> 63) | 1;
+        if (other.Den is not 0 && Den is not 0)
+            return 0;
+        if (Num is not 0 && other.Num is not 0)
+            return (Num >> 31) - (other.Num >> 31);
+
+        return int.MinValue;
+    }
 
     /// <inheritdoc />
     public bool Equals(Rational x, Rational y)

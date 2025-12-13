@@ -42,10 +42,6 @@ public readonly ref struct FFHandle<T>
     {
         unsafe {
             Raw = (T*) Unsafe.AsPointer(ref handle);
-            
-            if (Raw is null) {
-                throw new ArgumentNullException(nameof(handle));
-            }
         }
     }
 
@@ -55,10 +51,6 @@ public readonly ref struct FFHandle<T>
     /// <param name="raw"></param>
     public unsafe FFHandle(T* raw)
     {
-        if (raw is null) {
-            throw new ArgumentNullException(nameof(raw));
-        }
-        
         this.Raw = raw;
     }
     
@@ -97,7 +89,7 @@ public readonly ref struct FFHandle<T>
 
     public static bool operator != (FFHandle<T> a, FFHandle<T> b)
     {
-        return !(a == b);
+        return !a.Equals(b);
     }
 
 

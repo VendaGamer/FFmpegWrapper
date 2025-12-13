@@ -41,7 +41,6 @@ public static class FFHelper
     public static void ThrowError(this int errno, string? msg = null)
     {
         msg ??= "Operation failed";
-        
         throw new InvalidOperationException(msg + ": " + ErrorString(errno));
     }
 
