@@ -16,8 +16,9 @@ public readonly struct Rational(int num, int den)
     
     public static Rational Zero => new(0, 1);
     public static Rational One => new(1, 1);
-    public static Rational MaxValue => new(int.MaxValue, int.MaxValue);
-    public static Rational MinValue => new(int.MinValue, int.MinValue);
+    
+    public static readonly Rational MaxValue = new(int.MaxValue, int.MaxValue);
+    public static readonly Rational MinValue = new(int.MinValue, int.MinValue);
     public bool IsValidFrameRate => Num > 0 && Den > 0;
 
     /// <summary> Returns the reciprocal of this rational, <c>1/q</c>. </summary>
@@ -37,23 +38,65 @@ public readonly struct Rational(int num, int den)
         return TimeSpan.FromTicks(ticks);
     }
 
+    // Optimized arithmetic operators - inline and call FFmpeg functions directly
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rational operator +(Rational a, Rational b) => av_add_q(a, b);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rational operator -(Rational a, Rational b) => av_sub_q(a, b);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rational operator *(Rational a, Rational b) => av_mul_q(a, b);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rational operator /(Rational a, Rational b) => av_div_q(a, b);
 
-    //Comparison for equality is to properly handle the degenerate case of 0/0, where cmp_q() returns INT_MIN.
-    public static bool operator ==(Rational a, Rational b) => a.CompareTo(b) == 0;
-    public static bool operator !=(Rational a, Rational b) => a.CompareTo(b) != 0;
-    public static bool operator <(Rational a, Rational b) => a.CompareTo(b) == -1;
-    public static bool operator >(Rational a, Rational b) => a.CompareTo(b) == +1;
-    public static bool operator >=(Rational a, Rational b) => a.CompareTo(b) is 0 or +1;
-    public static bool operator <=(Rational a, Rational b) => a.CompareTo(b) is 0 or -1;
+    // Optimized comparison operators - single comparison result reused
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator ==(Rational a, Rational b)
+    {
+        // Fast path: check if numerators and denominators are equal
+        if (a.Num == b.Num && a.Den == b.Den)
+            return true;
+        
+        // Handle degenerate cases (0/0) and proper comparison
+        return a.CompareTo(b) is 0;
+    }
 
-    public static explicit operator double(Rational q) => q.Num / (double) q.Den;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator !=(Rational a, Rational b) => !(a == b);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator <(Rational a, Rational b)
+    {
+        long tmp = a.Num * (long)b.Den - b.Num * (long)a.Den;
+        
+        if (tmp != 0)
+            return (int)((tmp ^ a.Den ^ b.Den) >> 63) is -1;
+        
+        return a.CompareTo(b) is -1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator >(Rational a, Rational b) => b < a;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator <=(Rational a, Rational b) => !(a > b);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator >=(Rational a, Rational b) => !(a < b);
+
+    // Optimized cast operators
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static explicit operator double(Rational q) => q.Num / (double)q.Den;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Rational(int num) => new(num, 1);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Rational(AVRational q) => new(q.num, q.den);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator AVRational(Rational q) => new() { num = q.Num, den = q.Den };
 
     public override string ToString() => $"{Num}/{Den}";
