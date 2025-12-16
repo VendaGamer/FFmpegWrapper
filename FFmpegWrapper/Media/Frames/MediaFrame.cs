@@ -2,7 +2,7 @@
 
 using Abstractions;
 
-public abstract class MediaFrame : FFObject<AVFrame>
+public abstract class MediaFrame(FFHandle<AVFrame> handle) : FFObject<AVFrame>(handle)
 {
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
     public long? BestEffortTimestamp {
@@ -76,6 +76,36 @@ public abstract class MediaFrame : FFObject<AVFrame>
             }
         }
     }
+    
+    public unsafe byte** Data => _handle->data;
+
+    public int Stride {
+        get {
+            unsafe
+            {
+                return Handle.Ref.linesize[0];
+            }
+        }
+    }
+
+    public static MediaFrame CreateFromType(AVMediaType type)
+        => type switch {
+            AVMediaType.AVMEDIA_TYPE_VIDEO => new VideoFrame(),
+            AVMediaType.AVMEDIA_TYPE_AUDIO => new AudioFrame(),
+            _ => throw new ArgumentException("Invalid media type.", nameof(type))
+        };
+
+    protected MediaFrame() : this(AllocFrame()) { }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected static FFHandle<AVFrame> AllocFrame()
+    {
+        unsafe
+        {
+            return av_frame_alloc();
+        }
+    }
+    
 
     protected override unsafe void Free()
     {

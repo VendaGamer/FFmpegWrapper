@@ -78,7 +78,7 @@ public class VideoDecoder(MediaCodec codec) : MediaDecoder(AllocContext(codec))
             //TODO: support custom decoder negotiation and hw_frames_ctx
  
             _chooseHwPixelFmt = (ctx, pAvailFmts) => {
-                for (var pFmt = pAvailFmts; *pFmt != PixelFormats.None; pFmt++) {
+                for (var pFmt = pAvailFmts; *pFmt is not AVPixelFormat.AV_PIX_FMT_NONE; pFmt++) {
                     if (*pFmt == config.PixelFormat) {
                         return *pFmt;
                     }

@@ -24,31 +24,27 @@ public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
     }
 
     /// <inheritdoc cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
-    public LavResult TrySendPacket(MediaPacket? packet)
+    public LavResult TrySendPacket(FFHandle<AVPacket> handle)
     {
         unsafe
         {
-            return (LavResult)avcodec_send_packet(Handle, packet!.Handle);
+            return (LavResult)avcodec_send_packet(Handle, handle);
         }
     }
     
-    public bool ReceiveFrame(MediaFrame frame)
+    public bool ReceiveFrame(FFHandle<AVFrame> handle)
     {
         unsafe
         {
             ThrowIfDisposed();
-            var result = avcodec_receive_frame(_handle, frame.Handle);
-        
-            // Fast path for success (most common case)
-            if (result == 0) return true;
-        
-            // Fast path for common non-error cases
-            if (result is -11 or (int)AVError.AVERROR_EOF) {
+            var result = (LavResult)avcodec_receive_frame(_handle, handle);
+            
+            if (result is 0) 
+                return true;
+            if (result is LavResult.TryAgain or LavResult.EndOfFile)
                 return false;
-            }
-        
-            // Only throw for actual errors
-            ((LavResult)result).ThrowIfError("Could not decode frame");
+            
+            (result).ThrowIfError("Could not decode frame");
             return false;
         }
     }
@@ -59,13 +55,13 @@ public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int ProcessPackets(ReadOnlySpan<MediaPacket> packets, Span<MediaFrame> frames)
     {
-        /*int framesDecoded = 0;
+        int framesDecoded = 0;
         
         foreach (var packet in packets) {
             unsafe
             {
                 var sendResult = avcodec_send_packet(_handle, packet.Handle);
-                if (sendResult != 0 && sendResult != AVERROR_EOF) {
+                if (sendResult is not 0 && sendResult is not -11) {
                     ((LavResult)sendResult).ThrowIfError("Could not send packet");
                     continue;
                 }
@@ -76,9 +72,9 @@ public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
                 
                     if (receiveResult == 0) {
                         framesDecoded++;
-                    } else if (receiveResult == AVERROR(EAGAIN)) {
+                    } else if (receiveResult is -11) {
                         break; // Need more input
-                    } else if (receiveResult == AVERROR_EOF) {
+                    } else if (receiveResult is (int)AVError.AVERROR_EOF) {
                         return framesDecoded; // End of stream
                     } else {
                         ((LavResult)receiveResult).ThrowIfError("Could not receive frame");
@@ -86,9 +82,9 @@ public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
                     }
                 }
             }
-        }*/
+        }
         
-        return 0;
+        return framesDecoded;
     }
     
 }

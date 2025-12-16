@@ -98,14 +98,14 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// the entire original image fits within the target dimensions. The alignment parameter is useful for
     /// codecs that require dimensions to be multiples of specific values (e.g., 16 for some H.264 configurations).
     /// </remarks>
-    public PictureFormat GetScaled(int newWidth, int newHeight, AVPixelFormat newFormat = PixelFormats.None, bool keepAspectRatio = true, int align = 1)
+    public PictureFormat GetScaled(int newWidth, int newHeight, AVPixelFormat newFormat = AVPixelFormat.AV_PIX_FMT_NONE, bool keepAspectRatio = true, int align = 1)
     {
         if (keepAspectRatio) {
             double scale = Math.Min(newWidth / (double)Width, newHeight / (double)Height);
             newWidth = (int)Math.Round(Width * scale);
             newHeight = (int)Math.Round(Height * scale);
         }
-        if (newFormat == PixelFormats.None) {
+        if (newFormat is AVPixelFormat.AV_PIX_FMT_NONE) {
             newFormat = PixelFormat;
         }
         if (align > 1) {

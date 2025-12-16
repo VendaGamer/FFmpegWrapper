@@ -8,7 +8,7 @@ using CommunityToolkit.HighPerformance;
 using Extensions;
 using Streams;
 
-public sealed class MediaMuxer : FFObject<AVFormatContext>
+public sealed class MediaMuxer(FFHandle<AVFormatContext> handle) : FFObject<AVFormatContext>(handle)
 {
     public ReadOnlySpan<MediaStream> Streams {
         get {
@@ -46,13 +46,14 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
     }
 
-    public MediaMuxer(IFFHandleOwner<AVIOContext> ioContext, ReadOnlySpan<char> formatExtension)
+    public MediaMuxer(IFFHandleOwner<AVIOContext> ioContext, ReadOnlySpan<byte> formatExtension)
         : this(ioContext, OutputFormat.FindByExtenion(formatExtension).Handle)
     {
         _ownedIOContext = ioContext;
     }
 
-    public MediaMuxer(IFFHandleOwner<AVIOContext> ioContext,
+    public MediaMuxer(
+        IFFHandleOwner<AVIOContext> ioContext,
         FFHandle<AVOutputFormat> format)
     {
         unsafe

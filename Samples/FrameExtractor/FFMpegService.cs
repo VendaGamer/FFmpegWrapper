@@ -68,29 +68,18 @@ public sealed class FFMpegService
             stream = demuxer.Streams[0];
         }
             
-        using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream,false);
-
-        if (HardwareDevice.TryCreateCompatibleHardwareDevice(
-                decoder.Codec.Ref.id,
-                stream.CodecPars.PictureFormat,
-                out var hwDevice,
-                out var hwConfig))
-        {
-            decoder.SetupHardwareAccelerator(hwConfig, hwDevice);
-        }
-            
-        decoder.SetThreadCount(0, true);
+        using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream.Handle,false);
+        
         demuxer.Seek(timestamp, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD, stream);
-            
         decoder.Open();
 
-        while (demuxer.Read(packet))
+        while (demuxer.Read(packet.Handle))
         {
             if (packet.StreamIndex != stream.Index) continue; //Ignore packets from other streams
 
-            if (decoder.TrySendPacket(packet) == LavResult.Success)
+            if (decoder.TrySendPacket(packet.Handle) is LavResult.Success)
             {
-                if (decoder.ReceiveFrame(frame))
+                if (decoder.ReceiveFrame(frame.Handle))
                 {
                     frame.Save(filePath);
                     return new AVImage(filePath, frame.PixelFormat);
@@ -148,7 +137,7 @@ public sealed class FFMpegService
             return Array.Empty<AVImage>();
         }
             
-        using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream, false);
+        using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream.Handle, false);
         
         if (HardwareDevice.TryCreateCompatibleHardwareDevice(
                 decoder.Codec.Ref.id, stream.CodecPars.PictureFormat,
@@ -183,13 +172,13 @@ public sealed class FFMpegService
             {
                 decoder.Flush();
             } 
-            while (demuxer.Read(packet))
+            while (demuxer.Read(packet.Handle))
             {
                 if (packet.StreamIndex != stream.Index) continue; //Ignore packets from other streams
 
-                if (decoder.TrySendPacket(packet) is LavResult.Success)
+                if (decoder.TrySendPacket(packet.Handle) is LavResult.Success)
                 {
-                    if (decoder.ReceiveFrame(frame))
+                    if (decoder.ReceiveFrame(frame.Handle))
                     {
                         var imagePath = $"{filePath}{i}.jpg";
                         frame.Save(imagePath);

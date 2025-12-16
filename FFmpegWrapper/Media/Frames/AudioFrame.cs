@@ -1,32 +1,12 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
-public class AudioFrame : MediaFrame
+public class AudioFrame() : MediaFrame()
 {
     public AVSampleFormat SampleFormat => (AVSampleFormat)Handle.Ref.format;
     public int SampleRate => Handle.Ref.sample_rate;
     public ChannelLayout ChannelLayout => new(Handle.Ref.ch_layout);
 
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
-
-    public unsafe byte** Data => (byte**)&_handle->data;
-    public ReadOnlySpan<int> LineSize {
-        get {
-            unsafe
-            {
-                return new ReadOnlySpan<int>(Handle.Raw->linesize, AV_NUM_DATA_POINTERS);
-            }
-        }
-    }
-
-    public int Stride {
-        get {
-            unsafe
-            {
-                return Handle.Ref.linesize[0];
-            }
-        }
-    }
-
 
     public bool IsPlanar => av_sample_fmt_is_planar(SampleFormat) is not 0;
     /// <summary>
@@ -56,11 +36,10 @@ public class AudioFrame : MediaFrame
         }
     }
 
-    public AudioFrame(in AudioFormat fmt, int capacity)
+    public AudioFrame(in AudioFormat fmt, int capacity): this()
     {
         unsafe
         {
-            _handle = av_frame_alloc();
             _handle->format = (int)fmt.SampleFormat;
             _handle->sample_rate = fmt.SampleRate;
             fmt.Layout.CopyTo(&_handle->ch_layout);
@@ -72,13 +51,6 @@ public class AudioFrame : MediaFrame
     public AudioFrame(AVSampleFormat fmt, int sampleRate, int numChannels, int capacity)
         : this(new AudioFormat(fmt, sampleRate, numChannels), capacity) { }
     
-    public AudioFrame(FFHandle<AVFrame> frameHandle)
-    {
-        unsafe
-        {
-            _handle = frameHandle;
-        }
-    }
 
     public Span<T> GetSamples<T>(int channel = 0) where T : unmanaged
     {

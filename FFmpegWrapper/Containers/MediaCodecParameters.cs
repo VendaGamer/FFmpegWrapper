@@ -21,7 +21,7 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
     }
     
     /// <inheritdoc cref="AVCodecParameters.codec_type" />
-    public MediaType CodecType => (MediaType)Handle.Ref.codec_type;
+    public AVMediaType CodecType => Handle.Ref.codec_type;
 
     /// <inheritdoc cref="AVCodecParameters.codec_id" />
     public AVCodecID CodecId => Handle.Ref.codec_id;

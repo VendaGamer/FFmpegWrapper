@@ -48,9 +48,9 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
         _handle = desc;
         
         ValidHardwareFormats = ImmutableArray.Create(
-            FFHelper.GetSpanFromSentinelTerminatedPtr(desc->valid_hw_formats, PixelFormats.None));
+            FFHelper.GetSpanFromSentinelTerminatedPtr(desc->valid_hw_formats, AVPixelFormat.AV_PIX_FMT_NONE));
         ValidSoftwareFormats = ImmutableArray.Create(
-            FFHelper.GetSpanFromSentinelTerminatedPtr(desc->valid_sw_formats, PixelFormats.None));
+            FFHelper.GetSpanFromSentinelTerminatedPtr(desc->valid_sw_formats, AVPixelFormat.AV_PIX_FMT_NONE));
     }
     /// <summary>
     /// Check whenever dimesion are withing range of device constraints

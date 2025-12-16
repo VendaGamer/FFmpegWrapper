@@ -197,18 +197,18 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
     private AVPixelFormat GetDefaultSurfaceFormat()
     {
         return Type switch {
-            HWDeviceTypes.VDPAU => AVPixelFormat.AV_PIX_FMT_VDPAU,
-            HWDeviceTypes.Cuda  => AVPixelFormat.AV_PIX_FMT_CUDA,
-            HWDeviceTypes.VAAPI => AVPixelFormat.AV_PIX_FMT_VAAPI,
-            HWDeviceTypes.DXVA2 => AVPixelFormat.AV_PIX_FMT_DXVA2_VLD,
-            HWDeviceTypes.QSV   => AVPixelFormat.AV_PIX_FMT_QSV,
-            HWDeviceTypes.D3D11VA => AVPixelFormat.AV_PIX_FMT_D3D11,
-            HWDeviceTypes.D3D12VA => AVPixelFormat.AV_PIX_FMT_D3D12,
-            HWDeviceTypes.DRM   => AVPixelFormat.AV_PIX_FMT_DRM_PRIME,
-            HWDeviceTypes.OpenCL => AVPixelFormat.AV_PIX_FMT_OPENCL,
-            HWDeviceTypes.Vulkan => AVPixelFormat.AV_PIX_FMT_VULKAN,
-            HWDeviceTypes.VideoToolbox => AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX,
-            HWDeviceTypes.MediaCodec => AVPixelFormat.AV_PIX_FMT_MEDIACODEC,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_VDPAU => AVPixelFormat.AV_PIX_FMT_VDPAU,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA  => AVPixelFormat.AV_PIX_FMT_CUDA,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_VAAPI => AVPixelFormat.AV_PIX_FMT_VAAPI,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_DXVA2 => AVPixelFormat.AV_PIX_FMT_DXVA2_VLD,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_QSV   => AVPixelFormat.AV_PIX_FMT_QSV,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA => AVPixelFormat.AV_PIX_FMT_D3D11,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_D3D12VA => AVPixelFormat.AV_PIX_FMT_D3D12,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_DRM   => AVPixelFormat.AV_PIX_FMT_DRM_PRIME,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_OPENCL => AVPixelFormat.AV_PIX_FMT_OPENCL,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_VULKAN => AVPixelFormat.AV_PIX_FMT_VULKAN,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_VIDEOTOOLBOX => AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_MEDIACODEC => AVPixelFormat.AV_PIX_FMT_MEDIACODEC,
             _ => AVPixelFormat.AV_PIX_FMT_YUV420P
         };
     }

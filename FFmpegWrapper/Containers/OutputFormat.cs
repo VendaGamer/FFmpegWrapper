@@ -8,9 +8,12 @@ using Extensions;
 public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
 {
     public FFHandle<AVOutputFormat> Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
+
+                
                 return _handle;
             }
         }
@@ -24,24 +27,51 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         unsafe
         {
             _handle = handle;
-            Name = FFHelper.PtrToStringUtf8(Handle.Ref.name);
-            LongName = FFHelper.PtrToStringUtf8(Handle.Ref.long_name);
-            MimeType = FFHelper.PtrToStringUtf8(Handle.Ref.mime_type);
-            Extensions = FFHelper.PtrToStringUtf8(Handle.Ref.extensions);
         }
     }
 
     // Properties wrapping AVOutputFormat fields
     
     
-    public readonly string Name;
-    public readonly string LongName;
-    public readonly string MimeType;
-    
+    public ReadOnlySpan<byte> Name {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.name);
+            }
+        }
+    }
+
+    public ReadOnlySpan<byte> LongName {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.long_name);
+            }
+        }
+    }
+
+    public ReadOnlySpan<byte> MimeType {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.mime_type);
+            }
+        }
+    }
+
     /// <summary>
     /// Comma seperated extensions
     /// </summary>
-    public readonly string Extensions;
+    public ReadOnlySpan<byte> Extensions {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.extensions);
+            }
+        }
+    }
     
     public AVCodecID AudioCodec => Handle.Ref.audio_codec;
     
@@ -54,8 +84,8 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
     /// <summary>
     /// Useful for iterating over <see cref="OutputFormat"/> extensions
     /// </summary>
-    public readonly ReadOnlySpanTokenizer<char> GetExtensionsTokenizer()
-        => Extensions.Tokenize(',');
+    public readonly ReadOnlySpanTokenizer<byte> GetExtensionsTokenizer()
+        => Extensions.Tokenize((byte)',');
 
     // Check if this format supports a specific codec
     public unsafe bool SupportsCodec(AVCodecID codecId)
@@ -188,7 +218,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         }
     }
 
-    public static OutputFormat FindByExtenion(ReadOnlySpan<char> extension)
+    public static OutputFormat FindByExtenion(ReadOnlySpan<byte> extension)
     {
         if (TryFindByExtension(extension, out OutputFormat format)) {
             return format;
@@ -197,38 +227,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         throw new ArgumentException(nameof(extension));
     }
 
-    public static bool TryFindByExtension(
-        ReadOnlySpan<char> extension,
-        out OutputFormat outputFormat,
-        StringComparison comparisonType = StringComparison.Ordinal)
-    {
-        var formats = AvailableOutputFormats.AsSpan();
-        
-        for (int i = 0; i < formats.Length; i++) {
-            foreach (var span in formats[i].GetExtensionsTokenizer()) {
-                if (span.Equals(extension, comparisonType)) {
-                    outputFormat = formats[i];
-                    return true;
-                }
-            }
-        }
-        
-        
-        outputFormat = default!;
-        return false;
-    }
-    
-
-    // Check if format supports specific features
-    
-    public bool SupportsGlobalHeader => (Flags & (int)AVFormatCapabilityFlags.AVFMT_GLOBALHEADER) != 0;
-    
-    public bool SupportsSeek => (Flags & (int)AVFormatCapabilityFlags.AVFMT_SEEK_TO_PTS) != 0;
-    
-    public bool RequiresFilename => (Flags & (int)AVFormatCapabilityFlags.AVFMT_NOFILE) == 0;
-    
-
-    public override unsafe bool Equals(object? obj)
+    public override bool Equals(object? obj)
     {
         return obj is OutputFormat other && Equals(other);
     }
@@ -242,17 +241,5 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
     public static bool operator !=(OutputFormat left, OutputFormat right)
     {
         return !left.Equals(right);
-    }
-
-    // ToString for debugging
-    public override string ToString()
-    {
-        unsafe
-        {
-            if (_handle is null)
-                return "OutputFormat(null)";
-            
-            return $"OutputFormat({Name}: {LongName})";
-        }
     }
 }

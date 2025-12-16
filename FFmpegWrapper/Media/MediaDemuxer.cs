@@ -72,7 +72,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <remarks> See https://ffmpeg.org/ffmpeg-formats.html, https://ffmpeg.org/ffmpeg-protocols.html </remarks>
     /// <param name="url">URL to be opened for demuxing</param>
     /// <param name="options"> A dictionary filled with AVFormatContext and demuxer-private options. </param>
-    public unsafe MediaDemuxer(ReadOnlySpan<byte> url, Span2D<byte> options)
+    public MediaDemuxer(ReadOnlySpan<byte> url, Span2D<byte> options)
         : this(CreateContext(url, null, options)) { }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
@@ -137,30 +137,30 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// True to call <see cref="CodecBase.Open" /> before returning the decoder.
     /// Should be set to false if extra setup (e.g. hardware acceleration) is needed before opening.
     /// </param>
-    public MediaDecoder CreateStreamDecoder(MediaStream stream, bool open = true)
+    public MediaDecoder CreateStreamDecoder(FFHandle<AVStream> stream, bool open = true)
     {
         unsafe
         {
             ThrowIfDisposed();
 
-            if (Streams[stream.Index].Handle != stream.Handle) {
+            if (Streams[stream.Ref.index].Handle != stream) {
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
             }
         
-            var codecPar = stream._handle->codecpar;
+            var codecPar = stream.Ref.codecpar;
             
-            MediaDecoder decoder = stream.CodecPars.MediaType switch {
-                MediaType.Audio => new AudioDecoder(codecPar->codec_id),
-                MediaType.Video => new VideoDecoder(codecPar->codec_id),
-                _ => throw new NotSupportedException($"Stream type {stream.CodecPars.MediaType} is not supported."),
+            MediaDecoder decoder = stream.Ref.codecpar->codec_type switch {
+                AVMediaType.AVMEDIA_TYPE_AUDIO => new AudioDecoder(codecPar->codec_id),
+                AVMediaType.AVMEDIA_TYPE_VIDEO => new VideoDecoder(codecPar->codec_id),
+                _ => throw new NotSupportedException($"Stream type {stream.Ref.codecpar->codec_type} is not supported."),
             };
             
             avcodec_parameters_to_context(decoder.Handle, codecPar).CheckError("Could not copy stream parameters to the decoder.");
         
             // Fixup some unset properties for consistency 
-            decoder.TimeBase = stream.TimeBase;
+            decoder.TimeBase = stream.Ref.time_base;
 
-            if (stream.CodecPars.MediaType == MediaType.Video && decoder.FrameRate == Rational.Zero) {
+            if (stream.Ref.codecpar->codec_type is AVMediaType.AVMEDIA_TYPE_VIDEO && decoder.FrameRate == Rational.Zero) {
                 decoder.FrameRate = GuessFrameRate(stream);
             }
 
@@ -171,13 +171,13 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     /// <inheritdoc cref="ffmpeg.av_read_frame(AVFormatContext*, AVPacket*)"/>
-    public bool Read(MediaPacket packet)
+    public bool Read(FFHandle<AVPacket> handle)
     {
         unsafe
         {
             ThrowIfDisposed();
             
-            int result = av_read_frame(_handle, packet.Clear());
+            int result = av_read_frame(_handle, handle);
 
             if (result < 0 && result is not (int)AVError.AVERROR_EOF) {
                 result.ThrowError(msg: "Failed to read packet");
@@ -226,20 +226,17 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     /// <inheritdoc cref="ffmpeg.av_guess_frame_rate(AVFormatContext*, AVStream*, AVFrame*)"/>
-    public Rational GuessFrameRate(MediaStream stream)
+    public Rational GuessFrameRate(FFHandle<AVStream> stream)
     {
         unsafe
         {
             ThrowIfDisposed();
 
-            if (Streams[stream.Index].Handle != stream.Handle) {
+            if (Streams[stream.Ref.index].Handle != stream) {
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
             }
     
-            var guessedRate = av_guess_frame_rate(_handle, stream.Handle, null);
-    
-            // Return the guessed rate (caller needs to validate)
-            return guessedRate;
+            return av_guess_frame_rate(_handle, stream, null);
         }
     }
 

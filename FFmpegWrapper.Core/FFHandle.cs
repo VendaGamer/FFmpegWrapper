@@ -12,7 +12,16 @@ public readonly ref struct FFHandle<T>
     /// <summary>
     /// Unsafe handle to underlying ffmpeg object
     /// </summary>
-    public readonly unsafe T* Raw;
+    public unsafe T* Raw {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get
+        {
+            if (_handle is null) {
+                throw new ObjectDisposedException($"Underlying ffmpeg object {typeof(T).Name} has been disposed.");
+            }
+            return _handle;
+        }
+    }
     
     /// <summary>
     /// Safe handle to underlying ffmpeg object
@@ -23,6 +32,10 @@ public readonly ref struct FFHandle<T>
         get
         {
             unsafe {
+                if (_handle is null) {
+                    throw new ObjectDisposedException($"Underlying ffmpeg object {typeof(T).Name} has been disposed.");
+                }
+                
                 return ref Unsafe.AsRef<T>(Raw);
             }
         }
@@ -36,12 +49,13 @@ public readonly ref struct FFHandle<T>
             }
         }
     }
-    
+
+    private unsafe readonly T* _handle;
     
     public FFHandle(ref T handle)
     {
         unsafe {
-            Raw = (T*) Unsafe.AsPointer(ref handle);
+            _handle = (T*) Unsafe.AsPointer(ref handle);
         }
     }
 
@@ -51,7 +65,7 @@ public readonly ref struct FFHandle<T>
     /// <param name="raw"></param>
     public unsafe FFHandle(T* raw)
     {
-        this.Raw = raw;
+        _handle = raw;
     }
     
     /// <summary>
@@ -78,26 +92,18 @@ public readonly ref struct FFHandle<T>
     {
         unsafe
         {
-            return Raw == other.Raw;
+            return _handle == other._handle;
         }
     }
 
-    public static bool operator == (FFHandle<T> a, FFHandle<T> b)
-    {
-        return a.Equals(b);
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator == (FFHandle<T> a, FFHandle<T> b) => a.Equals(b);
 
-    public static bool operator != (FFHandle<T> a, FFHandle<T> b)
-    {
-        return !a.Equals(b);
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator != (FFHandle<T> a, FFHandle<T> b) => !a.Equals(b);
 
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        unsafe {
-            return ((nint)Raw).GetHashCode();
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override unsafe int GetHashCode() => ((nint)_handle).GetHashCode();
 }

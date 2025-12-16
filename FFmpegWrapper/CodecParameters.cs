@@ -20,7 +20,7 @@ public readonly struct CodecParameters : IFFHandleObserver<AVCodecParameters>
         }
     }
     
-    public MediaType MediaType => (MediaType)Handle.Ref.codec_type;
+    public AVMediaType MediaType => Handle.Ref.codec_type;
 
     private readonly unsafe AVCodecParameters* _handle;
 

@@ -1,5 +1,6 @@
 namespace FFmpegWrapper.Abstractions;
 
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 
 using Core;
@@ -34,9 +35,20 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     public FFHandle<TRaw> Handle {
         get {
             unsafe {
-                ThrowIfDisposed();
                 return _handle;
             }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected FFObject(FFHandle<TRaw> handle)
+    {
+        unsafe
+        {
+            if(handle.IsNull)
+                throw new ArgumentNullException(nameof(handle));
+        
+            _handle = handle;
         }
     }
 

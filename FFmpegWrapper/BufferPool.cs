@@ -10,7 +10,6 @@ public class BufferPool : FFObject<AVBufferPool>
     public BufferPool(nuint size, AllocateBuffer? allocFunc = null)
     {
         unsafe {
-            
             _alloc = NativeAlloc;
             _handle = av_buffer_pool_init(size, (delegate* unmanaged[Cdecl]<nuint, AVBufferRef*>)
                 Marshal.GetFunctionPointerForDelegate(_alloc));
