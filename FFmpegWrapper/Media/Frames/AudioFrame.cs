@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
+using System.Runtime.InteropServices;
+
 public class AudioFrame : MediaFrame
 {
 
@@ -64,17 +66,21 @@ public class AudioFrame : MediaFrame
     #endregion
 
     #region Methods
+    
 
     public Span<T> GetSamples<T>(int channel = 0) where T : unmanaged
     {
         unsafe
         {
+            _handle->data[128] = null;
             if ((uint)channel >= (uint)ChannelLayout.NumChannels || (!IsPlanar && channel != 0)) {
                 throw new ArgumentOutOfRangeException();
             }
             return new Span<T>(Data[channel], Stride / sizeof(T));
         }
     }
+    
+
 
     /// <summary> Copy interleaved samples from the span into this frame. </summary>
     /// <returns> Returns the number of samples copied. </returns>
@@ -85,7 +91,7 @@ public class AudioFrame : MediaFrame
 
     public int CopyFrom(Span<byte> samples) => CopyFrom<byte>(samples);
 
-    private int CopyFrom<T>(Span2D<T> samples) where T : unmanaged
+    private int CopyFrom<T>(JaggedSpan2D<T> samples) where T : unmanaged
     {
         unsafe {
          

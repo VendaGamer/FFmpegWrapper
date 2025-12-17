@@ -3,8 +3,6 @@ using CommunityToolkit.HighPerformance.Enumerables;
 
 namespace FFmpegWrapper.Containers;
 
-using System.Buffers.Text;
-
 using Extensions;
 
 public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
@@ -14,6 +12,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         get {
             unsafe
             {
+                Ref<
                 return _handle;
             }
         }

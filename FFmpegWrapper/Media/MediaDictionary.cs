@@ -163,7 +163,6 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
     public Enumerator GetEnumerator()
     {
         unsafe {
-            Span2D<byte> a;
             return new Enumerator(Handle);
         }
     }

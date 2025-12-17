@@ -29,7 +29,6 @@ public abstract class FormatContext(FFHandle<AVFormatContext> handle) : FFObject
                 if (_handle->duration > 0 &&  avio_size(_handle->pb) > 0) {
                     throw new InvalidOperationException("Do not set bitrate if duration and filesize is known");
                 }
-                
                 _handle->bit_rate = value;
             }
         }

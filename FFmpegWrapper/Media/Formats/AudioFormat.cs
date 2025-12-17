@@ -12,7 +12,7 @@ public readonly struct AudioFormat : IEquatable<AudioFormat>
     /// <value>The number of audio channels, typically ranging from 1 to 8 or more.</value>
     public int NumChannels => Layout.NumChannels;
     public int BytesPerSample => av_get_bytes_per_sample(SampleFormat);
-    public bool IsPlanar => av_sample_fmt_is_planar(SampleFormat) != 0;
+    public bool IsPlanar => av_sample_fmt_is_planar(SampleFormat) is not 0;
 
     public AudioFormat(AVSampleFormat sampleFmt, int sampleRate, int numChannels)
     {
