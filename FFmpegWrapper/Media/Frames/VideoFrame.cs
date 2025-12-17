@@ -1,6 +1,7 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 using Codecs;
 using Codecs.Decoding;
@@ -10,8 +11,11 @@ using Extensions;
 
 using Processing;
 
-public sealed class VideoFrame(FFHandle<AVFrame> handle) : MediaFrame(handle)
+public sealed class VideoFrame : MediaFrame
 {
+    
+    #region Properties
+
     public int Width => Handle.Ref.width;
     public int Height => Handle.Ref.height;
     public AVPixelFormat PixelFormat => (AVPixelFormat)Handle.Ref.format;
@@ -59,15 +63,12 @@ public sealed class VideoFrame(FFHandle<AVFrame> handle) : MediaFrame(handle)
         }
     }
 
-    /// Allocates an empty <see cref="AVFrame"/>
-    public VideoFrame(PictureFormat fmt)
-        : this(fmt.Width, fmt.Height, fmt.PixelFormat)
-    {
-        
-    }
-
+    #endregion
+    
+    #region Constructors
+    
     /// <inheritdoc />
-    public VideoFrame(int width, int height, AVPixelFormat fmt) : this(AllocFrame())
+    public VideoFrame(int width, int height, AVPixelFormat fmt)
     {
         unsafe
         {
@@ -95,7 +96,19 @@ public sealed class VideoFrame(FFHandle<AVFrame> handle) : MediaFrame(handle)
             }
         }
     }
+    public VideoFrame(PictureFormat fmt) : this(fmt.Width, fmt.Height, fmt.PixelFormat) { }
+    public VideoFrame(FFHandle<AVFrame> handle) : base(handle) { }
 
+    /// Allocates an empty <see cref="AVFrame"/>
+    public VideoFrame()
+    {
+        
+    }
+    
+    #endregion
+
+    #region Methods
+    
     /// <summary> Returns a view over the pixel row for the specified plane. </summary>
     /// <remarks> The returned span may be longer than <see cref="Width"/> due to padding. </remarks>
     /// <param name="y">Row index, in top to bottom order.</param>
@@ -201,7 +214,6 @@ public sealed class VideoFrame(FFHandle<AVFrame> handle) : MediaFrame(handle)
         unsafe{
             
             ThrowIfDisposed();
-
             if (!IsHardwareFrame) {
                 throw new InvalidOperationException("TransferTo expects a hardware source frame.");
             }
@@ -272,31 +284,45 @@ public sealed class VideoFrame(FFHandle<AVFrame> handle) : MediaFrame(handle)
             ).CheckError("Failed to clear frame.");
         }
     }
-
-    /// <summary> Saves this frame to the specified file. The format will be choosen based on the file extension. (Can be either JPG or PNG) </summary>
-    /// <param name="quality">JPEG: Quantization factor. PNG: ZLib compression level. 0-100</param>
-    public void Save(string filename, PictureFormat format)
+    
+    public void Save(ReadOnlySpan<char> fileName, PictureFormat format)
     {
-        unsafe
-        {
-            if(Width <= 0 || Height <= 0)
-                throw new InvalidOperationException("Frame has zero dimensions; ensure you decoded a video frame before calling Save().");
-            
-            using var sws = new SwScaler(Format,format);
-            var resFrame = sws.Convert(Handle);
+        var extIndex = fileName.LastIndexOf('.');
+        if (extIndex is -1)
+            throw new ArgumentException("File name must contain an extension.", nameof(fileName));
+
+        var ext = fileName[(extIndex + 1)..];
         
+        if (ext.Length > 8)
+            throw new ArgumentException("Funny, no ffmpeg's supported extension is that long.", nameof(fileName));
+        
+        Span<byte> extUtf8 = stackalloc byte[Encoding.UTF8.GetMaxByteCount(ext.Length)];
+        var outputFormat = OutputFormat.FindByExtension(extUtf8);
+        Save(fileName, format, outputFormat);
+    }
+    
+    public void Save(ReadOnlySpan<char> filename, PictureFormat format, OutputFormat outputFormat)
+    {
+        if(Width <= 0 || Height <= 0)
+            throw new InvalidOperationException("Frame has zero dimensions; ensure you decoded a video frame before calling Save().");
+        
+        using var sws = new SwScaler(Format,format);
+        
+        using var resFrame = sws.Convert(Handle);
+        using var packet = new MediaPacket();
+        var frameRate = av_guess_frame_rate();
+        using var encoder = new VideoEncoder(outputFormat.VideoCodec, resFrame.Format);
 #if NET9_0_OR_GREATER
         File.WriteAllBytes(filename, packet.Data);
 #elif NETSTANDARD2_1_OR_GREATER
         using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
         fs.Write(packet.Data);
 #else
-            using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
-            using var us = new UnmanagedMemoryStream(resFrame.Data, packet.DataLength);
-            us.CopyTo(fs);
-            
+        using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
+        using var us = new UnmanagedMemoryStream(resFrame.Data, packet.DataLength);
+        us.CopyTo(fs);
+        
 #endif
-        }
     }
 
     /// <summary> Decodes a single frame from the specified image or video file. </summary>
@@ -332,4 +358,6 @@ public sealed class VideoFrame(FFHandle<AVFrame> handle) : MediaFrame(handle)
         frame.Dispose();
         throw new FormatException();
     }
+    
+    #endregion
 }

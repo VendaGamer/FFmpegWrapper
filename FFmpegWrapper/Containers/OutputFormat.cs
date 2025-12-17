@@ -3,6 +3,8 @@ using CommunityToolkit.HighPerformance.Enumerables;
 
 namespace FFmpegWrapper.Containers;
 
+using System.Buffers.Text;
+
 using Extensions;
 
 public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
@@ -12,8 +14,6 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         get {
             unsafe
             {
-
-                
                 return _handle;
             }
         }
@@ -132,7 +132,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
     }
 
     // Find format by name
-    public static bool TryFindByShortName(ReadOnlySpan<byte> shortName, out OutputFormat format)
+    public static bool TryFindByShortName(scoped ReadOnlySpan<byte> shortName, out OutputFormat format)
     {
         unsafe {
 
@@ -154,7 +154,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
     }
     
     // Find format by name
-    public static bool TryFindByFileName(ReadOnlySpan<byte> fileName, out OutputFormat format)
+    public static bool TryFindByFileName(scoped ReadOnlySpan<byte> fileName, out OutputFormat format)
     {
         unsafe {
 
@@ -175,7 +175,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         }
     }
     
-    public static bool TryFindByMimeType(ReadOnlySpan<byte> fileName, out OutputFormat format)
+    public static bool TryFindByMimeType(scoped ReadOnlySpan<byte> fileName, out OutputFormat format)
     {
         unsafe {
 
@@ -198,7 +198,8 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
 
     private const byte DOT = (byte)'.';
     
-    public static bool TryFindByExtension(ReadOnlySpan<byte> extension, out OutputFormat outputFormat)
+    
+    public static bool TryFindByExtension(scoped ReadOnlySpan<byte> extension, out OutputFormat outputFormat)
     {
         unsafe {
 
@@ -218,13 +219,13 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         }
     }
 
-    public static OutputFormat FindByExtenion(ReadOnlySpan<byte> extension)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static OutputFormat FindByExtension(scoped ReadOnlySpan<byte> extension)
     {
-        if (TryFindByExtension(extension, out OutputFormat format)) {
+        if (TryFindByExtension(extension, out OutputFormat format))
             return format;
-        }
 
-        throw new ArgumentException(nameof(extension));
+        throw new ArgumentException("No output format with such extension", nameof(extension));
     }
 
     public override bool Equals(object? obj)

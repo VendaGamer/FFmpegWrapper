@@ -40,8 +40,10 @@ public sealed class SwScaler(FFHandle<SwsContext> handle) : FFObject<SwsContext>
         unsafe
         {
             ThrowIfDisposed();
+            
             int* table, invTable;
             int srcRange, dstRange, brightness, contrast, saturation;
+            
             sws_getColorspaceDetails(Handle, &invTable, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation);
 
             table = sws_getCoefficients((int)input.Matrix);
@@ -57,19 +59,17 @@ public sealed class SwScaler(FFHandle<SwsContext> handle) : FFObject<SwsContext>
         }
     }
     
-    public void Convert(FFHandle<AVFrame> src, FFHandle<AVFrame> dst)
-    {
-        unsafe
-        {
-            sws_scale_frame(Handle, dst, src).CheckError();
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe void Convert(FFHandle<AVFrame> src, FFHandle<AVFrame> dst) 
+        => sws_scale_frame(Handle, dst, src).CheckError();
     
     public VideoFrame Convert(FFHandle<AVFrame> src)
     {
         unsafe {
             var output = new VideoFrame();
-            sws_scale_frame(Handle, dst, src).CheckError();
+            sws_scale_frame(Handle, output.Handle, src).CheckError();
+            
+            return output;
         }
     }
 

@@ -43,7 +43,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
                     var index = 0;
                     AVCodecHWConfig* res = null!;
                     
-                    while((res = avcodec_get_hw_config(codec.Raw, index)) != null)
+                    while((res = avcodec_get_hw_config(codec._handle, index)) != null)
                     {
                         if (codec.IsDecoder) {
                             decBuilder.Add(new CodecHardwareConfig(codec, res));

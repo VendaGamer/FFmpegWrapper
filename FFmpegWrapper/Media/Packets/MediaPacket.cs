@@ -8,8 +8,7 @@ using Streams;
 
 public class MediaPacket : FFObject<AVPacket>
 {
-    /// <summary>This value is used to represent that no timestamp exists</summary>
-    public const long NoTimeStampValue = long.MinValue;
+    #region Properties
     
     /// <summary>
     /// Presentation timestamp in <see cref="MediaStream.TimeBase"/> units; 
@@ -23,120 +22,99 @@ public class MediaPacket : FFObject<AVPacket>
     /// Such timestamps must be converted to true pts/dts before they are stored in AVPacket.
     /// </summary>
     public long? PresentationTimestamp {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
-                if(_handle->pts is NoTimeStampValue)
-                    return null;
-                
-                return _handle->pts;
-            }
+            ref var handle = ref Handle.Ref;
+            
+            if(handle.pts is AV_NOPTS_VALUE)
+                return null;
+            
+            return handle.pts;
         }
-        set {
-            unsafe
-            {
-                if (value is null)
-                    _handle->pts = NoTimeStampValue;
-                else
-                    _handle->pts = value.Value;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set => Handle.Ref.pts = value ?? AV_NOPTS_VALUE;
     }
 
     public long? DecompressionTimestamp {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            ThrowIfDisposed();
-            unsafe
-            {
-                if(_handle->dts is NoTimeStampValue)
-                    return null;
-                
-                return _handle->dts;
-            }
+            ref var handle = ref Handle.Ref;
+            
+            if(handle.dts is AV_NOPTS_VALUE)
+                return null;
+            
+            return handle.dts;
         }
-        set {
-            ThrowIfDisposed();
-            unsafe
-            {
-                if (value is null)
-                    _handle->dts = NoTimeStampValue;
-                else
-                    _handle->dts = value.Value;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set => Handle.Ref.dts = value ?? AV_NOPTS_VALUE;
     }
 
     /// <summary> Duration of this packet in <see cref="MediaStream.TimeBase"/> units, 0 if unknown. Equals next_pts - this_pts in presentation order.  </summary>
     public long Duration {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.duration;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set => Handle.Ref.duration = value;
     }
     public int StreamIndex {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.stream_index;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set => Handle.Ref.stream_index = value;
     }
     
-    public AV_PKT_FLAGS Flags {
-        get => (AV_PKT_FLAGS)Handle.Ref.flags;
-        set => Handle.Ref.flags = (int)value;
-    }
+    public ref AV_PKT_FLAGS Flags => ref Unsafe.As<int, AV_PKT_FLAGS>(ref Handle.Ref.flags);
 
     /// <inheritdoc cref="AVPacket.pos"/>
-    public long BytePosition {
-        get => Handle.Ref.pos;
-        set => Handle.Ref.pos = value;
-    }
+    public ref long BytePosition => ref Handle.Ref.pos;
 
     public Span<byte> Data {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
+            unsafe {
                 ref var handle = ref Handle.Ref;
+                
                 return new Span<byte>(handle.data, handle.size);
             }
         }
     }
 
-    internal unsafe byte* DataRaw {
-        get => _handle->data;
-    }
-
-    internal int DataLength {
-        get {
-            unsafe
-            {
-                return _handle->size;
-            }
-        }
-    }
+    public unsafe FFHandle<byte> DataHandle => Handle.Ref.data;
+    
+    public int DataLength => Handle.Ref.size;
 
     public PacketSideDataList SideData {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return new PacketSideDataList(&_handle->side_data, &_handle->side_data_elems);
+                var handle = Handle.Raw;
+                
+                return new PacketSideDataList(&handle->side_data, &_handle->side_data_elems);
             }
         }
     }
+    
+    #endregion
+    
+    
+    #region Constructors
 
-    public MediaPacket()
-    {
-        unsafe
-        {
-            _handle = av_packet_alloc();
-            if (_handle == null) {
-                throw new OutOfMemoryException();
-            }
-        }
-    }
-    public MediaPacket(int size)
-        : this()
+    public MediaPacket(FFHandle<AVPacket> handle) : base(handle) { }
+    
+    public unsafe MediaPacket() : base(av_packet_alloc()) { }
+    
+    public MediaPacket(int size) : this()
     {
         unsafe
         {
             av_new_packet(_handle, size).CheckError("Failed to allocate packet buffer");
         }
     }
+    
+    #endregion
+
+    
 
     /// <summary> Copies the specified data span to the packet, ensuring buffer space. </summary>
     public void SetData(ReadOnlySpan<byte> data)
@@ -166,13 +144,12 @@ public class MediaPacket : FFObject<AVPacket>
         }
     }
     
-    public FFHandle<AVPacket> Clear()
+    public void Clear()
     {
         ThrowIfDisposed();
         unsafe
         {
             av_packet_unref(_handle);
-            return _handle;
         }
     }
 

@@ -40,6 +40,11 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
         }
     }
 
+    protected FFObject()
+    {
+        
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected FFObject(FFHandle<TRaw> handle)
     {

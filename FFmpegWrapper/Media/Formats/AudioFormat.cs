@@ -29,13 +29,13 @@ public readonly struct AudioFormat : IEquatable<AudioFormat>
 
     public override string ToString()
     {
-        var fmt = SampleFormat.ToString().Substring("AV_SAMPLE_FMT_".Length);
+        var fmt = SampleFormat.ToString()["AV_SAMPLE_FMT_".Length..];
         return $"{SampleRate} Hz, {Layout}, {fmt}";
     }
 
     public bool Equals(AudioFormat other)
         => other.SampleFormat == SampleFormat && other.SampleRate == SampleRate && other.Layout.Equals(Layout);
 
-    public override bool Equals(object obj) => obj is AudioFormat other && Equals(other);
+    public override bool Equals(object? obj) => obj is AudioFormat other && Equals(other);
     public override int GetHashCode() => (SampleRate, NumChannels, (int)SampleFormat).GetHashCode();
 }

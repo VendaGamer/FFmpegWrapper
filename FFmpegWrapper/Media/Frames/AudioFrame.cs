@@ -1,7 +1,10 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
-public class AudioFrame() : MediaFrame()
+public class AudioFrame : MediaFrame
 {
+
+    #region Properties
+
     public AVSampleFormat SampleFormat => (AVSampleFormat)Handle.Ref.format;
     public int SampleRate => Handle.Ref.sample_rate;
     public ChannelLayout ChannelLayout => new(Handle.Ref.ch_layout);
@@ -36,6 +39,10 @@ public class AudioFrame() : MediaFrame()
         }
     }
 
+    #endregion
+
+    #region Constructors
+
     public AudioFrame(in AudioFormat fmt, int capacity): this()
     {
         unsafe
@@ -48,9 +55,15 @@ public class AudioFrame() : MediaFrame()
             av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
         }
     }
-    public AudioFrame(AVSampleFormat fmt, int sampleRate, int numChannels, int capacity)
+    public AudioFrame(AVSampleFormat fmt, int sampleRate, int numChannels, int capacity) 
         : this(new AudioFormat(fmt, sampleRate, numChannels), capacity) { }
     
+    public AudioFrame(FFHandle<AVFrame> handle) : base(handle) { }
+    public AudioFrame() { }
+
+    #endregion
+
+    #region Methods
 
     public Span<T> GetSamples<T>(int channel = 0) where T : unmanaged
     {
@@ -94,4 +107,6 @@ public class AudioFrame() : MediaFrame()
             
         }
     }
+
+    #endregion
 }

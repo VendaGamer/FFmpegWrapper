@@ -5,10 +5,12 @@ using Extensions;
 
 public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
 {
+    #region Properties
+
     public FFHandle<AVCodec> Handle {
         get {
             unsafe {
-                return Raw;
+                return _handle;
             }
         }
     }
@@ -16,7 +18,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     public AVCodecID Id {
         get {
             unsafe {
-                return Raw->id;
+                return _handle->id;
             }
         }
     }
@@ -25,7 +27,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return Raw->type;
+                return _handle->type;
             }
         }
     }
@@ -36,7 +38,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return FFHelper.PtrToStringUtf8(Raw->name);
+                return FFHelper.PtrToStringUtf8(_handle->name);
             }
         }
     }
@@ -46,7 +48,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return FFHelper.PtrToStringUtf8(Raw->long_name)!;
+                return FFHelper.PtrToStringUtf8(_handle->long_name)!;
             }
         }
     }
@@ -56,10 +58,10 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                if (Raw->wrapper_name is null) {
+                if (_handle->wrapper_name is null) {
                     return FFHelper.SpanToStringUtf8("builtin"u8);
                 }
-                return FFHelper.PtrToStringUtf8(Raw->wrapper_name);
+                return FFHelper.PtrToStringUtf8(_handle->wrapper_name);
             }
         }
     }
@@ -68,7 +70,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return (AVCodecCapabilities)Raw->capabilities;
+                return (AVCodecCapabilities)_handle->capabilities;
             }
         }
     }
@@ -78,24 +80,24 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return Raw->max_lowres;
+                return _handle->max_lowres;
             }
         }
     }
+
+    #endregion
+
+    #region Fields
+
+    internal readonly unsafe AVCodec* _handle;
+
+    #endregion
     
-    internal readonly unsafe AVCodec* Raw;
     
-    public unsafe MediaCodec(FFHandle<AVCodec> raw)
+    
+    public unsafe MediaCodec(FFHandle<AVCodec> handle)
     {
-        Raw = raw;
-    }
-    public static unsafe MediaCodec FromHandle(AVCodec* handle)
-    {
-        if (handle is null) {
-            throw new ArgumentNullException();
-        }
-        
-        return new MediaCodec(handle);
+        _handle = handle;
     }
 
     /// <summary> Array of supported frame rates, or empty if any. </summary>
@@ -127,7 +129,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
 
             avcodec_get_supported_config(
                 null,
-                Raw,
+                _handle,
                 config,
                 0,
                 (void**)&configs,
@@ -153,7 +155,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return av_codec_is_encoder(Raw) != 0;
+                return av_codec_is_encoder(_handle) != 0;
             }
         }
     }
@@ -162,7 +164,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         get {
             unsafe
             {
-                return av_codec_is_decoder(Raw) != 0;
+                return av_codec_is_decoder(_handle) != 0;
             }
         }
     }
@@ -172,7 +174,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     {
         unsafe
         {
-            return ContextOption.GetOptions(&Raw->priv_class, removeAliases);
+            return ContextOption.GetOptions(&_handle->priv_class, removeAliases);
         }
     }
 
@@ -208,12 +210,19 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         }
     }
 
-    public static MediaCodec? TryGetEncoder(ReadOnlySpan<byte> name)
+    public static bool TryGetEncoder(ReadOnlySpan<byte> name, out MediaCodec codec)
     {
         unsafe
         {
-            AVCodec* ptr = avcodec_find_encoder_by_name(name.RawHandle);
-            return ptr == null ? null : new MediaCodec(ptr);
+            FFHandle<AVCodec> ptr = avcodec_find_encoder_by_name(name.RawHandle);
+
+            if (ptr.IsNull) {
+                codec = default;
+                return false;
+            }
+
+            codec = new MediaCodec(ptr);
+            return true;
         }
     }
     public static MediaCodec? TryGetDecoder(ReadOnlySpan<byte> name)

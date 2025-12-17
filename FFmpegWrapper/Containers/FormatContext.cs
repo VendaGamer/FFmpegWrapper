@@ -6,7 +6,7 @@ using Extensions;
 
 using Media;
 
-public abstract class FormatContext : FFObject<AVFormatContext>
+public abstract class FormatContext(FFHandle<AVFormatContext> handle) : FFObject<AVFormatContext>(handle)
 {
     public long FileSize {
         get {
@@ -43,12 +43,7 @@ public abstract class FormatContext : FFObject<AVFormatContext>
             }
         }
     }
-
-    protected unsafe FormatContext(AVOutputFormat* outputFormat) : this(outputFormat,null,null)
-    {
-        
-    }
-
+    
     private unsafe FormatContext(AVOutputFormat* outputFormat, ReadOnlySpan<byte> formatName, ReadOnlySpan<byte> filename)
     {
         fixed (AVFormatContext** ptr = &_handle) {
@@ -59,7 +54,7 @@ public abstract class FormatContext : FFObject<AVFormatContext>
     protected FormatContext()
     {
         unsafe {
-            _handle = avformat_alloc_context();
+            _handle = ;
         }
     }
     

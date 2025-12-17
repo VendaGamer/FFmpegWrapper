@@ -2,7 +2,7 @@
 
 using Abstractions;
 
-public abstract class MediaFrame(FFHandle<AVFrame> handle) : FFObject<AVFrame>(handle)
+public abstract class MediaFrame : FFObject<AVFrame>
 {
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
     public long? BestEffortTimestamp {
@@ -95,16 +95,12 @@ public abstract class MediaFrame(FFHandle<AVFrame> handle) : FFObject<AVFrame>(h
             _ => throw new ArgumentException("Invalid media type.", nameof(type))
         };
 
-    protected MediaFrame() : this(AllocFrame()) { }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected static FFHandle<AVFrame> AllocFrame()
-    {
-        unsafe
-        {
-            return av_frame_alloc();
-        }
-    }
+    #region Constructors
+
+    protected MediaFrame(FFHandle<AVFrame> handle) : base(handle) { }
+    protected unsafe MediaFrame() : base(av_frame_alloc()) { }
+
+    #endregion
     
 
     protected override unsafe void Free()

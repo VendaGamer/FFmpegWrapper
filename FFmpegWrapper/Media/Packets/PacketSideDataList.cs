@@ -1,10 +1,9 @@
 namespace FFmpegWrapper.Media.Packets;
 
 using System.Text;
-
 using CommunityToolkit.HighPerformance;
 
-public readonly struct PacketSideDataList
+public readonly ref struct PacketSideDataList
 {
     public FFHandleSource<AVPacketSideData> Handle {
         get {
@@ -14,7 +13,6 @@ public readonly struct PacketSideDataList
             }
         }
     }
-    
 
     public int Count {
         get {

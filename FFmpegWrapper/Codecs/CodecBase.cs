@@ -2,7 +2,6 @@
 
 using System.Buffers;
 using System.Runtime.InteropServices;
-
 using Abstractions;
 using Hardware;
 
@@ -103,11 +102,12 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected static FFHandle<AVCodecContext> AllocContext(MediaCodec? codec)
     {
         unsafe
         {
-            return avcodec_alloc_context3(codec is not null ? codec.Value.Raw : null);
+            return avcodec_alloc_context3(codec is not null ? codec.Value._handle : null);
         }
     }
 
@@ -158,7 +158,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     {
         unsafe
         {
-            if (config.Codec.Raw != _handle->codec || config.DeviceType != device.Type) {
+            if (config.Codec._handle != _handle->codec || config.DeviceType != device.Type) {
                 throw new ArgumentException("Mismatching hardware codec config.");
             }
         

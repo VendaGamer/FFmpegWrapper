@@ -112,11 +112,12 @@ public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
     public VideoEncoder(AVCodecID codecId, in PictureFormat format, Rational frameRate, int bitrate = 0)
         : this(MediaCodec.GetEncoder(codecId), format, frameRate, bitrate) { }
 
-    public VideoEncoder(MediaCodec codec, in PictureFormat format, Rational frameRate, int bitrate = 0)
+    public unsafe VideoEncoder(MediaCodec codec, in PictureFormat format, Rational frameRate, int bitrate = 0)
         : this(AllocContext(codec))
     {
         FrameFormat = format;
         FrameRate = frameRate;
+        
         TimeBase = frameRate.Reciprocal();
         BitRate = bitrate;
     }
