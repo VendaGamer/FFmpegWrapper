@@ -38,12 +38,12 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
             var decBuilder = ImmutableArray.CreateBuilder<CodecHardwareConfig>();
             
             unsafe {
+                AVCodecHWConfig* res = null;
                 foreach (var codec in MediaCodec.AvailableCodecs) {
                     
                     var index = 0;
-                    AVCodecHWConfig* res = null!;
                     
-                    while((res = avcodec_get_hw_config(codec._handle, index)) != null)
+                    while((res = avcodec_get_hw_config(codec._handle, index)) is not null)
                     {
                         if (codec.IsDecoder) {
                             decBuilder.Add(new CodecHardwareConfig(codec, res));
@@ -107,6 +107,8 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
 
     #endregion
     
+    
+    
     public FFHandle<AVCodecHWConfig> Handle {
         get {
             unsafe
@@ -146,13 +148,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
     
     private readonly unsafe AVCodecHWConfig* _handle;
 
-    private unsafe CodecHardwareConfig(AVCodec* codec, AVCodecHWConfig* config)
-    {
-        Codec = MediaCodec.FromHandle(codec);
-        _handle = config;
-    }
-
-    private unsafe CodecHardwareConfig(MediaCodec codec, AVCodecHWConfig* config)
+    private unsafe CodecHardwareConfig(MediaCodec codec, FFHandle<AVCodecHWConfig> config)
     {
         Codec = codec;
         _handle = config;

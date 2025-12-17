@@ -85,7 +85,7 @@ public class AudioFrame : MediaFrame
 
     public int CopyFrom(Span<byte> samples) => CopyFrom<byte>(samples);
 
-    private int CopyFrom<T>(Span<T> samples) where T : unmanaged
+    private int CopyFrom<T>(Span2D<T> samples) where T : unmanaged
     {
         unsafe {
          
