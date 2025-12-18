@@ -96,7 +96,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
 
                     if ((configPtr->methods & reqMethods) != 0 &&
                         (deviceType == null || configPtr->device_type == deviceType)) {
-                        configs.Add(new CodecHardwareConfig(codec, configPtr));
+                        configs.Add(new CodecHardwareConfig(new MediaCodec(codec),configPtr));
                     }
                 }
             }

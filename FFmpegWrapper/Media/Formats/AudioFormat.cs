@@ -29,7 +29,7 @@ public readonly struct AudioFormat : IEquatable<AudioFormat>
 
     public override string ToString()
     {
-        var fmt = SampleFormat.ToString()["AV_SAMPLE_FMT_".Length..];
+        var fmt = SampleFormat.ToString().Substring("AV_SAMPLE_FMT_".Length);
         return $"{SampleRate} Hz, {Layout}, {fmt}";
     }
 

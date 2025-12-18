@@ -1,12 +1,10 @@
 namespace FFmpegWrapper.Containers;
 
 using Abstractions;
-
 using Extensions;
-
 using Media;
 
-public abstract class FormatContext(FFHandle<AVFormatContext> handle) : FFObject<AVFormatContext>(handle)
+public abstract class FormatContext : FFObject<AVFormatContext>
 {
     public long FileSize {
         get {
@@ -50,12 +48,7 @@ public abstract class FormatContext(FFHandle<AVFormatContext> handle) : FFObject
         }
     }
 
-    protected FormatContext()
-    {
-        unsafe {
-            _handle = ;
-        }
-    }
+    protected unsafe FormatContext() : base(avformat_alloc_context()) { }
     
     /// <inheritdoc/>
     protected override unsafe void Free()

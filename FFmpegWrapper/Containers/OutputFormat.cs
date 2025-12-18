@@ -12,7 +12,6 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         get {
             unsafe
             {
-                Ref<
                 return _handle;
             }
         }

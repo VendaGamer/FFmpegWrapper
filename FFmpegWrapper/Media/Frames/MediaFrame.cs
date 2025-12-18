@@ -72,12 +72,12 @@ public abstract class MediaFrame : FFObject<AVFrame>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return new ReadOnlySpan<int>(Handle.Raw->linesize, AV_NUM_DATA_POINTERS);
+                return new ReadOnlySpan<int>(&Handle.Raw->linesize._0, AV_NUM_DATA_POINTERS);
             }
         }
     }
     
-    public unsafe byte** Data => _handle->data;
+    public unsafe byte** Data => &_handle->data._0;
 
     public int Stride {
         get {
