@@ -75,7 +75,7 @@ public readonly ref struct FFHandle<T>
     /// <returns></returns>
     public static unsafe implicit operator T*(FFHandle<T> handle)
     {
-        return handle.Raw;
+        return handle._handle;
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
-                return avcodec_is_open(Handle) != 0;
+                return avcodec_is_open(Handle) is not 0;
             }
         }
     }

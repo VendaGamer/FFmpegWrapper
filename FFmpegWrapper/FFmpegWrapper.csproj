@@ -27,7 +27,7 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.HighPerformance" PrivateAssets="All"/>
+        <PackageReference Include="CommunityToolkit.HighPerformance"/>
         <PackageReference Include="Microsoft.NETCore.Platforms" />
         <PackageReference Include="OwnerCore" />
         <PackageReference Include="System.Collections.Immutable" />

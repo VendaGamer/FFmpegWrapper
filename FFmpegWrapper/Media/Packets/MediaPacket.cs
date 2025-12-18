@@ -78,8 +78,8 @@ public class MediaPacket : FFObject<AVPacket>
             }
         }
     }
-
-    public unsafe FFHandle<byte> DataHandle => Handle.Ref.data;
+    
+    public unsafe byte* DataRaw => Handle.Ref.data;
     
     public int DataLength => Handle.Ref.size;
 

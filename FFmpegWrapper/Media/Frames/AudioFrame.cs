@@ -95,7 +95,7 @@ public class AudioFrame : MediaFrame
             if (fmt.IsPlanar || fmt.BytesPerSample != sizeof(T)) {
                 throw new InvalidOperationException("Incompatible format");
             }
-            if (samples.Length % fmt.NumChannels != 0) {
+            if (samples.Length % fmt.NumChannels is not 0) {
                 throw new ArgumentException("Sample count must be a multiple of channel count.", nameof(samples));
             }
 

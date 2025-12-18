@@ -10,6 +10,8 @@ using FFmpegWrapper.Media.Packets;
 
 using FFmpegBindings.Abstractions;
 
+using FFmpegWrapper.Media.Formats;
+
 /// <summary>
 /// Helper class for working with FFmpeg.Wrapper
 /// </summary>
@@ -81,7 +83,7 @@ public sealed class FFMpegService
             {
                 if (decoder.ReceiveFrame(frame.Handle))
                 {
-                    frame.Save(filePath);
+                    frame.Save(filePath, new PictureFormat(0,0, AVPixelFormat.AV_PIX_FMT_YUV420P));
                     return new AVImage(filePath, frame.PixelFormat);
                 }
             }
@@ -181,7 +183,7 @@ public sealed class FFMpegService
                     if (decoder.ReceiveFrame(frame.Handle))
                     {
                         var imagePath = $"{filePath}{i}.jpg";
-                        frame.Save(imagePath);
+                        frame.Save(imagePath, new PictureFormat(0,0, AVPixelFormat.AV_PIX_FMT_YUV420P));
                         images[i] = new AVImage(imagePath, frame.PixelFormat);
                         break;
                     }

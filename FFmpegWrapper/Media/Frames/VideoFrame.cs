@@ -137,8 +137,8 @@ public sealed class VideoFrame : MediaFrame
         {
             int height = GetPlaneSize(plane).Height;
 
-            byte* data = _handle->data[(uint)plane];
-            int rowSize = _handle->linesize[(uint)plane];
+            byte* data = _handle->data[plane];
+            int rowSize = _handle->linesize[plane];
 
             if (rowSize < 0) {
                 data += rowSize * (height - 1);
@@ -167,7 +167,7 @@ public sealed class VideoFrame : MediaFrame
             }
             
             
-            for (uint i = 0; i < 4; i++) {
+            for (int i = 0; i < 4; i++) {
                 if (desc->comp[i].plane != plane) continue;
                 
                 if (i is 1 or 2 && (desc->flags & (int)AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_RGB) is 0) {
@@ -278,7 +278,7 @@ public sealed class VideoFrame : MediaFrame
             var handle = Handle.Raw;
             
             av_image_fill_black(
-                handle->data, (nint*)handle->linesize,
+                &handle->data._0, (nint*)&handle->linesize._0,
                 (AVPixelFormat)handle->format, handle->color_range,
                 handle->width, handle->height
             ).CheckError("Failed to clear frame.");
@@ -290,15 +290,18 @@ public sealed class VideoFrame : MediaFrame
         var extIndex = fileName.LastIndexOf('.');
         if (extIndex is -1)
             throw new ArgumentException("File name must contain an extension.", nameof(fileName));
+        
 
-        var ext = fileName[(extIndex + 1)..];
-        
-        if (ext.Length > 8)
-            throw new ArgumentException("Funny, no ffmpeg's supported extension is that long.", nameof(fileName));
-        
-        Span<byte> extUtf8 = stackalloc byte[Encoding.UTF8.GetMaxByteCount(ext.Length)];
-        var outputFormat = OutputFormat.FindByExtension(extUtf8);
-        Save(fileName, format, outputFormat);
+        // NET STANDARD BYPASS
+        unsafe {
+            Span<byte> extUtf8 = stackalloc byte[Encoding.UTF8.GetMaxByteCount(fileName.Length) + 1];
+            var written = Encoding.UTF8.GetBytes(fileName.RawHandle, fileName.Length,
+                extUtf8.RawHandle,extUtf8.Length);
+
+            var outFor = OutputFormat.FindByExtension(extUtf8.Slice(0, written + 1)); 
+            
+            Save(fileName, format, outFor);
+        }
     }
     
     public void Save(ReadOnlySpan<char> filename, PictureFormat format, OutputFormat outputFormat)
@@ -306,21 +309,46 @@ public sealed class VideoFrame : MediaFrame
         if(Width <= 0 || Height <= 0)
             throw new InvalidOperationException("Frame has zero dimensions; ensure you decoded a video frame before calling Save().");
         
-        using var sws = new SwScaler(Format,format);
+        if (format.Width <= 0 || format.Height <= 0)
+            format = new PictureFormat(Width, Height, PixelFormat);
         
-        using var resFrame = sws.Convert(Handle);
+        if (IsHardwareFrame) {
+            using var tmp = new VideoFrame();
+            TransferTo(tmp);
+            tmp.Save(filename, format, outputFormat);
+            return;
+        }
+
+        MediaCodec codec = MediaCodec.GetEncoder(outputFormat.VideoCodec);
+        
+        using var tempFrame = new VideoFrame(new PictureFormat(format.Width, format.Height, codec.SupportedPixelFormats[0]));
+        using var encoder = new VideoEncoder(codec, format, Rational.One);
+        encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
+        using var sws = new SwScaler(this.Format, tempFrame.Format);
+        
+        tempFrame.Colorspace = Colorspace;
+        
+        encoder.Open();
+        
+        sws.SetColorspace(this.Colorspace, tempFrame.Colorspace);
+        sws.Convert(Handle, tempFrame.Handle);
+        
+        encoder.SendFrame(tempFrame.Handle);
+        
         using var packet = new MediaPacket();
-        var frameRate = av_guess_frame_rate();
-        using var encoder = new VideoEncoder(outputFormat.VideoCodec, resFrame.Format);
+        encoder.ReceivePacket(packet);
+        
 #if NET9_0_OR_GREATER
-        File.WriteAllBytes(filename, packet.Data);
+            File.WriteAllBytes(filename.ToString(), packet.Data);
 #elif NETSTANDARD2_1_OR_GREATER
-        using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
+        using var fs = new FileStream(filename.ToString(), FileMode.Create, FileAccess.Write);
         fs.Write(packet.Data);
 #else
-        using var fs = new FileStream(filename, FileMode.Create, FileAccess.Write);
-        using var us = new UnmanagedMemoryStream(resFrame.Data, packet.DataLength);
-        us.CopyTo(fs);
+        unsafe {
+            using var fs = new FileStream(filename.ToString(), FileMode.Create, FileAccess.Write);
+            using var us = new UnmanagedMemoryStream(packet.DataRaw, packet.DataLength);
+            us.CopyTo(fs);
+        }
         
 #endif
     }

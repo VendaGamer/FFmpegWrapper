@@ -89,30 +89,9 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// </summary>
     /// <param name="newWidth">The target width in pixels.</param>
     /// <param name="newHeight">The target height in pixels.</param>
-    /// <param name="newFormat">The new pixel format, or <see cref="PixelFormats.None"/> to keep the current format.</param>
-    /// <param name="keepAspectRatio">If true, maintains the original aspect ratio by scaling proportionally.</param>
-    /// <param name="align">Ensures that width and height are multiples of this value (useful for codec requirements).</param>
-    /// <returns>A new <see cref="PictureFormat"/> with the specified scaling applied.</returns>
-    /// <remarks>
-    /// When <paramref name="keepAspectRatio"/> is true, the smaller of the two scale factors is used to ensure
-    /// the entire original image fits within the target dimensions. The alignment parameter is useful for
-    /// codecs that require dimensions to be multiples of specific values (e.g., 16 for some H.264 configurations).
-    /// </remarks>
-    public PictureFormat GetScaled(int newWidth, int newHeight, AVPixelFormat newFormat = AVPixelFormat.AV_PIX_FMT_NONE, bool keepAspectRatio = true, int align = 1)
+    public PictureFormat GetScaled(int newWidth, int newHeight)
     {
-        if (keepAspectRatio) {
-            double scale = Math.Min(newWidth / (double)Width, newHeight / (double)Height);
-            newWidth = (int)Math.Round(Width * scale);
-            newHeight = (int)Math.Round(Height * scale);
-        }
-        if (newFormat is AVPixelFormat.AV_PIX_FMT_NONE) {
-            newFormat = PixelFormat;
-        }
-        if (align > 1) {
-            newWidth = (newWidth + align - 1) / align * align;
-            newHeight = (newHeight + align - 1) / align * align;
-        }
-        return new PictureFormat(newWidth, newHeight, newFormat);
+        return new PictureFormat(newWidth, newHeight, PixelFormat, PixelAspectRatio);
     }
     
     /// <summary>
