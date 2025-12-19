@@ -7,11 +7,15 @@ using System.Numerics;
 /// </summary>
 /// <typeparam name="T">Okay</typeparam>
 public readonly ref struct FFHandle<T>
+#if NET9_0_OR_GREATER
+    : IEquatable<FFHandle<T>>
+#endif
     where T : unmanaged
 {
     /// <summary>
-    /// Unsafe handle to underlying ffmpeg object
+    /// 
     /// </summary>
+    /// <exception cref="ObjectDisposedException">Thrown if handle is null</exception>
     public unsafe T* Raw {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
@@ -19,13 +23,15 @@ public readonly ref struct FFHandle<T>
             if (_handle is null) {
                 throw new ObjectDisposedException($"Underlying ffmpeg object {typeof(T).Name} has been disposed.");
             }
+            
             return _handle;
         }
     }
     
     /// <summary>
-    /// Safe handle to underlying ffmpeg object
+    /// 
     /// </summary>
+    /// <exception cref="ObjectDisposedException">Thrown if handle is null</exception>
     public ref T Ref
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,7 +51,7 @@ public readonly ref struct FFHandle<T>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return Raw is null;
+                return _handle is null;
             }
         }
     }
@@ -88,13 +94,8 @@ public readonly ref struct FFHandle<T>
         return new FFHandle<T>(handle);
     }
     
-    public bool Equals(FFHandle<T> other)
-    {
-        unsafe
-        {
-            return _handle == other._handle;
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe bool Equals(FFHandle<T> other) => _handle == other._handle;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator == (FFHandle<T> a, FFHandle<T> b) => a.Equals(b);
