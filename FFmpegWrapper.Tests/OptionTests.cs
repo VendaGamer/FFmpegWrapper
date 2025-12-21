@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Tests;
 
-public class OptionTests
+public class OptionTests: TestBase
 {
     [Fact]
     public void GetOptions()

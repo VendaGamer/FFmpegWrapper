@@ -8,6 +8,7 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DefineConstants>LIBS_LINUX</DefineConstants>
     </PropertyGroup>
     
     <Import Project="../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.projitems"/>

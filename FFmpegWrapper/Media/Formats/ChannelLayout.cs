@@ -4,8 +4,52 @@ using System.Runtime.ConstrainedExecution;
 
 using Extensions;
 
-public readonly struct ChannelLayout : IEquatable<ChannelLayout>
+public readonly struct ChannelLayout(AVChannelLayout native) : IFFWrapped<AVChannelLayout>, IEquatable<ChannelLayout>
 {
+    
+#region StaticProperties
+
+    public static ImmutableArray<ChannelLayout> StandardChannelLayouts => Utils.GetAllStandardChannelLayouts();
+
+    /// <summary>
+    /// Workaround class.
+    /// Cannot be directly in MediaCodec struct cause of this issue:
+    /// https://github.com/dotnet/runtime/issues/104511
+    /// </summary>
+    private static class Utils
+    {
+        private static ImmutableArray<ChannelLayout> s_standardChannelLayouts;
+            
+        public static ImmutableArray<ChannelLayout> GetAllStandardChannelLayouts()
+        {
+            if (!s_standardChannelLayouts.IsDefault) {
+                return s_standardChannelLayouts;
+            }
+                
+            var builder = ImmutableArray.CreateBuilder<ChannelLayout>(37);
+                
+            unsafe {
+                void* opaque = null;
+                AVChannelLayout* layout = null;
+                
+                while ((layout = av_channel_layout_standard(&opaque)) is not null) {
+
+                    AVChannelLayout standard;
+                    av_channel_layout_copy(&standard, layout);
+                        
+                    builder.Add(new ChannelLayout(standard));
+                }
+            }
+                
+            s_standardChannelLayouts =  builder.ToImmutable();
+            return s_standardChannelLayouts;
+        }
+    }
+
+    #endregion
+
+#region Properties
+
     internal unsafe AVChannelLayout* Handle {
         get {
             fixed (AVChannelLayout* layout = &Native) {
@@ -13,14 +57,17 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
             }
         }
     }
-    
-    public readonly AVChannelLayout Native;
+        
     public AVChannelOrder Order => Native.order;
 
     /// <summary>number of channels</summary>
     public int NumChannels => Native.nb_channels;
+        
+    AVChannelLayout IFFWrapped<AVChannelLayout>.Native => Native;
 
-    /// <inheritdoc cref="ffmpeg.av_channel_layout_channel_from_index"/>
+#endregion
+    
+    
     public AVChannel GetChannel(uint index)
     {
         unsafe
@@ -28,13 +75,9 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
             return av_channel_layout_channel_from_index(Handle, index);
         }
     }
-
-    public ChannelLayout(AVChannelLayout native)
-    {
-        Native = native;
-    }
     
-
+    public readonly AVChannelLayout Native = native;
+    
     /// <summary> Get the default channel layout for a given number of channels. </summary>
     public static ChannelLayout GetDefault(int numChannels)
     {
@@ -106,7 +149,6 @@ public readonly struct ChannelLayout : IEquatable<ChannelLayout>
             fixed (byte* ptr = buf) {
                 av_channel_layout_describe(Handle, ptr, (nuint)requiredSize).CheckError();
             }
-            
             return FFHelper.SpanToStringUtf8(buf);
         }
     }

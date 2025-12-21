@@ -1,33 +1,46 @@
 namespace FFmpegWrapper.Media;
 
-using System.Buffers;
 using System.Runtime.ConstrainedExecution;
 
-public sealed class CustomChannelLayout : CriticalFinalizerObject, IDisposable
+public sealed class CustomChannelLayout(AVChannelLayout layout)
+    : CriticalFinalizerObject, IFFWrapped<AVChannelLayout>, IDisposable
 {
-    public readonly ChannelLayout Layout;
+
+    #region StaticProperties
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static CustomChannelLayout DefaultFor(int numChannels) => new(ChannelLayout.GetDefault(numChannels).Native);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static CustomChannelLayout FromString(ReadOnlySpan<byte> str) => new(ChannelLayout.FromString(str).Native);
     
-    internal CustomChannelLayout(ChannelLayout layout)
-    {
-        Layout = layout;
-    }
+    
 
-    public static CustomChannelLayout DefaultFor(int numChannels)
-    {
-        return new CustomChannelLayout(ChannelLayout.GetDefault(numChannels));
-    }
+    #endregion
+    
+    #region Properties
+    
+    AVChannelLayout IFFWrapped<AVChannelLayout>.Native => Native;
+    
+    public unsafe ChannelCustom Custom => new(Native.u.map);
 
-    public static CustomChannelLayout FromString(ReadOnlySpan<byte> str)
-    {
-        return new CustomChannelLayout(ChannelLayout.FromString(str));
-    }
+    public ChannelLayout Layout => new(Native);
 
+    #endregion
+
+    
+    public readonly AVChannelLayout Native = layout;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     ~CustomChannelLayout() => Dispose(false);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose() => Dispose(true);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private unsafe void Dispose(bool disposing)
     {
-        av_channel_layout_uninit(Layout.Handle);
+        fixed(AVChannelLayout* ptr = &Native)
+            av_channel_layout_uninit(ptr);
     }
 }

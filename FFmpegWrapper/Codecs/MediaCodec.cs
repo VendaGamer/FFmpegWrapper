@@ -5,6 +5,46 @@ using Extensions;
 
 public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
 {
+
+    #region Static Properties
+
+    public static ImmutableArray<MediaCodec> AvailableCodecs
+        => Utils.GetAllAvailableCodecs();
+    
+     
+    /// <summary>
+    /// Workaround class.
+    /// Cannot be directly in MediaCodec struct cause of this issue:
+    /// https://github.com/dotnet/runtime/issues/104511
+    /// </summary>
+    private static class Utils
+    {
+        private static ImmutableArray<MediaCodec> s_availableCodecs;
+        
+        public static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
+        {
+            
+            if (!s_availableCodecs.IsDefault) {
+                return s_availableCodecs;
+            }
+            
+            var builder = ImmutableArray.CreateBuilder<MediaCodec>(1024);
+            
+            unsafe {
+                void* iterState = null;
+                AVCodec* codec;
+                while ((codec = av_codec_iterate(&iterState)) != null) {
+                    builder.Add(new MediaCodec(codec));
+                }
+            }
+            
+            s_availableCodecs =  builder.ToImmutable();
+            return s_availableCodecs;
+        }
+    }
+
+    #endregion
+    
     #region Properties
 
     public FFHandle<AVCodec> Handle {
@@ -244,40 +284,4 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     }
 
     public override string ToString() => LongName;
-
-    public static ImmutableArray<MediaCodec> AvailableCodecs
-        => Utils.GetAllAvailableCodecs();
-    
-     
-    /// <summary>
-    /// Workaround class.
-    /// Cannot be directly in MediaCodec struct cause of this issue:
-    /// https://github.com/dotnet/runtime/issues/104511
-    /// </summary>
-    private static class Utils
-    {
-        private static ImmutableArray<MediaCodec> s_availableCodecs;
-        
-        public static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
-        {
-            
-            if (!s_availableCodecs.IsDefault) {
-                return s_availableCodecs;
-            }
-            
-            var builder = ImmutableArray.CreateBuilder<MediaCodec>(1024);
-            
-            unsafe {
-                void* iterState = null;
-                AVCodec* codec;
-                while ((codec = av_codec_iterate(&iterState)) != null) {
-                    builder.Add(new MediaCodec(codec));
-                }
-            }
-            
-            s_availableCodecs =  builder.ToImmutable();
-            return s_availableCodecs;
-        }
-    }
-    
 }

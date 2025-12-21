@@ -3,16 +3,16 @@
 using Media.Formats;
 using Media.Frames;
 
-public class FrameTests
+public class FrameTests: TestBase
 {
     [Fact]
     public unsafe void Video_Props()
     {
-        var frame = new VideoFrame(1280, 720, PixelFormats.RGBA);
+        var frame = new VideoFrame(1280, 720, AVPixelFormat.AV_PIX_FMT_RGBA);
 
         Assert.Equal(1280, frame.Format.Width);
         Assert.Equal(720, frame.Format.Height);
-        Assert.Equal(PixelFormats.RGBA, frame.Format.PixelFormat);
+        Assert.Equal(AVPixelFormat.AV_PIX_FMT_RGBA, frame.Format.PixelFormat);
         Assert.False(frame.Format.IsPlanar);
 
         Assert.Equal(1280, frame.GetRowSpan<uint>(0).Length);
@@ -30,7 +30,7 @@ public class FrameTests
     [Fact]
     public unsafe void Audio_Props()
     {
-        var frame = new AudioFrame(SampleFormats.FloatPlanar, 48000, 2, 1024);
+        var frame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_FLTP, 48000, 2, 1024);
 
         Assert.Equal(1024, frame.Capacity);
         Assert.Equal(1024, frame.Count);
@@ -44,7 +44,7 @@ public class FrameTests
         Assert.Throws<ArgumentOutOfRangeException>(() => frame.GetSamples<float>(2));
 
         frame.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => _ = frame.Handle);
+        Assert.Throws<ObjectDisposedException>(() => _ = frame.Handle.Raw);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class FrameTests
     [Fact]
     public void SideData_Integration()
     {
-        using var frame = new VideoFrame(128, 128, PixelFormats.RGBA);
+        using var frame = new VideoFrame(128, 128, AVPixelFormat.AV_PIX_FMT_RGBA);
 
         Assert.Equal(0, frame.SideData.Count);
 

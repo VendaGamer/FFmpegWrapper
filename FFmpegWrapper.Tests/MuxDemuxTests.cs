@@ -5,7 +5,7 @@ using Containers;
 using Media;
 using Media.Packets;
 
-public unsafe class MuxDemuxTests
+public unsafe class MuxDemuxTests : TestBase
 {
     [Fact]
     public void CustomIO_Read()
@@ -96,9 +96,9 @@ public unsafe class MuxDemuxTests
 
         Assert.Equal("Test Media File"u8, demuxer.Metadata["title"u8]);
 
-        demuxer.TryFindBestStream(MediaTypes.Video, out var vs);
-        Assert.Equal(CodecIds.H264, vs.CodecPars.CodecId);
-        Assert.Equal(PixelFormats.YUV420P, vs.CodecPars.PictureFormat.PixelFormat);
+        demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var vs);
+        Assert.Equal(AVCodecID.AV_CODEC_ID_H264, vs.CodecPars.CodecId);
+        Assert.Equal(AVPixelFormat.AV_PIX_FMT_YUV420P, vs.CodecPars.PictureFormat.PixelFormat);
         Assert.Equal(320, vs.CodecPars.PictureFormat.Width);
         Assert.Equal(240, vs.CodecPars.PictureFormat.Height);
 
