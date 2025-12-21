@@ -10,14 +10,11 @@ public class BufferPool : FFObject<AVBufferPool>
     public BufferPool(nuint size, AllocateBuffer? allocFunc = null)
     {
         unsafe {
-            _alloc = NativeAlloc;
+            
+            _alloc = allocFunc is null ? av_buffer_alloc : bufSize => allocFunc(bufSize);
+            
             _handle = av_buffer_pool_init(size, (delegate* unmanaged[Cdecl]<nuint, AVBufferRef*>)
                 Marshal.GetFunctionPointerForDelegate(_alloc));
-            
-            AVBufferRef* NativeAlloc(nuint size)
-            {
-                return allocFunc(size);
-            }
         }
     }
 

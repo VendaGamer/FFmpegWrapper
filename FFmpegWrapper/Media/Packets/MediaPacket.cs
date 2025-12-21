@@ -8,6 +8,7 @@ using Streams;
 
 public class MediaPacket : FFObject<AVPacket>
 {
+    
     #region Properties
     
     /// <summary>
@@ -142,6 +143,24 @@ public class MediaPacket : FFObject<AVPacket>
         {
             av_packet_rescale_ts(Handle, sourceBase, destBase);
         }
+    }
+
+    public void SaveData(string fileName)
+    {
+#if NET7_0_OR_GREATER
+        File.WriteAllBytes(fileName, Data);
+#elif NETSTANDARD2_1_OR_GREATER
+        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+        fs.Write(Data);
+        fs.Flush();
+#else
+        unsafe {
+            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+            using var us = new UnmanagedMemoryStream(DataRaw, DataLength);
+            us.CopyTo(fs);
+        }
+        
+#endif
     }
     
     public void Clear()

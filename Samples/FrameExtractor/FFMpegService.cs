@@ -19,6 +19,7 @@ public sealed class FFMpegService
 {
     private static bool isInitialized = false;
     public static Action? Init { get; set; }
+    
     private static readonly Dictionary<AVLog, ConsoleColor> logColors = new()
     {
         { AVLog.AV_LOG_DEBUG, ConsoleColor.Cyan},
@@ -34,7 +35,7 @@ public sealed class FFMpegService
     {
         if (!isInitialized)
         {
-            if (Init != null)
+            if (Init is not null)
             {
                 Init();
                 isInitialized = true;
@@ -113,7 +114,7 @@ public sealed class FFMpegService
     /// do not use smaller than 2
     /// </assertions>
     /// <returns></returns>
-    public IReadOnlyList<AVImage> SampleImages(string pathToVideo, string fileName, byte count = 3,
+    public IReadOnlyList<AVImage> SampleImages(string pathToVideo, string fileName, string fileExtension, byte count = 3,
         TimeSpan? startEndCrop = null)
     {
         Debug.Assert(count > 1, "Please use SampleImage instead of SampleImages when sampling 1 image");
@@ -168,21 +169,22 @@ public sealed class FFMpegService
         var images = new AVImage[count];
         for (byte i = 0; i < count; i++)
         {
-            var curtime = startTime + (interval * i);
-            Console.WriteLine($"current time: {curtime}");
-            if(demuxer.Seek(curtime, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD, stream))
+            var curTime = startTime + (interval * i);
+            Console.WriteLine($"current time: {curTime}");
+            if(demuxer.Seek(curTime, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD, stream))
             {
                 decoder.Flush();
             } 
             while (demuxer.Read(packet.Handle))
             {
-                if (packet.StreamIndex != stream.Index) continue; //Ignore packets from other streams
+                if (packet.StreamIndex != stream.Index) 
+                    continue; //Ignore packets from other streams
 
                 if (decoder.TrySendPacket(packet.Handle) is LavResult.Success)
                 {
                     if (decoder.ReceiveFrame(frame.Handle))
                     {
-                        var imagePath = $"{filePath}{i}.jpg";
+                        var imagePath = $"{filePath}{i}.{fileExtension}";
                         frame.Save(imagePath, new PictureFormat(0,0, AVPixelFormat.AV_PIX_FMT_YUV420P));
                         images[i] = new AVImage(imagePath, frame.PixelFormat);
                         break;

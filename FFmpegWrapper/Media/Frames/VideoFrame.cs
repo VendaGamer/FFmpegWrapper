@@ -285,8 +285,9 @@ public sealed class VideoFrame : MediaFrame
         }
     }
     
-    public void Save(ReadOnlySpan<char> fileName, PictureFormat format)
+    public void Save(string fileName, PictureFormat format)
     {
+        var span = fileName.AsSpan();
         var extIndex = fileName.LastIndexOf('.');
         if (extIndex is -1)
             throw new ArgumentException("File name must contain an extension.", nameof(fileName));
@@ -294,17 +295,17 @@ public sealed class VideoFrame : MediaFrame
 
         // NET STANDARD BYPASS
         unsafe {
-            Span<byte> extUtf8 = stackalloc byte[Encoding.UTF8.GetMaxByteCount(fileName.Length) + 1];
-            var written = Encoding.UTF8.GetBytes(fileName.RawHandle, fileName.Length,
-                extUtf8.RawHandle,extUtf8.Length);
+            Span<byte> fileNameUtf8 = stackalloc byte[Encoding.UTF8.GetMaxByteCount(fileName.Length) + 1];
+            var written = Encoding.UTF8.GetBytes(span.RawHandle, fileName.Length,
+                fileNameUtf8.RawHandle,fileNameUtf8.Length);
 
-            var outFor = OutputFormat.FindByExtension(extUtf8.Slice(0, written + 1)); 
+            var outFor = OutputFormat.FindByExtension(fileNameUtf8.Slice(0, written + 1)); 
             
             Save(fileName, format, outFor);
         }
     }
     
-    public void Save(ReadOnlySpan<char> filename, PictureFormat format, OutputFormat outputFormat)
+    public void Save(string fileName, PictureFormat format, OutputFormat outputFormat)
     {
         if(Width <= 0 || Height <= 0)
             throw new InvalidOperationException("Frame has zero dimensions; ensure you decoded a video frame before calling Save().");
@@ -315,16 +316,29 @@ public sealed class VideoFrame : MediaFrame
         if (IsHardwareFrame) {
             using var tmp = new VideoFrame();
             TransferTo(tmp);
-            tmp.Save(filename, format, outputFormat);
+            tmp.Save(fileName, format, outputFormat);
             return;
         }
 
         MediaCodec codec = MediaCodec.GetEncoder(outputFormat.VideoCodec);
+
+        unsafe {
+            var desc = av_pix_fmt_desc_get(format.PixelFormat);
+            
+            int hasAlpha = (int)(desc->flags & (ulong)AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_ALPHA);
+            
+            format = new PictureFormat(format.Width, format.Height, 
+                avcodec_find_best_pix_fmt_of_list(codec.SupportedPixelFormats.RawHandle,
+                    this.Format.PixelFormat, hasAlpha, null)
+            );
+            
+        }
+
         
-        using var tempFrame = new VideoFrame(new PictureFormat(format.Width, format.Height, codec.SupportedPixelFormats[0]));
+        using var tempFrame = new VideoFrame(format);
         using var encoder = new VideoEncoder(codec, format, Rational.One);
         encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
-        using var sws = new SwScaler(this.Format, tempFrame.Format);
+        using var sws = new SwScaler(this.Format, format);
         
         tempFrame.Colorspace = Colorspace;
         
@@ -337,20 +351,7 @@ public sealed class VideoFrame : MediaFrame
         
         using var packet = new MediaPacket();
         encoder.ReceivePacket(packet);
-        
-#if NET9_0_OR_GREATER
-            File.WriteAllBytes(filename.ToString(), packet.Data);
-#elif NETSTANDARD2_1_OR_GREATER
-        using var fs = new FileStream(filename.ToString(), FileMode.Create, FileAccess.Write);
-        fs.Write(packet.Data);
-#else
-        unsafe {
-            using var fs = new FileStream(filename.ToString(), FileMode.Create, FileAccess.Write);
-            using var us = new UnmanagedMemoryStream(packet.DataRaw, packet.DataLength);
-            us.CopyTo(fs);
-        }
-        
-#endif
+        packet.SaveData(fileName);
     }
 
     /// <summary> Decodes a single frame from the specified image or video file. </summary>
