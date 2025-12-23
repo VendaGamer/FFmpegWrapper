@@ -17,7 +17,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
         }
     }
 
-    private readonly unsafe AVOutputFormat* _handle;
+    internal readonly unsafe AVOutputFormat* _handle;
 
     // Private constructor to ensure only valid instances are created
     public OutputFormat(FFHandle<AVOutputFormat> handle)

@@ -31,7 +31,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
     /// Hardware device types ordered by priority (first = highest priority).
     /// CUDA is preferred, followed by other high-performance options.
     /// </summary>
-    public static readonly AVHWDeviceType[] HardwareDevicePriority =
+    public static readonly IReadOnlyList<AVHWDeviceType> HardwareDevicePriority =
     [
         (AVHWDeviceType)13,                             // NVIDIA NVDEC - hardware decoder
         AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA,           // NVIDIA CUDA - best performance
@@ -63,7 +63,7 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
     /// </summary>
     private static int GetDeviceTypePriority(AVHWDeviceType deviceType)
     {
-        for (int i = 0; i < HardwareDevicePriority.Length; i++)
+        for (int i = 0; i < HardwareDevicePriority.Count; i++)
         {
             if (HardwareDevicePriority[i] == deviceType)
                 return i;
