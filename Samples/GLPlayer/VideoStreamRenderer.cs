@@ -1,8 +1,8 @@
 using System.Diagnostics;
 
-using FFmpeg.AutoGen.Abstractions;
+using FFmpegBindings.Abstractions;
+
 using FFmpegWrapper.Codecs.Decoding;
-using FFmpegWrapper.Core;
 using FFmpegWrapper.Hardware;
 using FFmpegWrapper.Media;
 using FFmpegWrapper.Media.Frames;
@@ -33,7 +33,7 @@ public class VideoStreamRenderer : StreamRenderer
 
         //Setup HW decoder
         var hwConfig = decoder.TryGetHardwareConfigs().FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
-        using var device = HardwareDevice.Create(hwConfig.DeviceType);
+        using var device = HardwareDevice.TryCreateCompatibleHardwareDevice();
 
         if (device != null) {
             decoder.SetupHardwareAccelerator(hwConfig, device);
@@ -41,7 +41,7 @@ public class VideoStreamRenderer : StreamRenderer
         decoder.Open();
 
         //https://en.wikipedia.org/wiki/Perceptual_quantizer
-        _isHDR = stream.CodecPars.ColorTrc == AVColorTransferCharacteristic.AVCOL_TRC_SMPTE2084;
+        _isHDR = stream.CodecPars.ColorCharacteristics is AVColorTransferCharacteristic.AVCOL_TRC_SMPTE2084;
 
         string shaderBasePath = AppContext.BaseDirectory + "Shaders/";
         _shader = new ShaderProgram();

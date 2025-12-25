@@ -20,12 +20,13 @@ public readonly struct CodecParameters : IFFHandleObserver<AVCodecParameters>
     
     public AVMediaType MediaType => Handle.Ref.codec_type;
 
+    public AVColorTransferCharacteristic ColorCharacteristics => Handle.Ref.color_trc;
+
     private readonly unsafe AVCodecParameters* _handle;
 
     public CodecParameters(FFHandle<AVCodecParameters> handle)
     {
-        unsafe
-        {
+        unsafe {
             _handle =  handle;
         }
     }

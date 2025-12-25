@@ -16,6 +16,16 @@
     <ItemGroup>
         <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+        <DirectPInvoke Include="avcodec-61" />
+        <DirectPInvoke Include="avdevice-61" />
+        <DirectPInvoke Include="avfilter-10" />
+        <DirectPInvoke Include="avformat-61" />
+        <DirectPInvoke Include="avutil-59" />
+        <DirectPInvoke Include="swresample-5" />
+        <DirectPInvoke Include="swscale-8" />
+    </ItemGroup>
 
     <Import Project="../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.projitems"/>
 

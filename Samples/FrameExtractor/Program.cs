@@ -1,5 +1,7 @@
 using FFmpegBindings.DynamicallyLinked;
 
+using FrameExtractor;
+
 FFmpegLinked.Init();
 
 var service = new FFMpegService();

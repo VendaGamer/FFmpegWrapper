@@ -2,6 +2,8 @@
 
 using Abstractions;
 
+using CommunityToolkit.HighPerformance;
+
 using Core;
 
 using Streams;
@@ -147,20 +149,10 @@ public class MediaPacket : FFObject<AVPacket>
 
     public void SaveData(string fileName)
     {
-#if NET7_0_OR_GREATER
-        File.WriteAllBytes(fileName, Data);
-#elif NETSTANDARD2_1_OR_GREATER
-        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-        fs.Write(Data);
-        fs.Flush();
-#else
-        unsafe {
-            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-            using var us = new UnmanagedMemoryStream(DataRaw, DataLength);
-            us.CopyTo(fs);
-        }
+        using var sfh = File.OpenWrite(fileName);
         
-#endif
+        sfh.Write(Data);
+        sfh.Flush();
     }
     
     public void Clear()

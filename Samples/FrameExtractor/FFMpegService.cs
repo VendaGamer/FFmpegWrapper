@@ -1,18 +1,17 @@
 using System.Diagnostics;
 using System.Text;
 
+using FFmpegBindings.Abstractions;
+
 using FFmpegWrapper.Codecs.Decoding;
 using FFmpegWrapper.Core;
 using FFmpegWrapper.Hardware;
 using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Formats;
 using FFmpegWrapper.Media.Frames;
 using FFmpegWrapper.Media.Packets;
 
-using FFmpegBindings.Abstractions;
-
-using FFmpegWrapper.Codecs.Encoding;
-using FFmpegWrapper.Containers;
-using FFmpegWrapper.Media.Formats;
+namespace FrameExtractor;
 
 /// <summary>
 /// Helper class for working with FFmpeg.Wrapper
@@ -135,7 +134,6 @@ public sealed class FFMpegService
         using var demuxer = new MediaDemuxer(Encoding.UTF8.GetBytes(pathToVideo));
         using var packet = new MediaPacket();
         using var frame = new VideoFrame();
-        var outputFormat = OutputFormat.FindByExtension()
 
             
         if (!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var stream))
@@ -144,7 +142,6 @@ public sealed class FFMpegService
         }
             
         using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream.Handle, false);
-        using var encoder = new VideoEncoder();
         
         if (HardwareDevice.TryCreateCompatibleHardwareDevice(
                 decoder.Codec.Ref.id, stream.CodecPars.PictureFormat,
@@ -158,7 +155,6 @@ public sealed class FFMpegService
         decoder.SetThreadCount(0, true);
         decoder.Open();
         
-        encoder.SetThreadCount(0, true);
         var startTime = stream.GetTimestamp(stream.StartTime ?? 0);
         var endTime = stream.Duration ?? TimeSpan.FromHours(2);
 
@@ -180,6 +176,7 @@ public sealed class FFMpegService
             {
                 decoder.Flush();
             } 
+            
             while (demuxer.Read(packet.Handle))
             {
                 if (packet.StreamIndex != stream.Index) 

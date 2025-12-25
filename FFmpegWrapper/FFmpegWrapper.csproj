@@ -7,7 +7,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>latest</LangVersion>
         <InvariantGlobalization>true</InvariantGlobalization>
-        <PackageId>Vencaa.FFmpeg.AutoGen.Wrapper</PackageId>
+        <PackageId>Vencaa.FFmpeg.Wrapper</PackageId>
         <Description>Mostly safe FFmpeg API wrapper based on FFmpeg.AutoGen.</Description>
         <Version>7.1.1.0-dev</Version>
         <Product>Vencaa.FFmpeg.AutoGen.Wrapper</Product>
