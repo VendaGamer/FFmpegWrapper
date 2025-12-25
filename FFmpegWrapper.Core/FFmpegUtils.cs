@@ -13,9 +13,8 @@ public static class FFmpegUtils
     
     private const int DefaultBufferSize = 1024;
     
-    // Thread-local storage for print prefix to avoid race conditions
-    [ThreadStatic]
-    private static int t_PrintPrefix = 1;
+    [ThreadStatic] 
+    private static int s_tPrintPrefix;
 
     /// <summary> Set log level and message callback. </summary>
     /// <param name="minLevel">Level of logging</param>
@@ -30,12 +29,12 @@ public static class FFmpegUtils
         
             av_log_set_level((int)minLevel);
             
-            av_log_set_callback((delegate* unmanaged[Cdecl]<void*, int, byte*, int, void>)
+            av_log_set_callback((delegate* unmanaged[Cdecl]<void*, int, byte*, void*, void>)
                 Marshal.GetFunctionPointerForDelegate(logCallback));
         
             return;
 
-            static void NativeCb(void* avcl, int level, byte* fmt, int vl)
+            static void NativeCb(void* avcl, int level, byte* fmt, void* vl)
             {
                 if (level > (int)s_MinLevel) return;
             
@@ -63,16 +62,16 @@ public static class FFmpegUtils
                 }
             }
 
-            static void ProcessLogMessage(void* avcl, int level, byte* fmt, int vl, byte[] buffer)
+            static void ProcessLogMessage(void* avcl, int level, byte* fmt, void* vl, byte[] buffer)
             {
                 int length;
             
                 fixed (byte* pBuffer = buffer)
                 {
-                    int localPrintPrefix = t_PrintPrefix;
+                    int localPrintPrefix = s_tPrintPrefix;
                     length = av_log_format_line2(avcl, level, fmt, vl, pBuffer, buffer.Length, &localPrintPrefix);
                     length = Math.Min(length, buffer.Length - 1);
-                    t_PrintPrefix = localPrintPrefix;
+                    s_tPrintPrefix = localPrintPrefix;
                 }
 
                 if (length > 0)
@@ -86,12 +85,12 @@ public static class FFmpegUtils
             }
         
             static void ProcessLogMessageStack(void* avcl, int level, byte* fmt,
-                int vl, byte* buffer, int bufferLength)
+                void* vl, byte* buffer, int bufferLength)
             {
-                int localPrintPrefix = t_PrintPrefix;
+                int localPrintPrefix = s_tPrintPrefix;
                 int length = av_log_format_line2(avcl, level, fmt, vl, buffer, bufferLength, &localPrintPrefix);
                 length = Math.Min(length, bufferLength - 1);
-                t_PrintPrefix = localPrintPrefix;
+                s_tPrintPrefix = localPrintPrefix;
 
                 if (length > 0)
                 {

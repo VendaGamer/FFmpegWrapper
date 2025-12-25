@@ -1,15 +1,28 @@
-using SkiaSharp;
+using System.Text;
 
-using FFmpeg.Wrapper;
+using FFmpegBindings.Abstractions;
+
+using FFmpegWrapper.Codecs.Encoding;
+using FFmpegWrapper.Media;
+using FFmpegWrapper.Media.Formats;
+using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.Processing;
+
+using SkiaSharp;
 
 if (args.Length < 1) {
     Console.WriteLine("Usage: SkiaInterop <output path>");
     return;
 }
-using var muxer = new MediaMuxer(args[0]);
+using var muxer = new MediaMuxer(Encoding.UTF8.GetBytes(args[0]));
 
 int frameRate = 30;
-using var encoder = new VideoEncoder(CodecIds.H264, new PictureFormat(1280, 720, PixelFormats.YUV420P), frameRate, bitrate: 1200_000);
+
+using var encoder = new VideoEncoder(
+    AVCodecID.AV_CODEC_ID_H264,
+    new PictureFormat(1280, 720, AVPixelFormat.AV_PIX_FMT_YUV420P),
+    frameRate, bitrate: 1200_000);
+
 using var frame = new VideoFrame(encoder.FrameFormat);
 
 var stream = muxer.AddStream(encoder);
@@ -17,21 +30,21 @@ muxer.Open();
 
 using var bitmap = new SKBitmap(frame.Width, frame.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
 using var canvas = new SKCanvas(bitmap);
-using var scaler = new SwScaler(new PictureFormat(bitmap.Width, bitmap.Height, PixelFormats.RGBA), frame.Format, InterpolationMode.Bilinear);
+using var scaler = new SwScaler(new PictureFormat(bitmap.Width, bitmap.Height, AVPixelFormat.AV_PIX_FMT_RGBA),
+    frame.Format, SWSFlags.SWS_BILINEAR);
 
 int numFrames = (frameRate * 10 + 1); //encode 10s of video
 for (int i = 0; i < numFrames; i++) {
     Console.Write($"Generating frame {i}/{numFrames}\r");
 
     //Draw some weird stuff
-    using var paint = new SKPaint() {
-        IsAntialias = true,
-        Color = SKColors.Black,
-        TextAlign = SKTextAlign.Right,
-        TextSize = 48
-    };
+    using var paint = new SKPaint();
+    paint.IsAntialias = true;
+    paint.Color = SKColors.Black;
     canvas.Clear(SKColors.White);
-    canvas.DrawText("Frame #" + i, bitmap.Width - 4, paint.TextSize + 4, paint);
+    var font = new SKFont(SKTypeface.Default, 14);
+    
+    canvas.DrawText("Frame #" + i, bitmap.Width,SKTextAlign.Right, font, paint);
 
     paint.ImageFilter = SKImageFilter.CreateDropShadow(2f, 2f, 4f, 4f, 0x70_000000);
 

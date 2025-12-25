@@ -11,6 +11,7 @@
         <IsPackable>false</IsPackable>
         <BaseOutputPath>../build</BaseOutputPath>
         <DefineConstants>LIBS_WINDOWS</DefineConstants>
+        <PublishAot>true</PublishAot>
     </PropertyGroup>
   
     <ItemGroup>
@@ -18,13 +19,13 @@
     </ItemGroup>
     
     <ItemGroup>
-        <DirectPInvoke Include="avcodec-61" />
-        <DirectPInvoke Include="avdevice-61" />
-        <DirectPInvoke Include="avfilter-10" />
-        <DirectPInvoke Include="avformat-61" />
-        <DirectPInvoke Include="avutil-59" />
-        <DirectPInvoke Include="swresample-5" />
-        <DirectPInvoke Include="swscale-8" />
+        <DirectPInvoke Include="Libs/avcodec-61" />
+        <DirectPInvoke Include="Libs/avdevice-61" />
+        <DirectPInvoke Include="Libs/avfilter-10" />
+        <DirectPInvoke Include="Libs/avformat-61" />
+        <DirectPInvoke Include="Libs/avutil-59" />
+        <DirectPInvoke Include="Libs/swresample-5" />
+        <DirectPInvoke Include="Libs/swscale-8" />
     </ItemGroup>
 
     <Import Project="../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.projitems"/>
