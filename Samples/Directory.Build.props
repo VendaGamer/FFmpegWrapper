@@ -10,22 +10,12 @@
         <InvariantGlobalization>true</InvariantGlobalization>
         <IsPackable>false</IsPackable>
         <BaseOutputPath>../build</BaseOutputPath>
-        <DefineConstants>LIBS_WINDOWS</DefineConstants>
+        <DefineConstants>LIBS_LINUX</DefineConstants>
         <PublishAot>true</PublishAot>
     </PropertyGroup>
   
     <ItemGroup>
         <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
-    </ItemGroup>
-    
-    <ItemGroup>
-        <DirectPInvoke Include="Libs/avcodec-61" />
-        <DirectPInvoke Include="Libs/avdevice-61" />
-        <DirectPInvoke Include="Libs/avfilter-10" />
-        <DirectPInvoke Include="Libs/avformat-61" />
-        <DirectPInvoke Include="Libs/avutil-59" />
-        <DirectPInvoke Include="Libs/swresample-5" />
-        <DirectPInvoke Include="Libs/swscale-8" />
     </ItemGroup>
 
     <Import Project="../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.projitems"/>

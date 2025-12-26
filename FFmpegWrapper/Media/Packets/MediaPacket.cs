@@ -1,10 +1,14 @@
 ﻿namespace FFmpegWrapper.Media.Packets;
 
+using System.Runtime.InteropServices;
+
 using Abstractions;
 
 using CommunityToolkit.HighPerformance;
 
 using Core;
+
+using Microsoft.Win32.SafeHandles;
 
 using Streams;
 
@@ -139,38 +143,37 @@ public class MediaPacket : FFObject<AVPacket>
     }
 
     /// <inheritdoc cref="ffmpeg.av_packet_rescale_ts(AVPacket*, AVRational, AVRational)"/>
-    public void RescaleTS(Rational sourceBase, Rational destBase)
-    {
-        unsafe
-        {
-            av_packet_rescale_ts(Handle, sourceBase, destBase);
-        }
-    }
+    public unsafe void RescaleTS(Rational sourceBase, Rational destBase)
+        => av_packet_rescale_ts(Handle, sourceBase, destBase);
 
     public void SaveData(string fileName)
     {
-        using var sfh = File.OpenWrite(fileName);
-        
-        sfh.Write(Data);
-        sfh.Flush();
+    #if NET6_0_OR_GREATER
+        using var handle = File.OpenHandle(fileName, FileMode.Create, FileAccess.Write);
+        RandomAccess.Write(handle, Data, 0);
+    #elif NETSTANDARD2_1_OR_GREATER
+        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+        fs.Write(Data);
+    #else
+        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+        unsafe {
+            using var us = new UnmanagedMemoryStream(DataRaw, DataLength);
+            us.CopyTo(fs);
+        }
+
+    #endif
     }
     
-    public void Clear()
+    public unsafe void Clear()
     {
         ThrowIfDisposed();
-        unsafe
-        {
-            av_packet_unref(_handle);
-        }
+        av_packet_unref(_handle);
     }
 
-    protected override void Free()
+    protected unsafe override void Free()
     {
-        unsafe
-        {
-            fixed (AVPacket** pkt = &_handle) {
-                av_packet_free(pkt);
-            }
+        fixed (AVPacket** pkt = &_handle) {
+            av_packet_free(pkt);
         }
     }
 }

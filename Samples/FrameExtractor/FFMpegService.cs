@@ -13,6 +13,11 @@ using FFmpegWrapper.Media.Packets;
 
 namespace FrameExtractor;
 
+using FFmpegWrapper.Codecs;
+using FFmpegWrapper.Codecs.Encoding;
+using FFmpegWrapper.Containers;
+using FFmpegWrapper.Processing;
+
 /// <summary>
 /// Helper class for working with FFmpeg.Wrapper
 /// </summary>
@@ -142,18 +147,22 @@ public sealed class FFMpegService
         }
             
         using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream.Handle, false);
-        
-        if (HardwareDevice.TryCreateCompatibleHardwareDevice(
-                decoder.Codec.Ref.id, stream.CodecPars.PictureFormat,
-                out var hwDevice,
-                out var hwConfig))
-        {
-            Console.WriteLine($"Using HW DEVICE: {hwDevice.Type}");
-            decoder.SetupHardwareAccelerator(hwConfig, hwDevice);
-        }
             
         decoder.SetThreadCount(0, true);
         decoder.Open();
+        
+        var outputFormat = OutputFormat.FindByExtension(Encoding.UTF8.GetBytes($"dummy.{fileExtension}"));
+        var outCodec = MediaCodec.GetEncoder(outputFormat.VideoCodec);
+        var outFormat = new PictureFormat(decoder.FrameFormat.Width, decoder.FrameFormat.Height,
+            outCodec.SupportedPixelFormats[0]);
+        
+        using var sws = new SwScaler(decoder.FrameFormat, outFormat);
+        using var encoder = new VideoEncoder(outCodec, outFormat, decoder.FrameRate);
+        using var encFrame = new VideoFrame(outFormat);
+        sws.SetColorspace(decoder.Colorspace, encoder.Colorspace);
+        
+        encoder.SetThreadCount(0, true);
+        encoder.Open();
         
         var startTime = stream.GetTimestamp(stream.StartTime ?? 0);
         var endTime = stream.Duration ?? TimeSpan.FromHours(2);
@@ -182,16 +191,19 @@ public sealed class FFMpegService
                 if (packet.StreamIndex != stream.Index) 
                     continue; //Ignore packets from other streams
 
-                if (decoder.TrySendPacket(packet.Handle) is LavResult.Success)
-                {
-                    if (decoder.ReceiveFrame(frame.Handle))
-                    {
-                        var imagePath = $"{filePath}{i}.{fileExtension}";
-                        frame.Save(imagePath, new PictureFormat(0,0, AVPixelFormat.AV_PIX_FMT_YUV420P));
-                        images[i] = new AVImage(imagePath, frame.PixelFormat);
-                        break;
-                    }
+                if (decoder.TrySendPacket(packet.Handle) is not LavResult.Success) {
+                    continue;
                 }
+
+                if (!decoder.ReceiveFrame(frame.Handle)) {
+                    continue;
+                }
+
+                sws.Convert(frame.Handle, encFrame.Handle);
+                encoder.SendFrame(encFrame.Handle);
+                encoder.ReceivePacket(packet);
+                packet.SaveData($"{filePath}{i}.{fileExtension}");
+                break;
 
             }
         }

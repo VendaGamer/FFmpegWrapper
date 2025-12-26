@@ -193,9 +193,6 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
             return false;
         }
     }
-
-    private const byte DOT = (byte)'.';
-    
     
     public static bool TryFindByExtension(scoped ReadOnlySpan<byte> extension, out OutputFormat outputFormat)
     {
