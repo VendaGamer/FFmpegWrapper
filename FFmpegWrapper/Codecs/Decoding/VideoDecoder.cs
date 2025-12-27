@@ -62,7 +62,7 @@ public class VideoDecoder(MediaCodec codec) : MediaDecoder(AllocContext(codec))
     }
 
     AVCodecContext.AVCodecContext_get_format? _chooseHwPixelFmt;
-
+    
     /// <summary>
     /// Before the decoder is open, setups hardware acceleration via the specified device. 
     /// If the device does not support the input format, a software decoder will be used instead.

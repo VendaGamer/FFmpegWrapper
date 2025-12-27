@@ -15,9 +15,8 @@
 
     <ItemGroup>
         <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
+        <ProjectReference Include="..\..\Bindings\FFmpegBindings.Linked\FFmpegBindings.Linked.csproj" />
     </ItemGroup>
-
-    <Import Project="../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.projitems"/>
 
 
 </Project>

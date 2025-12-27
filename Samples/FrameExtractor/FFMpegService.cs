@@ -138,7 +138,7 @@ public sealed class FFMpegService
             
         using var demuxer = new MediaDemuxer(Encoding.UTF8.GetBytes(pathToVideo));
         using var packet = new MediaPacket();
-        using var frame = new VideoFrame();
+        using var decFrame = new VideoFrame();
 
             
         if (!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var stream))
@@ -147,22 +147,28 @@ public sealed class FFMpegService
         }
             
         using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream.Handle, false);
-            
-        decoder.SetThreadCount(0, true);
-        decoder.Open();
         
         var outputFormat = OutputFormat.FindByExtension(Encoding.UTF8.GetBytes($"dummy.{fileExtension}"));
         var outCodec = MediaCodec.GetEncoder(outputFormat.VideoCodec);
-        var outFormat = new PictureFormat(decoder.FrameFormat.Width, decoder.FrameFormat.Height,
-            outCodec.SupportedPixelFormats[0]);
         
-        using var sws = new SwScaler(decoder.FrameFormat, outFormat);
+        var outFormat = new PictureFormat(decoder.Width, decoder.Height,
+            outCodec.GetBestPixelFormat(decoder.PixelFormat));
+        
+        
+        
         using var encoder = new VideoEncoder(outCodec, outFormat, decoder.FrameRate);
         using var encFrame = new VideoFrame(outFormat);
+        
+
+        using var sws = new SwScaler(decoder.FrameFormat, outFormat);
         sws.SetColorspace(decoder.Colorspace, encoder.Colorspace);
         
         encoder.SetThreadCount(0, true);
+        decoder.SetThreadCount(0, true);
+        encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
+        
         encoder.Open();
+        decoder.Open();
         
         var startTime = stream.GetTimestamp(stream.StartTime ?? 0);
         var endTime = stream.Duration ?? TimeSpan.FromHours(2);
@@ -188,18 +194,18 @@ public sealed class FFMpegService
             
             while (demuxer.Read(packet.Handle))
             {
-                if (packet.StreamIndex != stream.Index) 
+                if (packet.StreamIndex != stream.Index)
                     continue; //Ignore packets from other streams
 
                 if (decoder.TrySendPacket(packet.Handle) is not LavResult.Success) {
                     continue;
                 }
 
-                if (!decoder.ReceiveFrame(frame.Handle)) {
+                if (!decoder.ReceiveFrame(decFrame.Handle)) {
                     continue;
                 }
 
-                sws.Convert(frame.Handle, encFrame.Handle);
+                sws.Convert(decFrame.Handle, encFrame.Handle);
                 encoder.SendFrame(encFrame.Handle);
                 encoder.ReceivePacket(packet);
                 packet.SaveData($"{filePath}{i}.{fileExtension}");
