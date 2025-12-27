@@ -10,10 +10,9 @@
         <InvariantGlobalization>true</InvariantGlobalization>
         <IsPackable>false</IsPackable>
         <BaseOutputPath>../build</BaseOutputPath>
-        <DefineConstants>LIBS_LINUX</DefineConstants>
         <PublishAot>true</PublishAot>
     </PropertyGroup>
-  
+
     <ItemGroup>
         <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
     </ItemGroup>

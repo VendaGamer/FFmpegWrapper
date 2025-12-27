@@ -1,5 +1,6 @@
 ﻿using FFmpegBindings.Abstractions;
-using FFmpegBindings.DynamicallyLinked;
+using FFmpegBindings.Linked;
+
 
 FFmpegLinked.Init();
 
