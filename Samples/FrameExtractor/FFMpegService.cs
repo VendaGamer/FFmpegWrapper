@@ -159,13 +159,14 @@ public sealed class FFMpegService
         using var encoder = new VideoEncoder(outCodec, outFormat, decoder.FrameRate);
         using var encFrame = new VideoFrame(outFormat);
         
-
         using var sws = new SwScaler(decoder.FrameFormat, outFormat);
+        using var encPacket = new MediaPacket();
         sws.SetColorspace(decoder.Colorspace, encoder.Colorspace);
+        
+        encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
         
         encoder.SetThreadCount(0, true);
         decoder.SetThreadCount(0, true);
-        encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
         
         encoder.Open();
         decoder.Open();
@@ -197,18 +198,20 @@ public sealed class FFMpegService
                 if (packet.StreamIndex != stream.Index)
                     continue; //Ignore packets from other streams
 
-                if (decoder.TrySendPacket(packet.Handle) is not LavResult.Success) {
+                if (decoder.TrySendPacket(packet.Handle) is not LavResult.Success)
                     continue;
-                }
 
-                if (!decoder.ReceiveFrame(decFrame.Handle)) {
+                if (!decoder.ReceiveFrame(decFrame.Handle))
                     continue;
-                }
-
+                
                 sws.Convert(decFrame.Handle, encFrame.Handle);
                 encoder.SendFrame(encFrame.Handle);
-                encoder.ReceivePacket(packet);
-                packet.SaveData($"{filePath}{i}.{fileExtension}");
+
+                if (encoder.ReceivePacket(encPacket)) {
+                    encPacket.SaveData($"{filePath}{i}.{fileExtension}");
+                    
+                    encPacket.Clear();
+                }
                 break;
 
             }

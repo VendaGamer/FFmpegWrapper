@@ -70,7 +70,7 @@ public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
     }
 
     /// <inheritdoc cref="AVCodecContext.gop_size"/>
-    public int GopSize {
+    public int GroupOfPicturesSize {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.gop_size;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

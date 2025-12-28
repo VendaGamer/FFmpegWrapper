@@ -1,4 +1,4 @@
-using FFmpegBindings.DynamicallyLinked;
+using FFmpegBindings.Linked;
 
 using FFmpegWrapper.Codecs;
 using FFmpegWrapper.Media.Formats;

@@ -58,13 +58,14 @@ public abstract class MediaEncoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
         unsafe
         {
             var result = (LavResult)avcodec_receive_packet(Handle, pkt.Handle);
-
+            
             if (result is not (LavResult.Success or LavResult.TryAgain or LavResult.EndOfFile)) {
                 result.ThrowIfError("Could not encode packet");
             }
             return result >= 0;
         }
     }
+    
     public bool SendFrame(FFHandle<AVFrame> frame)
     {
         unsafe
