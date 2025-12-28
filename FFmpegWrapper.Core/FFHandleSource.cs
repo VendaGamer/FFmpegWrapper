@@ -21,10 +21,6 @@ public readonly struct FFHandleSource<T>
     /// <returns></returns>
     public static unsafe implicit operator T**(FFHandleSource<T> handle)
     {
-        if (handle.Raw is null) {
-            throw new ArgumentNullException(nameof(handle.Raw));
-        }
-        
         return handle.Raw;
     }
 

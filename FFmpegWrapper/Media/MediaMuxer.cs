@@ -10,7 +10,11 @@ using Streams;
 
 public sealed class MediaMuxer : FFObject<AVFormatContext>
 {
+
+    #region Properties
+
     public ReadOnlySpan<MediaStream> Streams {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -20,21 +24,24 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             }
         }
     }
-
-    /// <inheritdoc cref="AVFormatContext.metadata" />
-    public MediaDictionary Metadata;
-
-    public bool IsOpen { get; private set; } = false;
+    
     internal MediaPacket TempPacket => _tempPacket ??= new MediaPacket();
     
+    public bool IsOpen { get; private set; }
+
+    #endregion
+
+    #region Fields
+
     private readonly IFFHandleOwner<AVIOContext>? _ownedIOContext;
     
     private MediaPacket? _tempPacket;
 
-    public MediaMuxer(FFHandle<AVFormatContext> handle): base(handle)
-    {
-        
-    }
+    #endregion
+    
+    #region Constructors
+    
+    public MediaMuxer(FFHandle<AVFormatContext> handle): base(handle) { }
 
     public MediaMuxer(ReadOnlySpan<byte> filename)
     {
@@ -46,7 +53,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             }
             
             avio_open(&_handle->pb, filename.RawHandle, (int)AVIO_FLAGS.AVIO_FLAG_WRITE).CheckError("Could not open output file");
-            Metadata = new MediaDictionary(_handle->metadata);
         }
 
     }
@@ -90,8 +96,12 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             _handle = formatContext;
         }
     }
+    
+    #endregion
 
-    /// <summary> Creates and adds a new stream to the muxed file. </summary>
+    #region Methods
+
+     /// <summary> Creates and adds a new stream to the muxed file. </summary>
     /// <remarks> The <paramref name="encoder"/> must not be open before this is called. </remarks>
     public MediaStream AddStream(MediaEncoder encoder)
     {
@@ -101,10 +111,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             if (IsOpen) {
                 throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
             }
-            if (encoder.IsOpen) {
-                //This is an unfortunate limitation, but the GlobalHeader flag must be set before the encoder is open.
-                throw new InvalidOperationException("Cannot add stream with an already open encoder.");
-            }
+
 
             AVStream* stream = avformat_new_stream(_handle, encoder.Handle.Raw->codec);
             if (stream == null) {
@@ -155,18 +162,14 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             return st;
         }
     }
-
-    /// <summary> Opens all streams and writes the container header. </summary>
-    /// <remarks> This method will also open all encoders passed to <see cref="AddStream(MediaEncoder)"/>. </remarks>
-    public void Open()
-    {
-        Open(Span2D<byte>.Empty, true);
-    }
-
-    /// <inheritdoc cref="Open()" />
-    /// <param name="options">A collection of AVFormatContext and muxer-private options. </param>
-    /// <param name="ignoreUnknownOptions">When false, throws <see cref="InvalidOperationException" /> when <paramref name="options" /> contains unknown or invalid entries. </param>
-    public void Open(Span2D<byte> options, bool ignoreUnknownOptions = false)
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="options"></param>
+    /// <param name="ignoreUnknownOptions"></param>
+    /// <exception cref="InvalidOperationException"></exception>
+    public void Open(Span2D<byte> options = default, bool ignoreUnknownOptions = false)
     {
         unsafe
         {
@@ -229,7 +232,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     }
 
     /// <summary> Encodes the given frame and muxes the resulting packets to the output file. </summary>
-    public void EncodeAndWrite(MediaStream stream, MediaEncoder encoder, MediaFrame? frame)
+    public void EncodeAndWrite(MediaStream stream, MediaEncoder encoder, FFHandle<AVFrame> frame)
     {
         ThrowIfNotOpen();
 
@@ -238,8 +241,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         }
         
         _tempPacket ??= new MediaPacket();
-
-        encoder.SendFrame(frame is not null ? frame.Handle : null);
+        encoder.SendFrame(frame);
 
 
         while (encoder.ReceivePacket(_tempPacket)) {
@@ -252,6 +254,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ThrowIfNotOpen()
     {
         ThrowIfDisposed();
@@ -259,6 +262,16 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         if (!IsOpen) {
             throw new InvalidOperationException("Muxer is not open");
         }
+    }
+
+    public unsafe void WriteHeader(FFHandleSource<AVDictionary> dictionary = default)
+    {
+        avformat_write_header(Handle.Raw, dictionary);
+    }
+
+    public unsafe void WriteTrailer()
+    {
+        av_write_trailer(Handle.Raw);
     }
 
     /// <inheritdoc />
@@ -276,4 +289,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         
         _tempPacket?.Dispose();
     }
+
+    #endregion
+    
 }

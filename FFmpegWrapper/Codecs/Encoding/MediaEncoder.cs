@@ -66,11 +66,11 @@ public abstract class MediaEncoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
         }
     }
     
-    public bool SendFrame(FFHandle<AVFrame> frame)
+    public bool SendFrame(FFHandle<AVFrame> frame = default)
     {
         unsafe
         {
-            var result = (LavResult)avcodec_send_frame(Handle, frame.Raw);
+            var result = (LavResult)avcodec_send_frame(Handle.Raw, frame);
 
             if (result != LavResult.Success && result != LavResult.EndOfFile) {
                 result.ThrowIfError("Could not encode frame");

@@ -121,7 +121,7 @@ public sealed class FFMpegService
     /// </assertions>
     /// <returns></returns>
     public IReadOnlyList<AVImage> SampleImages(string pathToVideo, string fileName, string fileExtension, byte count = 3,
-        TimeSpan? startEndCrop = null)
+    TimeSpan? startEndCrop = null)
     {
         Debug.Assert(count > 1, "Please use SampleImage instead of SampleImages when sampling 1 image");
 
@@ -154,17 +154,15 @@ public sealed class FFMpegService
         var outFormat = new PictureFormat(decoder.Width, decoder.Height,
             outCodec.GetBestPixelFormat(decoder.PixelFormat));
         
-        
-        
         using var encoder = new VideoEncoder(outCodec, outFormat, decoder.FrameRate);
         using var encFrame = new VideoFrame(outFormat);
         
         using var sws = new SwScaler(decoder.FrameFormat, outFormat);
-        using var encPacket = new MediaPacket();
         sws.SetColorspace(decoder.Colorspace, encoder.Colorspace);
         
+        // Configure encoder for specific formats
         encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
-        
+        encoder.GlobalQuality = 32 * FFmpegConstants.FF_QP2LAMBDA;
         encoder.SetThreadCount(0, true);
         decoder.SetThreadCount(0, true);
         
@@ -184,10 +182,14 @@ public sealed class FFMpegService
         interval /= (count-1);
 
         var images = new AVImage[count];
+        
         for (byte i = 0; i < count; i++)
         {
             var curTime = startTime + (interval * i);
             Console.WriteLine($"current time: {curTime}");
+            
+            var outputPath = $"{filePath}{i}.{fileExtension}";
+            
             if(demuxer.Seek(curTime, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD, stream))
             {
                 decoder.Flush();
@@ -196,7 +198,7 @@ public sealed class FFMpegService
             while (demuxer.Read(packet.Handle))
             {
                 if (packet.StreamIndex != stream.Index)
-                    continue; //Ignore packets from other streams
+                    continue;
 
                 if (decoder.TrySendPacket(packet.Handle) is not LavResult.Success)
                     continue;
@@ -204,16 +206,13 @@ public sealed class FFMpegService
                 if (!decoder.ReceiveFrame(decFrame.Handle))
                     continue;
                 
+                // Convert pixel format
                 sws.Convert(decFrame.Handle, encFrame.Handle);
-                encoder.SendFrame(encFrame.Handle);
-
-                if (encoder.ReceivePacket(encPacket)) {
-                    encPacket.SaveData($"{filePath}{i}.{fileExtension}");
-                    
-                    encPacket.Clear();
-                }
+                using var muxer = new MediaMuxer(Encoding.UTF8.GetBytes(outputPath));
+                muxer.AddStream(encoder);
+                muxer.EncodeAndWrite(stream, encoder, encFrame.Handle);
+                images[i] = new AVImage(outputPath, outFormat.PixelFormat);
                 break;
-
             }
         }
             

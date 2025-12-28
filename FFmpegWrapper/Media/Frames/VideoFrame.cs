@@ -344,7 +344,7 @@ public sealed class VideoFrame : MediaFrame
         
         encoder.Open();
         
-        sws.SetColorspace(this.Colorspace, tempFrame.Colorspace);
+        sws.SetColorspace(Colorspace, tempFrame.Colorspace);
         sws.Convert(Handle, tempFrame.Handle);
         
         encoder.SendFrame(tempFrame.Handle);
@@ -389,4 +389,5 @@ public sealed class VideoFrame : MediaFrame
     }
     
     #endregion
+    
 }

@@ -110,7 +110,7 @@ public static class FFHelper
 
 
 #if !NETSTANDARD2_1_OR_GREATER
-    public static void Deconstruct<K, V>(this KeyValuePair<K, V> pair, out K key, out V val) => (key, val) = (pair.Key, pair.Value);
+    public static void Deconstruct<TKey, TVal>(this KeyValuePair<TKey, TVal> pair, out TKey key, out TVal val) => (key, val) = (pair.Key, pair.Value);
 #endif
     public static long? GetPts(long pts)
     {
