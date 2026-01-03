@@ -1,30 +1,27 @@
 namespace FFmpegWrapper;
 
 using System.Runtime.InteropServices;
-
 using Core;
 
-public class BufferPool : FFObject<AVBufferPool>
+public abstract class BufferPool : FFObject<AVBufferPool>
 {
-    private av_buffer_pool_init_alloc _alloc;
-    public BufferPool(nuint size, AllocateBuffer? allocFunc = null)
+    protected BufferPool(nuint size)
     {
         unsafe {
-            
-            _alloc = allocFunc is null ? av_buffer_alloc : bufSize => allocFunc(bufSize);
-            
-            _handle = av_buffer_pool_init(size, (delegate* unmanaged[Cdecl]<nuint, AVBufferRef*>)
-                Marshal.GetFunctionPointerForDelegate(_alloc));
+            _handle = av_buffer_pool_init(size,
+            (delegate* unmanaged[Cdecl]<nuint, AVBufferRef*>)
+                Marshal.GetFunctionPointerForDelegate(AllocateBuffer));
         }
     }
 
-    protected BufferPool(FFHandle<AVBufferPool> handle)
+    protected BufferPool(FFHandle<AVBufferPool> handle) : base(handle)
     {
-        unsafe
-        {
-            _handle = handle;
-        }
+
     }
+    
+    protected abstract FFHandle<AVBufferRef> AllocateBuffer(nuint size);
+
+
     
     protected override unsafe void Free()
     {
@@ -32,8 +29,4 @@ public class BufferPool : FFObject<AVBufferPool>
             av_buffer_pool_uninit(ptr);
         }
     }
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate AVBufferRef* av_buffer_pool_init_alloc(nuint size);
-    public delegate FFHandle<AVBufferRef> AllocateBuffer(nuint size);
 }

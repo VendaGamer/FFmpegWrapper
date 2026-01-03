@@ -1,5 +1,7 @@
 using FFmpegWrapper.Media.Formats;
 
+namespace GLPlayer;
+
 public interface IAudioSink : IDisposable
 {
     AudioFormat Format { get; }

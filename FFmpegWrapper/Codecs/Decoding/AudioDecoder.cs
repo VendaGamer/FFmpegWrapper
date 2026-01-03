@@ -30,17 +30,17 @@ public class AudioDecoder : MediaDecoder
     public AudioFormat Format => new(SampleFormat, SampleRate, ChannelLayout);
 
     public AudioDecoder(AVCodecID codecId)
-        : this(MediaCodec.GetDecoder(codecId))
+        : this(MediaCodec.GetDecoder(codecId).Handle)
     {
         
     }
 
-    public AudioDecoder(MediaCodec codec)
-        : this(AllocContext(codec))
+    public AudioDecoder(NullableFFHandle<AVCodec> codec = default)
+        : base(codec)
     {
         
     }
-
+    
     public AudioDecoder(FFHandle<AVCodecContext> ctx)
         : base(ctx)
     {

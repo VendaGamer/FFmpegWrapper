@@ -336,7 +336,7 @@ public sealed class VideoFrame : MediaFrame
 
         
         using var tempFrame = new VideoFrame(format);
-        using var encoder = new VideoEncoder(codec, format, Rational.One);
+        using var encoder = new VideoEncoder(codec.Handle, format, Rational.One);
         encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
         using var sws = new SwScaler(this.Format, format);
         
@@ -377,7 +377,7 @@ public sealed class VideoFrame : MediaFrame
         while (demuxer.Read(packet.Handle)) {
             if (packet.StreamIndex != stream.Index) continue;
 
-            decoder.SendPacket(packet);
+            decoder.SendPacket(packet.Handle);
 
             if (decoder.ReceiveFrame(frame.Handle)) {
                 return frame;

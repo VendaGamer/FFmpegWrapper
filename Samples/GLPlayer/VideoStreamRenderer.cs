@@ -12,6 +12,8 @@ using GL2O;
 
 using OpenTK.Windowing.Desktop;
 
+namespace GLPlayer;
+
 public class VideoStreamRenderer : StreamRenderer
 {
     VideoFrame _currFrame = new(), _nextFrame = new();
@@ -30,7 +32,7 @@ public class VideoStreamRenderer : StreamRenderer
         : base(demuxer, stream)
     {
         var decoder = (VideoDecoder)_decoder;
-
+        
         //Setup HW decoder
         var hwConfig = decoder.TryGetHardwareConfigs().FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
         using var device = HardwareDevice.TryCreateCompatibleHardwareDevice();

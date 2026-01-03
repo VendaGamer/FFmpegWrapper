@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 using Core;
 
-public sealed class CustomBufferPool<TUserData>
+public abstract class CustomBufferPool<TUserData>
     where TUserData : unmanaged
 {
     public readonly TUserData UserData;
@@ -27,14 +27,14 @@ public sealed class CustomBufferPool<TUserData>
                         Marshal.GetFunctionPointerForDelegate(_alloc),
                     (delegate* unmanaged[Cdecl]<void*, void>)
                         Marshal.GetFunctionPointerForDelegate(_free));
-            
 
-            unsafe AVBufferRef* NativeAlloc(void* opaque, nuint size)
+
+            AVBufferRef* NativeAlloc(void* opaque, nuint size)
             {
                 return allocFunc((TUserData*)opaque, size).Raw;
             }
-        
-            unsafe void NativeFree(void* opaque)
+
+            void NativeFree(void* opaque)
             {
                 freeUserData((TUserData*)opaque);
             }
@@ -42,5 +42,5 @@ public sealed class CustomBufferPool<TUserData>
     }
     
     public delegate FFHandle<AVBufferRef> AllocateBufferWithUserData(FFHandle<TUserData> data, nuint size);
-    public unsafe delegate void FreeUserData(FFHandle<TUserData> userData);
+    public delegate void FreeUserData(FFHandle<TUserData> userData);
 }

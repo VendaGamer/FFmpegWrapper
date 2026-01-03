@@ -2,10 +2,12 @@
 
 using System.Runtime.InteropServices;
 
+using Extensions;
+
 using Hardware;
 using Media;
 
-public class VideoDecoder(MediaCodec codec) : MediaDecoder(AllocContext(codec))
+public class VideoDecoder : MediaDecoder
 {
     public int Width {
         get {
@@ -55,40 +57,55 @@ public class VideoDecoder(MediaCodec codec) : MediaDecoder(AllocContext(codec))
         }
     }
 
-    public VideoDecoder(AVCodecID codecId)
-        : this(MediaCodec.GetDecoder(codecId))
+    public VideoDecoder(NullableFFHandle<AVCodec> ctx = default) : base(ctx)
     {
         
     }
 
-    AVCodecContext.AVCodecContext_get_format? _chooseHwPixelFmt;
+    public VideoDecoder(AVCodecID id) : base(id)
+    {
+        
+    }
+
+    public VideoDecoder(FFHandle<AVCodecContext> handle) : base(handle)
+    {
+        unsafe {
+            _handle->get_format =
+                (delegate* unmanaged[Cdecl]<AVCodecContext*, AVPixelFormat*, AVPixelFormat>)
+                Marshal.GetFunctionPointerForDelegate(GetFormatCore);
+        }
+    }
     
     /// <summary>
     /// Before the decoder is open, setups hardware acceleration via the specified device. 
     /// If the device does not support the input format, a software decoder will be used instead.
     /// </summary>
-    public void SetupHardwareAccelerator(CodecHardwareConfig config, HardwareDevice device)
+    public void SetupHardwareAccelerator(
+        CodecHardwareConfig config,
+        HardwareDevice device,
+        NullableFFHandle<AVBufferRef> hwFramePool = default)
+    {
+        ThrowIfOpen();
+        ThrowIfDisposed();
+        
+        SetHardwareContext(config, device, null);
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe AVPixelFormat GetFormatCore(
+        AVCodecContext* ctx,
+        AVPixelFormat* formats) => GetFormat(ctx,
+        FFHelper.GetSpanFromSentinelTerminatedPtr(formats,
+            AVPixelFormat.AV_PIX_FMT_NONE));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected virtual AVPixelFormat GetFormat(
+        FFHandle<AVCodecContext> ctx,
+        ReadOnlySpan<AVPixelFormat> pixelFormats)
     {
         unsafe
         {
-            ThrowIfOpen();
-            ThrowIfDisposed();
-        
-            SetHardwareContext(config, device, null);
-            //TODO: support custom decoder negotiation and hw_frames_ctx
- 
-            _chooseHwPixelFmt = (ctx, pAvailFmts) => {
-                for (var pFmt = pAvailFmts; *pFmt is not AVPixelFormat.AV_PIX_FMT_NONE; pFmt++) {
-                    if (*pFmt == config.PixelFormat) {
-                        return *pFmt;
-                    }
-                }
-                return ctx->sw_pix_fmt;
-            };
-
-            _handle->get_format = (delegate* unmanaged[Cdecl]<AVCodecContext*, AVPixelFormat*, AVPixelFormat>)
-                Marshal.GetFunctionPointerForDelegate(_chooseHwPixelFmt);
+            return avcodec_default_get_format(ctx, pixelFormats.RawHandle);
         }
     }
-    
 }

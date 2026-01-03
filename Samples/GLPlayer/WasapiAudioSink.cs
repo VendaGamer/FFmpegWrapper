@@ -1,13 +1,8 @@
-﻿using FFmpeg.Wrapper;
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 
-using Windows.Win32.Media.Audio;
-using Windows.Win32.System.Com;
-
-using FFmpegWrapper.Core;
 using FFmpegWrapper.Media.Formats;
 
-using static Windows.Win32.PInvoke;
+namespace GLPlayer;
 
 [SupportedOSPlatform("windows10.0")]
 public unsafe class WasapiAudioSink : IAudioSink

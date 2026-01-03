@@ -75,7 +75,7 @@ public readonly ref struct NullableFFHandle<T>
     public bool Equals(FFHandle<T> other)
     {
         unsafe {
-            return _handle == other._handle;
+            return _handle == other.Raw;
         }
     }
 
@@ -113,7 +113,7 @@ public readonly ref struct NullableFFHandle<T>
     {
         unsafe
         {
-            return handle._handle;
+            return handle.Raw;
         }
     }
 }

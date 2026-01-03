@@ -1,6 +1,8 @@
-using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
+using System.Text;
 
-using FFmpegWrapper.Core;
+using FFmpegBindings.Abstractions;
+using FFmpegBindings.Linked;
+
 using FFmpegWrapper.Media;
 using FFmpegWrapper.Media.Packets;
 
@@ -13,10 +15,12 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 // - Audio playback via the Windows Audio Session API 
 // - Crude A/V synchronization (video stream follows audio).
 // - HDR to SDR output (SMPTE 2084)
+namespace GLPlayer;
+
 public class PlayerWindow : NativeWindow
 {
     private MediaDemuxer _demuxer;
-    private VideoStreamRenderer _videoStream;
+    private VideoStreamRenderer? _videoStream;
     private AudioStreamRenderer _audioStream;
     private MediaPacket? _packet;
 
@@ -30,15 +34,14 @@ public class PlayerWindow : NativeWindow
                 ClientSize = Monitors.GetPrimaryMonitor().WorkArea.Size * 8 / 10
             })
     {
-        DynamicallyLoadedBindings.LibrariesPath = @"C:\ffmpeg";
-        DynamicallyLoadedBindings.Initialize();
+        FFmpegLinked.Init();
         
-        _demuxer = new MediaDemuxer(videoPath);
+        _demuxer = new MediaDemuxer(Encoding.UTF8.GetBytes(videoPath));
 
-        _demuxer.TryFindBestStream(MediaTypes.Video, out var videoStream);
+        _demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var videoStream);
         _videoStream = new VideoStreamRenderer(_demuxer, videoStream, Context);
 
-        _demuxer.TryFindBestStream(MediaTypes.Video, out var audioStream);
+        _demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var audioStream);
         _audioStream = new AudioStreamRenderer(_demuxer, audioStream!);
     }
 
@@ -85,12 +88,12 @@ public class PlayerWindow : NativeWindow
     {
         base.OnResize(e);
 
-        if (_videoStream == null) return;
+        if (_videoStream is null) return;
         var pars = _videoStream.Stream.CodecPars;
         
-        double scale = Math.Min(e.Width / (double)pars.Width, e.Height / (double)pars.Height);
-        int w = (int)Math.Round(pars.Width * scale);
-        int h = (int)Math.Round(pars.Height * scale);
+        double scale = Math.Min(e.Width / (double)pars.PictureFormat.Width, e.Height / (double)pars.PictureFormat.Height);
+        int w = (int)Math.Round(pars.PictureFormat.Width * scale);
+        int h = (int)Math.Round(pars.PictureFormat.Height * scale);
         int x = (e.Width - w) / 2;
         int y = (e.Height - h) / 2;
 
@@ -114,10 +117,10 @@ public class PlayerWindow : NativeWindow
         var newTime = _refClock.GetFrameTime() + TimeSpan.FromSeconds(secs);
         Console.WriteLine("Seek to " + newTime);
 
-        var opts = secs < 0 ? SeekOptions.Backward : SeekOptions.Forward;
+        var opts = secs < 0 ? AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD : AVSEEK_FLAGS.AVSEEK_FLAG_ANY;
 
         if (_demuxer.Seek(newTime, opts)) {
-            _videoStream.Flush();
+            _videoStream?.Flush();
             _audioStream.Flush();
             _packet = null;
         }
@@ -125,7 +128,7 @@ public class PlayerWindow : NativeWindow
 
     private void OnUnload()
     {
-        _videoStream.Dispose();
+        _videoStream?.Dispose();
         _audioStream.Dispose();
         _demuxer.Dispose();
     }

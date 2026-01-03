@@ -17,7 +17,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     {
         unsafe {
             fixed (AVDictionary** ptr = &_handle) {
-                av_dict_copy(ptr ,null,0);
+                av_dict_set(ptr,null , null,0);
             }
         }
     }
@@ -169,7 +169,6 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     public static unsafe MediaDictionaryOwner CreateFromEntries(ReadOnlySpan<Utf8KeyValue> entries, AVDictFlags flags)
     {
         AVDictionary* handle = null;
-        av_dict_copy(&handle ,null,0);
         
         foreach (var entry in entries) {
             av_dict_set(&handle, entry.Key.RawHandle, entry.Value.RawHandle, 0).CheckError();

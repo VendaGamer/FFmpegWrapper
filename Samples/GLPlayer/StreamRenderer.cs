@@ -1,25 +1,20 @@
-using System.Diagnostics;
+namespace GLPlayer;
 
+using System.Diagnostics;
 using FFmpegWrapper.Codecs.Decoding;
 using FFmpegWrapper.Media;
 using FFmpegWrapper.Media.Frames;
 using FFmpegWrapper.Media.Packets;
 using FFmpegWrapper.Media.Streams;
 
-public abstract class StreamRenderer : IDisposable
+public abstract class StreamRenderer(MediaDemuxer demuxer, MediaStream stream) : IDisposable
 {
-    public MediaStream Stream { get; }
-    protected MediaDecoder _decoder;
+    public MediaStream Stream { get; } = stream;
+    protected MediaDecoder _decoder = demuxer.CreateStreamDecoder(stream.Handle, open: false);
 
     private Queue<MediaPacket> _packetQueue = new();
     public PlayerClock Clock { get; } = new();
 
-    public StreamRenderer(MediaDemuxer demuxer, MediaStream stream)
-    {
-        Stream = stream;
-        _decoder = demuxer.CreateStreamDecoder(stream, open: false);
-    }
-    
     public bool EnqueuePacket(MediaPacket packet)
     {
         if (_packetQueue.Count < 128) {

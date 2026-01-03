@@ -235,7 +235,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         _tempPacket ??= new MediaPacket();
         encoder.SendFrame(frame);
         
-        frame.Ref.p
         while (encoder.ReceivePacket(_tempPacket)) {
             unsafe
             {

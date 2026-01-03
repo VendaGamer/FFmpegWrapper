@@ -137,7 +137,6 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     
     public unsafe MediaCodec(FFHandle<AVCodec> handle)
     {
-        handle.ThrowIfNull();
         _handle = handle;
     }
 
@@ -260,33 +259,36 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetEncoder(ReadOnlySpan<byte> name, out MediaCodec codec)
     {
         unsafe
         {
-            FFHandle<AVCodec> ptr = avcodec_find_encoder_by_name(name.RawHandle);
+            NullableFFHandle<AVCodec> handle = avcodec_find_encoder_by_name(name.RawHandle);
 
-            if (ptr.IsNull) {
+            if (handle.IsNull) {
                 codec = default;
                 return false;
             }
 
-            codec = new MediaCodec(ptr);
+            codec = new MediaCodec(handle.Handle);
             return true;
         }
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetDecoder(ReadOnlySpan<byte> name, out MediaCodec codec)
     {
         unsafe
         {
-            FFHandle<AVCodec> ptr = avcodec_find_decoder_by_name(name.RawHandle);
+            NullableFFHandle<AVCodec> handle = avcodec_find_decoder_by_name(name.RawHandle);
             
-            if (ptr.IsNull) {
+            if (handle.IsNull) {
                 codec = default;
                 return false;
             }
 
-            codec = new MediaCodec(ptr);
+            codec = new MediaCodec(handle.Handle);
             return true;
         }
     }

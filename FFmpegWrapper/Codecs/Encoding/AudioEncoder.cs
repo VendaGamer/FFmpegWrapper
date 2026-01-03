@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
-public class AudioEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
+public class AudioEncoder : MediaEncoder
 {
     public AVSampleFormat SampleFormat {
         get => Handle.Ref.sample_fmt;
@@ -56,12 +56,14 @@ public class AudioEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
     /// May be 0 when the codec has <see cref="MediaCodecCaps.VariableFrameSize"/> set, then the frame size is not restricted.
     /// </remarks>
     public int FrameSize => Handle.Ref.frame_size;
+    
+    public AudioEncoder(FFHandle<AVCodecContext> ctx) : base(ctx) { }
 
     public AudioEncoder(AVCodecID codecId, in AudioFormat format, int bitrate = 0)
-        : this(MediaCodec.GetEncoder(codecId), format, bitrate) { }
+        : this(MediaCodec.GetEncoder(codecId).Handle, format, bitrate) { }
 
-    public AudioEncoder(MediaCodec codec, in AudioFormat format, int bitrate = 0)
-        : this(AllocContext(codec))
+    public AudioEncoder(NullableFFHandle<AVCodec> codec, in AudioFormat format, int bitrate = 0)
+        : base(codec)
     {
         Format = format;
         BitRate = bitrate;

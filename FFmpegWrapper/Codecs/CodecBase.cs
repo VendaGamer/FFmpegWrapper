@@ -3,6 +3,9 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Abstractions;
+
+using Extensions;
+
 using Hardware;
 
 public abstract class CodecBase : FFObject<AVCodecContext>
@@ -77,19 +80,27 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe {
                 var raw = Handle.Raw;
-                
                 return new PacketSideDataList(&_handle->coded_side_data, &raw->nb_coded_side_data);
             }
         }
     }
-    
-    private IMemoryOwner<byte>? _extraData;
 
-    protected CodecBase(FFHandle<AVCodecContext> ctx)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected unsafe CodecBase(NullableFFHandle<AVCodec> codec = default)
+        : this(avcodec_alloc_context3(codec)) { }
+    
+    protected CodecBase(FFHandle<AVCodecContext> handle) : base(handle)
     {
-        unsafe
-        {
-            _handle = ctx;
+        unsafe {
+            ref var ctx = ref handle.Ref;
+            
+            ctx.execute =
+                (delegate* unmanaged[Cdecl]<AVCodecContext*, delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int>, void*, int*, int, int, int>)
+                Marshal.GetFunctionPointerForDelegate(Execute);
+            
+            ctx.execute2 = 
+                (delegate* unmanaged[Cdecl]<AVCodecContext*, delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int, int, int>, void*, int*, int, int>)
+                Marshal.GetFunctionPointerForDelegate(Execute2);
         }
     }
 
@@ -99,15 +110,6 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             {
                 return Handle.Ref.codec;
             }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected static FFHandle<AVCodecContext> AllocContext(MediaCodec? codec)
-    {
-        unsafe
-        {
-            return avcodec_alloc_context3(codec is not null ? codec.Value._handle : null);
         }
     }
 
@@ -154,23 +156,6 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         }
     }
 
-    protected void SetHardwareContext(CodecHardwareConfig config, HardwareDevice device, HardwareFramePool? framePool)
-    {
-        unsafe
-        {
-            if (config.Codec._handle != _handle->codec || config.DeviceType != device.Type) {
-                throw new ArgumentException("Mismatching hardware codec config.");
-            }
-        
-            _handle->hw_device_ctx = av_buffer_ref(device.Handle);
-            _handle->hw_frames_ctx = framePool == null ? null : av_buffer_ref(framePool.Handle);
-
-            if (framePool == null && (config.Methods & ~CodecHardwareMethods.FramesContext) == 0) {
-                throw new ArgumentException("Specified hardware codec config requires a frame pool to be provided.");
-            }
-        }
-    }
-
     /// <summary> Reset the decoder state / flush internal buffers. </summary>
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -202,7 +187,6 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         unsafe
         {
             ThrowIfOpen();
-            _extraData?.Dispose();
             var span = owner.Memory.Span;
             ref var handle = ref Handle.Ref; 
             
@@ -211,11 +195,29 @@ public abstract class CodecBase : FFObject<AVCodecContext>
                 handle.extradata_size = 0;
                 return;
             }
-
-            _extraData = owner;
             
             handle.extradata = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
             handle.extradata_size = span.Length;
+        }
+    }
+    
+    protected void SetHardwareContext(
+        CodecHardwareConfig config,
+        HardwareDevice device,
+        NullableFFHandle<AVBufferRef> framePool)
+    {
+        unsafe
+        {
+            if (config.Codec._handle != _handle->codec || config.DeviceType != device.Type) {
+                throw new ArgumentException("Mismatching hardware codec config.");
+            }
+        
+            _handle->hw_device_ctx = av_buffer_ref(device.Handle);
+            _handle->hw_frames_ctx = framePool == null ? null : av_buffer_ref(framePool.Handle);
+
+            if (framePool == null && (config.Methods & ~CodecHardwareMethods.FramesContext) == 0) {
+                throw new ArgumentException("Specified hardware codec config requires a frame pool to be provided.");
+            }
         }
     }
     
@@ -226,13 +228,26 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             throw new InvalidOperationException("Value must be set before the codec is open.");
     }
 
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected virtual unsafe int Execute(
+        AVCodecContext* ctx,
+        delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int> function,
+        void* arg, int* ret, int count, int size) 
+            => avcodec_default_execute(ctx, function, arg, ret, count, size);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected virtual unsafe int Execute2(
+        AVCodecContext* ctx,
+        delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int, int, int> function,
+        void* arg, int* ret, int count)
+            => avcodec_default_execute2(ctx, function, arg, ret, count);
+
     /// <inheritdoc />
     protected override void Free()
     {
         unsafe
         {
-            _extraData?.Dispose();
-            
             fixed (AVCodecContext** c = &_handle) {
                 avcodec_free_context(c);
             }

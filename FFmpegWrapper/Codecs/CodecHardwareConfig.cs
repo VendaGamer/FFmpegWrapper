@@ -1,12 +1,9 @@
 namespace FFmpegWrapper.Codecs;
 
-using System.Net.NetworkInformation;
-
 public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
 {
 
     #region Static Methods
-
     public static ImmutableArray<CodecHardwareConfig> AvailableDecoderConfigs => Utils.GetAvailableDecoderConfigs();
     public static ImmutableArray<CodecHardwareConfig> AvailableEncoderConfigs => Utils.GetAvailableDecoderConfigs();
     private static class Utils
@@ -14,6 +11,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
         private static ImmutableArray<CodecHardwareConfig> s_availableDecoderConfigs;
         private static ImmutableArray<CodecHardwareConfig> s_availableEncoderConfigs;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ImmutableArray<CodecHardwareConfig> GetAvailableDecoderConfigs()
         {
             if (s_availableDecoderConfigs.IsDefault) {
@@ -23,6 +21,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
             return s_availableDecoderConfigs;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ImmutableArray<CodecHardwareConfig> GetAvailableEncoderConfigs()
         {
             if (s_availableEncoderConfigs.IsDefault) {
@@ -61,47 +60,38 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
         }
     }
     
-
-    /// <summary>
-    /// Returns a list of all hardware decoder configurations that may or may not be supported on this machine.
-    /// </summary>
-    /// <param name="codecId">
-    /// If specified, only configurations for that codec will be returned.
-    /// </param>
-    /// <param name="deviceType">
-    /// If specified, only configurations for that device type will be returned.
-    /// </param>
-    public static IReadOnlyList<CodecHardwareConfig> GetHardwareConfigs(
-        AVCodecID? codecId = null,
-        AVHWDeviceType? deviceType = null)
+    public static ReadOnlySpan<CodecHardwareConfig> GetAvailableConfigsFor(FFHandle<AVCodec> codec)
     {
+        codec.ThrowIfNull();
+        
         unsafe {
-            var configs = new List<CodecHardwareConfig>();
-            void* iterState = null;
-            AVCodec* codec;
+            ImmutableArray<CodecHardwareConfig> configs = 
+                av_codec_is_decoder(codec) is 0 ?
+                Utils.GetAvailableEncoderConfigs() :
+                Utils.GetAvailableDecoderConfigs();
 
-            while ((codec = av_codec_iterate(&iterState)) != null) {
-                if ((codecId != null && codec->id != codecId) ||
-                    av_codec_is_decoder(codec) == 0)
-                    continue;
-
-
-
-                int i = 0;
-                AVCodecHWConfig* configPtr;
-
-                while ((configPtr = avcodec_get_hw_config(codec, i++)) != null) {
-                    const int reqMethods =
-                        (int)(CodecHardwareMethods.DeviceContext | CodecHardwareMethods.FramesContext);
-
-                    if ((configPtr->methods & reqMethods) != 0 &&
-                        (deviceType == null || configPtr->device_type == deviceType)) {
-                        configs.Add(new CodecHardwareConfig(new MediaCodec(codec),configPtr));
-                    }
+            int startIndex = -1;
+            
+            for (int i = 0; i < configs.Length; i++) {
+                if (configs[i].Codec._handle == codec) {
+                    startIndex = i;
+                    break;
                 }
             }
+            
+            if(startIndex is -1)
+                return ReadOnlySpan<CodecHardwareConfig>.Empty;
 
-            return configs;
+            int endIndex = startIndex;
+            
+            for (int i = startIndex+1; i < configs.Length; i++) {
+                if (configs[i].Codec._handle != codec) {
+                    endIndex = i;
+                    break;
+                }
+            }
+            
+            return configs.AsSpan(startIndex, endIndex - startIndex);
         }
     }
 
@@ -117,8 +107,6 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
             }
         }
     }
-
-    public readonly MediaCodec Codec;
     public AVHWDeviceType DeviceType {
         get {
             unsafe
@@ -147,14 +135,22 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
     }
     
     private readonly unsafe AVCodecHWConfig* _handle;
+    public readonly MediaCodec Codec;
 
-    private unsafe CodecHardwareConfig(MediaCodec codec, FFHandle<AVCodecHWConfig> config)
+
+    public CodecHardwareConfig(FFHandle<AVCodec> handle, FFHandle<AVCodecHWConfig> config)
+        : this(new MediaCodec(handle), config) { }
+    
+    public CodecHardwareConfig(MediaCodec codec, FFHandle<AVCodecHWConfig> config)
     {
         Codec = codec;
-        _handle = config;
+        unsafe {
+            _handle = config;
+        }
     }
+    
     public override string ToString()
     {
-        return $"{Codec.Name} | {DeviceType} | {PixelFormat} | Methods: {Methods} | {(Codec.IsDecoder ? "Decoder" : "Encoder")}";
+        return $"{DeviceType} | {PixelFormat} | Methods: {Methods}";
     }
 }

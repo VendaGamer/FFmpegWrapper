@@ -4,7 +4,7 @@ using Hardware;
 
 using Media;
 
-public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
+public class VideoEncoder : MediaEncoder
 {
     public int Width {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -84,7 +84,9 @@ public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
     }
     /// <inheritdoc cref="AVCodecContext.max_b_frames"/>
     public int MaxBFrames {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.max_b_frames;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             
@@ -93,7 +95,9 @@ public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
     }
 
     public int MinQuantizer {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.qmin;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             
@@ -101,7 +105,9 @@ public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
         }
     }
     public int MaxQuantizer {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.qmax;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             
@@ -109,11 +115,16 @@ public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
         }
     }
 
-    public VideoEncoder(AVCodecID codecId, in PictureFormat format, Rational frameRate, int bitrate = 0)
-        : this(MediaCodec.GetEncoder(codecId), format, frameRate, bitrate) { }
+    public VideoEncoder(FFHandle<AVCodecContext> ctx) : base(ctx)
+    {
+        
+    }
 
-    public unsafe VideoEncoder(MediaCodec codec, in PictureFormat format, Rational frameRate, int bitrate = 0)
-        : this(AllocContext(codec))
+    public VideoEncoder(AVCodecID codecId, in PictureFormat format, Rational frameRate, int bitrate = 0)
+        : this(MediaCodec.GetEncoder(codecId).Handle, format, frameRate, bitrate) { }
+
+    public unsafe VideoEncoder(NullableFFHandle<AVCodec> codec, in PictureFormat format, Rational frameRate, int bitrate = 0)
+        : base(codec)
     {
         FrameFormat = format;
         FrameRate = frameRate;
@@ -122,8 +133,13 @@ public class VideoEncoder(FFHandle<AVCodecContext> ctx) : MediaEncoder(ctx)
         BitRate = bitrate;
     }
 
-    public VideoEncoder(CodecHardwareConfig config, in PictureFormat format, Rational frameRate, HardwareDevice device, HardwareFramePool? framePool = null)
-        : this(config.Codec, in format, frameRate)
+    public VideoEncoder(
+        CodecHardwareConfig config,
+        in PictureFormat format,
+        Rational frameRate,
+        HardwareDevice device,
+        NullableFFHandle<AVBufferRef> framePool = default)
+        : this(config.Codec.Handle, in format, frameRate)
     {
         SetHardwareContext(config, device, framePool);
     }

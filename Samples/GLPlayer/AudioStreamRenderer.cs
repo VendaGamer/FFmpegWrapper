@@ -5,6 +5,8 @@ using FFmpegWrapper.Media.Frames;
 using FFmpegWrapper.Media.Streams;
 using FFmpegWrapper.Processing;
 
+namespace GLPlayer;
+
 public class AudioStreamRenderer : StreamRenderer
 {
     private SwResampler _resampler;

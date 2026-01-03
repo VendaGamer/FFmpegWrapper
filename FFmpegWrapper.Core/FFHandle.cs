@@ -1,7 +1,5 @@
 namespace FFmpegWrapper.Core;
 
-using System.Numerics;
-
 /// <summary>
 /// TODO: Comment
 /// </summary>
@@ -13,61 +11,39 @@ public readonly ref struct FFHandle<T>
     where T : unmanaged
 {
     /// <summary>
-    /// 
+    /// Reinterprets the <see langword="T*"/> to <see langword="ref"/> <see cref="T"/>
     /// </summary>
-    /// <exception cref="ObjectDisposedException">Thrown if handle is null</exception>
-    public unsafe T* Raw {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            ThrowIfNull();
-            
-            return _handle;
-        }
-    }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <exception cref="ObjectDisposedException">Thrown if handle is null</exception>
     public ref T Ref
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
             unsafe {
-                ThrowIfNull();
-                
                 return ref Unsafe.AsRef<T>(Raw);
             }
         }
     }
 
-    public bool IsNull {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get {
-            unsafe {
-                return _handle is null;
-            }
-        }
-    }
-
-    internal unsafe readonly T* _handle;
+    public unsafe readonly T* Raw;
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public FFHandle(ref T handle)
     {
+        if(Unsafe.IsNullRef(ref handle))
+            throw new ArgumentNullException(nameof(handle));
+        
         unsafe {
-            _handle = (T*) Unsafe.AsPointer(ref handle);
+            Raw = (T*) Unsafe.AsPointer(ref handle);
         }
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="raw"></param>
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe FFHandle(T* raw)
     {
-        _handle = raw;
+        if(raw is null)
+            throw new ArgumentNullException(nameof(raw));
+        
+        Raw = raw;
     }
     
     /// <summary>
@@ -76,18 +52,15 @@ public readonly ref struct FFHandle<T>
     /// <param name="handle"></param>
     /// <returns></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe implicit operator T*(FFHandle<T> handle) => handle._handle;
+    public static unsafe implicit operator T*(FFHandle<T> handle) => handle.Raw;
 
     /// <summary>
     /// Casts a raw pointer to <see cref="FFHandle{T}"/>
     /// </summary>
-    public static unsafe implicit operator FFHandle<T>(T* handle)
-    {
-        return new FFHandle<T>(handle);
-    }
+    public static unsafe implicit operator FFHandle<T>(T* handle) => new(handle);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public unsafe bool Equals(FFHandle<T> other) => _handle == other._handle;
+    public unsafe bool Equals(FFHandle<T> other) => Raw == other.Raw;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator == (FFHandle<T> a, FFHandle<T> b) => a.Equals(b);
@@ -95,15 +68,14 @@ public readonly ref struct FFHandle<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator != (FFHandle<T> a, FFHandle<T> b) => !a.Equals(b);
 
-
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override unsafe int GetHashCode() => ((nint)_handle).GetHashCode();
+    public override unsafe int GetHashCode() => ((nint)Raw).GetHashCode();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ThrowIfNull()
+    public unsafe void ThrowIfNull()
     {
-        if (IsNull) {
+        if (Raw is null) {
             throw new ObjectDisposedException($"Underlying ffmpeg object {typeof(T).Name} has been disposed.");
         }
     }

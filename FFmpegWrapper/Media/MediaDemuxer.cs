@@ -3,11 +3,7 @@
 using Abstractions;
 using Codecs;
 using Codecs.Decoding;
-
-using CommunityToolkit.HighPerformance;
-
 using Extensions;
-
 using Streams;
 
 public class MediaDemuxer : FFObject<AVFormatContext>
@@ -65,7 +61,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <param name="url">URL to be opened for demuxing</param>
     /// <param name="options"> A dictionary filled with AVFormatContext and demuxer-private options. </param>
     public MediaDemuxer(ReadOnlySpan<byte> url, ReadOnlySpan<Utf8KeyValue> options)
-        : this(CreateContext(url, null, options)) { }
+        : this(CreateContext(options, url, null)) { }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
     /// <param name="ctx"></param>
@@ -77,26 +73,34 @@ public class MediaDemuxer : FFObject<AVFormatContext>
             Metadata = new MediaDictionaryOwner(_handle->metadata);
         }
     }
+
+    private static unsafe FFHandle<AVFormatContext> CreateContext(
+        ReadOnlySpan<Utf8KeyValue> options,
+        ReadOnlySpan<byte> url = default,
+        FFHandle<AVIOContext> pb = default)
+    {
+        if (options.IsEmpty)
+            return CreateContext(url, pb);
+        
+        return CreateContext(url, pb, MediaDictionaryOwner.CreateFromEntries(options).Handle);
+    }
     
-    private static unsafe FFHandle<AVFormatContext> CreateContext(ReadOnlySpan<byte> url = default, FFHandle<AVIOContext> pb = default, ReadOnlySpan<Utf8KeyValue> options = default)
+    private static unsafe FFHandle<AVFormatContext> CreateContext(
+        ReadOnlySpan<byte> url = default,
+        FFHandle<AVIOContext> pb = default,
+        NullableFFHandle<AVDictionary> options = default)
     {
         AVFormatContext* ctx = avformat_alloc_context();
         if (ctx == null) {
             throw new OutOfMemoryException("Could not allocate demuxer.");
         }
-
+        
         ctx->pb = pb;
+        AVDictionary* dict = options;
         
-        using var opts = MediaDictionaryOwner.CreateFromEntries(options);
-        
-        avformat_open_input(&ctx, url.RawHandle, null, opts).CheckError("Could not open input");
-        
-        if (av_dict_count(opts) > 0) {
-            //TODO
-            throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '')");
-        }
-
+        avformat_open_input(&ctx, url.RawHandle, null, &dict).CheckError("Could not open input");
         avformat_find_stream_info(ctx, null).CheckError("Could not find stream information");
+        av_dict_free(&dict);
         return ctx;
     }
 

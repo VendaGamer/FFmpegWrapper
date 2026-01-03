@@ -1,10 +1,61 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
+using System.Buffers;
 using Extensions;
+using Hardware;
 
-public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx)
+public abstract class MediaDecoder : CodecBase
 {
-    public void SendPacket(MediaPacket? packet)
+    public IMemoryOwner<byte>? ExtraData {
+        protected get;
+        set {
+            unsafe {
+                var handle = Handle.Raw;
+                field?.Dispose();
+                
+                if (value is null) {
+                    handle->extradata = null;
+                    handle->extradata_size = 0;
+                    return;
+                }
+
+                field = value;
+                var span = value.Memory.Span;
+                handle->extradata = span.RawHandle;
+                handle->extradata_size = span.Length;
+            }
+        }
+    }
+    #region Constructors
+
+    protected MediaDecoder(FFHandle<AVCodecContext> ctx) : base(ctx)
+    {
+        unsafe {
+            if (av_codec_is_decoder(ctx.Raw->codec) is 0)
+                throw new ArgumentException("Codec is not a decoder");
+        }
+    }
+    
+    protected MediaDecoder(NullableFFHandle<AVCodec> codec = default) : base(codec)
+    {
+        unsafe {
+            if (codec.IsNull)
+                return;
+            if (av_codec_is_decoder(codec) is 0)
+                throw new ArgumentException("Codec is not a decoder");
+        }
+    }
+
+    protected MediaDecoder(AVCodecID codecId)
+        : this(MediaCodec.GetDecoder(codecId).Handle)
+    {
+        
+    }
+
+    #endregion
+
+    
+    public void SendPacket(NullableFFHandle<AVPacket> packet)
     {
         unsafe
         {
@@ -24,7 +75,7 @@ public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
     }
 
     /// <inheritdoc cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
-    public LavResult TrySendPacket(FFHandle<AVPacket> handle)
+    public LavResult TrySendPacket(NullableFFHandle<AVPacket> handle)
     {
         unsafe
         {
@@ -49,42 +100,10 @@ public abstract class MediaDecoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
         }
     }
     
-    /// <summary>
-    /// Batch processing method for improved throughput
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int ProcessPackets(ReadOnlySpan<MediaPacket> packets, Span<MediaFrame> frames)
-    {
-        int framesDecoded = 0;
-        
-        foreach (var packet in packets) {
-            unsafe
-            {
-                var sendResult = avcodec_send_packet(_handle, packet.Handle);
-                if (sendResult is not 0 && sendResult is not -11) {
-                    ((LavResult)sendResult).ThrowIfError("Could not send packet");
-                    continue;
-                }
 
-                // Try to receive multiple frames from this packet
-                for (int i = framesDecoded; i < frames.Length; i++) {
-                    var receiveResult = avcodec_receive_frame(_handle, frames[i].Handle);
-                
-                    if (receiveResult == 0) {
-                        framesDecoded++;
-                    } else if (receiveResult is -11) {
-                        break; // Need more input
-                    } else if (receiveResult is (int)AVError.AVERROR_EOF) {
-                        return framesDecoded; // End of stream
-                    } else {
-                        ((LavResult)receiveResult).ThrowIfError("Could not receive frame");
-                        break;
-                    }
-                }
-            }
-        }
-        
-        return framesDecoded;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected override void FreeManaged()
+    {
+        ExtraData?.Dispose();
     }
-    
 }

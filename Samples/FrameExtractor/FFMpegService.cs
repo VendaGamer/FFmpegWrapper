@@ -154,7 +154,7 @@ public sealed class FFMpegService
         var outFormat = new PictureFormat(decoder.Width, decoder.Height,
             outCodec.GetBestPixelFormat(decoder.PixelFormat));
         
-        using var encoder = new VideoEncoder(outCodec, outFormat, decoder.FrameRate);
+        using var encoder = new VideoEncoder(outCodec.Handle, outFormat, decoder.FrameRate);
         using var encFrame = new VideoFrame(outFormat);
         
         using var sws = new SwScaler(decoder.FrameFormat, outFormat);

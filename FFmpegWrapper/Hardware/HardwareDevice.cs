@@ -89,31 +89,38 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
         out CodecHardwareConfig codecConfig)
     {
         // Get all available hardware configurations for the specified codec just once.
-        var availableConfigs = CodecHardwareConfig.GetHardwareConfigs(codecId);
+        var availableConfigs = 
+            CodecHardwareConfig.GetAvailableConfigsFor(
+                MediaCodec.GetDecoder(codecId).Handle
+                );
         
         // Iterate through our priority list, from highest to lowest priority.
         foreach (var preferredDeviceType in HardwareDevicePriority)
         {
-            // Find the first available config that matches the current priority level.
-            var config = availableConfigs.FirstOrDefault(c => c.DeviceType == preferredDeviceType);
+            foreach (var config in availableConfigs) {
+                if (config.DeviceType != preferredDeviceType) {
+                    continue;
+                }
 
-            if (config.Handle.IsNull) {
-                continue;
-            }
-            // Attempt to create the hardware device. A 'using' block ensures it's disposed if not returned.
-            if (!TryCreate(config.DeviceType, out var hardwareDevice))
-            {
-                continue;
-            }
+                if (!TryCreate(config.DeviceType, out var hardwareDevice))
+                {
+                    continue;
+                }
             
-            // Check if the device can handle the target format.
-            if (hardwareDevice.FrameConstraints == null ||
-                hardwareDevice.FrameConstraints.IsValidFormat(targetFormat))
-            {
-                codecConfig = config;
-                device = hardwareDevice;
-                return true;
+                // Check if the device can handle the target format.
+                if (hardwareDevice.FrameConstraints == null ||
+                    hardwareDevice.FrameConstraints.IsValidFormat(targetFormat))
+                {
+                    codecConfig = config;
+                    device = hardwareDevice;
+                    return true;
+                }
+
+                break;
             }
+
+            
+            
         }
 
         // No suitable device was found after checking all priorities.
@@ -148,7 +155,6 @@ public sealed class HardwareDevice : FFObject<AVBufferRef>
         if (desc is not null) {
             FrameConstraints = new HardwareFrameConstraints(desc);
         }
-
     }
 
     /// <summary> Open a device of the specified type and create a context for it. </summary>

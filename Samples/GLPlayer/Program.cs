@@ -1,3 +1,5 @@
+using GLPlayer;
+
 if (args.Length < 1) {
     Console.WriteLine("Usage: GLPlayer <input video path>");
     return;

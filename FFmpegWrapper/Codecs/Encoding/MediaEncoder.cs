@@ -2,9 +2,7 @@
 
 using Extensions;
 
-using Media;
-
-public abstract class MediaEncoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx)
+public abstract class MediaEncoder : CodecBase
 {
 
     /// <inheritdoc cref="AVCodecContext.bit_rate" />
@@ -52,6 +50,26 @@ public abstract class MediaEncoder(FFHandle<AVCodecContext> ctx) : CodecBase(ctx
             av_opt_set(Handle, name.RawHandle, value.RawHandle, 0).CheckError();
         }
     }
+
+    #region Constructors
+
+    protected MediaEncoder(FFHandle<AVCodecContext> ctx) : base(ctx)
+    {
+
+    }
+
+    protected MediaEncoder(NullableFFHandle<AVCodec> codec = default) : base(codec)
+    {
+        unsafe {
+            if (codec.IsNull)
+                return;
+            if (av_codec_is_encoder(codec) is 0)
+                throw new ArgumentException("Codec is not a encoder");
+        }
+    }
+
+    #endregion
+    
 
     public bool ReceivePacket(MediaPacket pkt)
     {

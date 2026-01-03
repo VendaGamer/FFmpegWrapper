@@ -20,6 +20,10 @@ public readonly struct AudioFormat : IEquatable<AudioFormat>
         SampleRate = sampleRate;
         Layout = ChannelLayout.GetDefault(numChannels);
     }
+
+    public AudioFormat(AVSampleFormat sampleFmt, int sampleRate, AVChannelLayout channelLayout)
+        : this(sampleFmt, sampleRate, new ChannelLayout(channelLayout)) { }
+    
     public AudioFormat(AVSampleFormat sampleFmt, int sampleRate, ChannelLayout channelLayout)
     {
         SampleFormat = sampleFmt;

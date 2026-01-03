@@ -52,7 +52,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     {
         unsafe
         {
-            if(handle.IsNull)
+            if(handle.Raw is null)
                 throw new ArgumentNullException(nameof(handle));
         
             _handle = handle;
