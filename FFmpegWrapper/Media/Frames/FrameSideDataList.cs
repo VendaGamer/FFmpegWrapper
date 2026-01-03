@@ -133,11 +133,11 @@ public readonly struct FrameSideData(FFHandle<AVFrameSideData> handle)
         }
     }
 
-    public MediaDictionary Metadata {
+    public MediaDictionaryOwner Metadata {
         get {
             unsafe
             {
-                return new MediaDictionary(Handle.Ref.metadata);
+                return new MediaDictionaryOwner(Handle.Ref.metadata);
             }
         }
     }

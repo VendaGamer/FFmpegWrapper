@@ -32,11 +32,11 @@ public readonly struct MediaStream
     /// <inheritdoc cref="AVStream.r_frame_rate" />
     public Rational RealFrameRate => Handle.Ref.r_frame_rate;
 
-    public MediaDictionary Metadata {
+    public MediaDictionaryOwner Metadata {
         get {
             unsafe
             {
-                return new MediaDictionary(Handle.Raw->metadata);
+                return new MediaDictionaryOwner(Handle.Raw->metadata);
             }
         }
     }

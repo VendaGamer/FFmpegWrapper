@@ -1,9 +1,7 @@
 ﻿using System.Diagnostics;
-
-using FFmpeg.AutoGen.Abstractions;
+using FFmpegBindings.Abstractions;
 using FFmpegWrapper.Codecs.Decoding;
 using FFmpegWrapper.Codecs.Encoding;
-using FFmpegWrapper.Core;
 using FFmpegWrapper.Filtering;
 using FFmpegWrapper.Media;
 using FFmpegWrapper.Media.Frames;

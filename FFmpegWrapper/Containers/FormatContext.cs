@@ -32,11 +32,11 @@ public abstract class FormatContext : FFObject<AVFormatContext>
         }
     }
 
-    public MediaDictionary metadata {
+    public MediaDictionaryOwner metadata {
         get {
             unsafe
             {
-                return new MediaDictionary(Handle.Ref.metadata);
+                return new MediaDictionaryOwner(Handle.Ref.metadata);
             }
         }
     }

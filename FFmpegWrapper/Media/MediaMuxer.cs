@@ -2,9 +2,7 @@
 
 using Abstractions;
 using Codecs.Encoding;
-
 using CommunityToolkit.HighPerformance;
-
 using Extensions;
 using Streams;
 
@@ -158,7 +156,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             stream->time_base = srcStream.TimeBase;
 
             var st = new MediaStream(stream);
-            
             return st;
         }
     }
@@ -169,7 +166,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <param name="options"></param>
     /// <param name="ignoreUnknownOptions"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public void Open(Span2D<byte> options = default, bool ignoreUnknownOptions = false)
+    public void Open(ReadOnlySpan<Utf8KeyValue> options = default, bool ignoreUnknownOptions = false)
     {
         unsafe
         {
@@ -183,23 +180,24 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
                 //     .CheckError("Could not copy the encoder parameters to the stream.");
                 
             }
+            
+            var opts = MediaDictionaryOwner.CreateFromEntries(options);
 
-            AVDictionary* rawOpts = null;
-            MediaDictionary.Populate(&rawOpts, options);
-
-            avformat_write_header(_handle, &rawOpts).CheckError("Could not write header to output file");
+            avformat_write_header(_handle, (FFHandleSource<AVDictionary>)opts)
+                .CheckError("Could not write header to output file");
 
             try {
-                if (!ignoreUnknownOptions && av_dict_count(rawOpts) > 0) {
-                    string invalidKeys = string.Join("', '", new MediaDictionary(rawOpts));
+                if (!ignoreUnknownOptions && av_dict_count(opts) > 0) {
+                    string invalidKeys = string.Join("', '", new MediaDictionaryOwner(opts));
                     throw new InvalidOperationException($"Unknown or invalid muxer options (keys: '{invalidKeys}')");
                 }
             } finally {
-                av_dict_free(&rawOpts);
+                av_dict_free(opts);
             }
             IsOpen = true;
         }
     }
+    
 
     /// <summary> Muxes the given packet to the output file, ensuring correct interleaving. </summary>
     /// <remarks>
@@ -234,16 +232,10 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <summary> Encodes the given frame and muxes the resulting packets to the output file. </summary>
     public void EncodeAndWrite(MediaStream stream, MediaEncoder encoder, FFHandle<AVFrame> frame)
     {
-        ThrowIfNotOpen();
-
-        if (Streams[stream.Index].Handle != stream.Handle) {
-            throw new ArgumentException("Specified stream is not owned by the muxer.");
-        }
-        
         _tempPacket ??= new MediaPacket();
         encoder.SendFrame(frame);
-
-
+        
+        frame.Ref.p
         while (encoder.ReceivePacket(_tempPacket)) {
             unsafe
             {
@@ -264,9 +256,10 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         }
     }
 
-    public unsafe void WriteHeader(FFHandleSource<AVDictionary> dictionary = default)
+    public unsafe void WriteHeader(NullableFFHandle<AVDictionary> options = default)
     {
-        avformat_write_header(Handle.Raw, dictionary);
+        AVDictionary* opt = options;
+        avformat_write_header(Handle.Raw, &opt);
     }
 
     public unsafe void WriteTrailer()

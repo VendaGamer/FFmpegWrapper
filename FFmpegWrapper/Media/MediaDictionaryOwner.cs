@@ -1,21 +1,19 @@
 namespace FFmpegWrapper.Media;
 
 using System.Collections;
+using System.Text;
 using Abstractions;
-
-using CommunityToolkit.HighPerformance;
-
 using Extensions;
 
 /// <summary>
-/// Efficient wrapper for AVDictionary with minimal overhead operations
+/// Efficient wrapper for <see cref="AVDictionary"/>, providing convenient methods for dictionary manipulation.
 /// </summary>
-public sealed class MediaDictionary : FFObject<AVDictionary>
+public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<Utf8KeyValue>
 {
     /// <summary>
     /// Creates a new owned MediaDictionary
     /// </summary>
-    public MediaDictionary()
+    public MediaDictionaryOwner()
     {
         unsafe {
             fixed (AVDictionary** ptr = &_handle) {
@@ -27,13 +25,16 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
     /// <summary>
     /// Wraps an existing AVDictionary pointer (takes ownership of the pointer)
     /// </summary>
-    public MediaDictionary(FFHandle<AVDictionary> target)
+    public MediaDictionaryOwner(FFHandle<AVDictionary> target)
     {
         unsafe
         {
             _handle = target;
         }
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ObservedMediaDictionary ToObserved() => new(this);
 
     /// <summary>
     /// Gets the number of entries in the dictionary
@@ -79,6 +80,19 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
         }
     }
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public long SetIntValue(ReadOnlySpan<byte> key, long value,
+        AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE)
+    {
+        unsafe
+        {
+            fixed(AVDictionary** ptr = &_handle)
+                av_dict_set_int(ptr, key.RawHandle, value, (int)flags).CheckError();
+            return value;
+        }
+    }
+
     /// <summary>
     /// Tries to get a value, returning false if the key doesn't exist
     /// </summary>
@@ -91,35 +105,17 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
     /// <summary>
     /// Sets the value associated with the given key, overwriting it if necessary.
     /// </summary>
-    public void SetValue(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value, AVDictFlags flags = 0)
+    public void SetValue(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value,
+        AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE |
+                            AVDictFlags.AV_DICT_DONT_STRDUP_VAL |
+                            AVDictFlags.AV_DICT_DONT_STRDUP_KEY)
     {
         unsafe
         {
             fixed (AVDictionary** ptr = &_handle) {
                 av_dict_set(ptr, key.RawHandle, value.RawHandle, (int)flags).CheckError();
-                av_dict_copy(ptr, null, (int)flags).CheckError();
             }
         }
-    }
-
-    /// <summary>
-    /// Removes a key from the dictionary
-    /// </summary>
-    public bool Remove(ReadOnlySpan<byte> key, AVDictFlags flags = 0)
-    {
-        bool existed = ContainsKey(key);
-        if (existed)
-        {
-            unsafe
-            {
-                fixed(AVDictionary** ptr = &_handle)
-                {
-                    av_dict_set(ptr, key.RawHandle, null, (int)flags).CheckError();
-                }
-                base._handle = _handle;
-            }
-        }
-        return existed;
     }
 
     /// <summary>
@@ -133,47 +129,76 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
                 av_dict_free(ptr);
                 av_dict_copy(ptr, null, 0);
             }
-            base._handle = _handle; // Should be null after free
         }
     }
-
-    /// <summary>
-    /// Efficiently populates a dictionary from key-value pairs
-    /// </summary>
-    public static void Populate(FFHandleSource<AVDictionary> dict, Span2D<byte> options)
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe MediaDictionaryOwner CreateFromUtf8String(
+        ReadOnlySpan<byte> factoryString, ReadOnlySpan<byte> keyValueSeparator,
+        ReadOnlySpan<byte> pairSeparator, AVDictFlags flags = 0)
     {
-        if (options.IsEmpty) return;
+        AVDictionary* handle = null;
+        var res = av_dict_parse_string(&handle, factoryString.RawHandle,
+            keyValueSeparator.RawHandle, pairSeparator.RawHandle,
+            (int)flags);
 
+        if (res < 0) {
+            if(handle is not null)
+                av_dict_free(&handle);
+            
+            throw new ArgumentException($"Failed to parse dictionary: {res}");
+        }
+        
+        return new MediaDictionaryOwner(handle);
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe MediaDictionaryOwner CreateCopyOf(FFHandle<AVDictionary> source)
+    {
+        AVDictionary* handle = null;
+        av_dict_copy(&handle ,source,0).CheckError();
+        
+        return new MediaDictionaryOwner(handle);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static MediaDictionaryOwner CreateFromEntries(params ReadOnlySpan<Utf8KeyValue> entries)
+        => CreateFromEntries(entries, 0);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe MediaDictionaryOwner CreateFromEntries(ReadOnlySpan<Utf8KeyValue> entries, AVDictFlags flags)
+    {
+        AVDictionary* handle = null;
+        av_dict_copy(&handle ,null,0);
+        
+        foreach (var entry in entries) {
+            av_dict_set(&handle, entry.Key.RawHandle, entry.Value.RawHandle, 0).CheckError();
+        }
+        
+        return new MediaDictionaryOwner(handle);
     }
 
     /// <summary>
     /// Copies entries from another dictionary
     /// </summary>
-    public void CopyFrom(MediaDictionary other, AVDictFlags flags = 0)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyFrom(FFHandle<AVDictionary> other, AVDictFlags flags = 0)
     {
         unsafe
         {
-            fixed (AVDictionary** prt = &_handle) {
-                av_dict_copy(prt, other.Handle, (int)flags).CheckError();
+            fixed (AVDictionary** ptr = &_handle) {
+                av_dict_copy(ptr, other, (int)flags).CheckError();
             }
         }
     }
     
-    public Enumerator GetEnumerator()
-    {
-        unsafe {
-            return new Enumerator(Handle);
-        }
-    }
-    
-    
-    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString()
     {
         return ToString((byte)':', (byte)'|');
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public string ToString(byte utf8KeyValueSeparatorChar, byte utf8PairsSeparator)
     {
         unsafe
@@ -188,12 +213,13 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected override void Free()
     {
         unsafe
         {
-            if (_handle != null)
-            {
+            if (_handle != null) {
+                ReadOnlySpan<byte> a;
                 fixed (AVDictionary** handle = &_handle) {
                     av_dict_free(handle);
                 }
@@ -201,7 +227,15 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
         }
     }
     
-    public ref struct Enumerator : IEnumerator<MediaDictionaryEntry>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe Enumerator GetEnumerator() => new(Handle);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    IEnumerator<Utf8KeyValue> IEnumerable<Utf8KeyValue>.GetEnumerator() => GetEnumerator();
+    
+    public struct Enumerator : IEnumerator<Utf8KeyValue>
     {
         private readonly unsafe AVDictionary* _dict;
         private unsafe AVDictionaryEntry* _currentEntry;
@@ -215,17 +249,10 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
         /// <summary>
         /// Current entry
         /// </summary>
-        public MediaDictionaryEntry Current
-        {
-            get {
-                unsafe
-                {
-                    return new MediaDictionaryEntry(_currentEntry);
-                }
-            }
-        }
+        public unsafe Utf8KeyValue Current => *_currentEntry;
 
         /// <inheritdoc />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             unsafe {
@@ -235,6 +262,7 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
         }
         object IEnumerator.Current => Current;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void IEnumerator.Reset()
         {
             unsafe
@@ -242,6 +270,11 @@ public sealed class MediaDictionary : FFObject<AVDictionary>
                 _currentEntry = null;
             }
         }
-        void IDisposable.Dispose(){ }
+        
+        void IDisposable.Dispose()
+        {
+            
+        }
     }
+    
 }

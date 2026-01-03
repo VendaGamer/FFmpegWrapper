@@ -12,16 +12,10 @@ using Streams;
 
 public class MediaDemuxer : FFObject<AVFormatContext>
 {
-    private readonly IFFHandleOwner<AVIOContext>? _ioContext;
-
-    public TimeSpan? Duration {
-        get {
-            unsafe
-            {
-                return FFHelper.GetTimeSpan(Handle.Ref.duration, new Rational(1, AV_TIME_BASE));
-            }
-        }
-    }
+    
+    #region Properties
+    
+    public TimeSpan? Duration => FFHelper.GetTimeSpan(Handle.Ref.duration, new Rational(1, AV_TIME_BASE));
 
     /// <summary> An array of all streams in the file. </summary>
     public ReadOnlySpan<MediaStream> Streams {
@@ -34,7 +28,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     /// <inheritdoc cref="AVFormatContext.metadata" />
-    public readonly MediaDictionary Metadata;
+    public readonly MediaDictionaryOwner Metadata;
 
     public bool CanSeek {
         get {
@@ -44,35 +38,33 @@ public class MediaDemuxer : FFObject<AVFormatContext>
             }
         }
     }
-
-    /// <summary> Opens an existing resource URL for demuxing. </summary>
-    /// <remarks>
-    /// Note that this constructor accepts URLs for other than files, as supported by FFmpeg. <br/>
-    /// If that is not desirable, ensure that <paramref name="url"/> points to a valid file path prior to instantiation (via <see cref="File.Exists(string)"/>), 
-    /// or use <see cref="MediaDemuxer(string, IEnumerable{KeyValuePair{string, string}})"/> with the
-    /// <c>protocol_whitelist=file</c> option.
-    /// </remarks>
-    public unsafe MediaDemuxer(ReadOnlySpan<byte> url)
-        : this(CreateContext(url, default, null)) { }
+    
+    #endregion
+    
+    
+    private readonly IFFHandleOwner<AVIOContext>? _ioContext;
+    
+    /// <summary>
+    /// Opens an existing resource URL for demuxing.
+    /// </summary>
+    /// <param name="url">Media source URL</param>
+    public MediaDemuxer(ReadOnlySpan<byte> url) : this(CreateContext(url)) { }
 
     /// <inheritdoc />
     public MediaDemuxer(IFFHandleOwner<AVIOContext> inputOutputContextOwner)
-        : this(CreateContext(null, inputOutputContextOwner.Handle, null))
+        : this(CreateContext(pb: inputOutputContextOwner.Handle)) 
     {
         _ioContext = inputOutputContextOwner;
     }
-    
+
     public MediaDemuxer(FFHandle<AVIOContext> inputOutputContext)
-        : this(CreateContext(null, inputOutputContext, null))
-    {
-        
-    }
+        : this(CreateContext(pb: inputOutputContext)) { }
 
     /// <summary> Opens an existing resource URL for demuxing. </summary>
     /// <remarks> See https://ffmpeg.org/ffmpeg-formats.html, https://ffmpeg.org/ffmpeg-protocols.html </remarks>
     /// <param name="url">URL to be opened for demuxing</param>
     /// <param name="options"> A dictionary filled with AVFormatContext and demuxer-private options. </param>
-    public MediaDemuxer(ReadOnlySpan<byte> url, Span2D<byte> options)
+    public MediaDemuxer(ReadOnlySpan<byte> url, ReadOnlySpan<Utf8KeyValue> options)
         : this(CreateContext(url, null, options)) { }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
@@ -82,11 +74,11 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         unsafe
         {
             _handle = ctx;
-            Metadata = new MediaDictionary(_handle->metadata);
+            Metadata = new MediaDictionaryOwner(_handle->metadata);
         }
     }
     
-    private static unsafe FFHandle<AVFormatContext> CreateContext(ReadOnlySpan<byte> url, FFHandle<AVIOContext> pb, Span2D<byte> options)
+    private static unsafe FFHandle<AVFormatContext> CreateContext(ReadOnlySpan<byte> url = default, FFHandle<AVIOContext> pb = default, ReadOnlySpan<Utf8KeyValue> options = default)
     {
         AVFormatContext* ctx = avformat_alloc_context();
         if (ctx == null) {
@@ -94,19 +86,14 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
 
         ctx->pb = pb;
-
-        AVDictionary* rawOpts = null;
-        MediaDictionary.Populate(&rawOpts, options);
         
-        avformat_open_input(&ctx, url.RawHandle, null, &rawOpts).CheckError("Could not open input");
-
-        try {
-            if (av_dict_count(rawOpts) > 0) {
-                //TODO
-                throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '')");
-            }
-        } finally {
-            av_dict_free(&rawOpts);
+        using var opts = MediaDictionaryOwner.CreateFromEntries(options);
+        
+        avformat_open_input(&ctx, url.RawHandle, null, opts).CheckError("Could not open input");
+        
+        if (av_dict_count(opts) > 0) {
+            //TODO
+            throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '')");
         }
 
         avformat_find_stream_info(ctx, null).CheckError("Could not find stream information");

@@ -3,6 +3,8 @@ namespace FFmpegWrapper.Abstractions;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 
+using CommunityToolkit.HighPerformance;
+
 using Core;
 
 /// <summary>
@@ -30,7 +32,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     /// <summary>
     /// pointer to the underlying unmanaged FFmpeg structure.
     /// </summary>
-    protected unsafe TRaw* _handle;
+    internal unsafe TRaw* _handle;
 
     public FFHandle<TRaw> Handle {
         get {
@@ -163,4 +165,25 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
         GC.SuppressFinalize(this);
         Dispose(true);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe implicit operator FFHandleSource<TRaw>(FFObject<TRaw> ffObject)
+    {
+        fixed(TRaw** ptr = &ffObject._handle)
+            return ptr;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe implicit operator FFHandle<TRaw>(FFObject<TRaw> ffObject) => ffObject.Handle;
+    
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe implicit operator TRaw**(FFObject<TRaw> ffObject)
+    {
+        fixed(TRaw** ptr = &ffObject._handle)
+            return ptr;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe implicit operator TRaw*(FFObject<TRaw> ffObject) => ffObject.Handle;
+
 }

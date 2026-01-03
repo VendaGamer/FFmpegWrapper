@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Extensions;
 
+using Core;
+
 public static class LavResultExtensions
 {
     public static bool IsSuccess(this LavResult result)

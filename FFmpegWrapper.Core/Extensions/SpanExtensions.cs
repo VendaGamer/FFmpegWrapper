@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 
 using CommunityToolkit.HighPerformance;
 
+using Core;
+
 public static class SpanExtensions
 {
 

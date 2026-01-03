@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Core;
 
-public readonly struct FFHandleSource<T>
+public readonly ref struct FFHandleSource<T>
     where T : unmanaged
 {
     public readonly unsafe T** Raw;
@@ -23,6 +23,13 @@ public readonly struct FFHandleSource<T>
     {
         return handle.Raw;
     }
+    
+
+    public static unsafe implicit operator T*(FFHandleSource<T> handle)
+    {
+        return *handle.Raw;
+    }
+
 
     /// <summary>
     /// Casts raw pointer to <see cref="FFHandle{T}"/>

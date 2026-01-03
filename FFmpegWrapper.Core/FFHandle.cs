@@ -52,7 +52,7 @@ public readonly ref struct FFHandle<T>
         }
     }
 
-    private unsafe readonly T* _handle;
+    internal unsafe readonly T* _handle;
     
     public FFHandle(ref T handle)
     {
@@ -75,16 +75,12 @@ public readonly ref struct FFHandle<T>
     /// </summary>
     /// <param name="handle"></param>
     /// <returns></returns>
-    public static unsafe implicit operator T*(FFHandle<T> handle)
-    {
-        return handle._handle;
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe implicit operator T*(FFHandle<T> handle) => handle._handle;
 
     /// <summary>
-    /// Casts raw pointer to <see cref="FFHandle{T}"/>
+    /// Casts a raw pointer to <see cref="FFHandle{T}"/>
     /// </summary>
-    /// <param name="handle"></param>
-    /// <returns></returns>
     public static unsafe implicit operator FFHandle<T>(T* handle)
     {
         return new FFHandle<T>(handle);
