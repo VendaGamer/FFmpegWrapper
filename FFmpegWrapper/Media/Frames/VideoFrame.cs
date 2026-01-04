@@ -16,35 +16,56 @@ public sealed class VideoFrame : MediaFrame
     
     #region Properties
 
-    public int Width => Handle.Ref.width;
-    public int Height => Handle.Ref.height;
-    public AVPixelFormat PixelFormat => (AVPixelFormat)Handle.Ref.format;
-
-    public PictureFormat Format => new(Width, Height, PixelFormat, Handle.Ref.sample_aspect_ratio);
-    public PictureColorspace Colorspace {
+    public PictureFormat Format {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
-                return new PictureColorspace(_handle->colorspace, _handle->color_primaries,
-                    _handle->color_trc, _handle->color_range);
-                
-            }
-        }
-        set {
-            unsafe
-            {
-                ThrowIfDisposed();
+            ref var handle = ref Handle.Ref;
             
-                _handle->colorspace = value.Matrix;
-                _handle->color_primaries = value.Primaries;
-                _handle->color_trc = value.Transfer;
-                _handle->color_range = value.Range;
-            }
+            return new PictureFormat(
+                handle.width,
+                handle.height,
+                (AVPixelFormat)handle.format, 
+                handle.sample_aspect_ratio);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set {
+            ref var handle = ref Handle.Ref;
+            
+            handle.width = value.Width;
+            handle.height = value.Height;
+            handle.format = (int)value.PixelFormat;
+            handle.sample_aspect_ratio = value.AspectRatio;
+        }
+    }
+    
+    
+    public PictureColorspace Colorspace {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            ref var handle =  ref Handle.Ref;
+                
+            return new PictureColorspace(
+                handle.colorspace,
+                handle.color_primaries,
+                handle.color_trc,
+                handle.color_range,
+                handle.chroma_location);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set {
+            ref var handle = ref Handle.Ref;
+                
+            handle.colorspace = value.Matrix;
+            handle.color_primaries = value.Primaries;
+            handle.color_trc = value.Transfer;
+            handle.color_range = value.Range;
+            handle.chroma_location = value.Location;
         }
     }
 
     /// <summary> Whether this frame is attached to a hardware frame context. </summary>
     public bool IsHardwareFrame {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -55,12 +76,8 @@ public sealed class VideoFrame : MediaFrame
 
     /// <summary> Whether the frame rows are flipped. Alias for <c>RowSize[0] &lt; 0</c>. </summary>
     public bool IsVerticallyFlipped {
-        get {
-            unsafe
-            {
-                return Handle.Ref.linesize[0] < 0;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.linesize[0] < 0;
     }
 
     #endregion
@@ -68,7 +85,7 @@ public sealed class VideoFrame : MediaFrame
     #region Constructors
     
     /// <inheritdoc />
-    public VideoFrame(int width, int height, AVPixelFormat fmt)
+    public VideoFrame(int width, int height, AVPixelFormat fmt, Rational aspectRatio)
     {
         unsafe
         {
@@ -84,6 +101,7 @@ public sealed class VideoFrame : MediaFrame
             _handle->width = width;
             _handle->height = height;
             _handle->format = (int)fmt;
+            _handle->sample_aspect_ratio = aspectRatio;
             
             int result = av_frame_get_buffer(_handle, 0);
             if (result < 0) {
@@ -96,14 +114,17 @@ public sealed class VideoFrame : MediaFrame
             }
         }
     }
-    public VideoFrame(PictureFormat fmt) : this(fmt.Width, fmt.Height, fmt.PixelFormat) { }
-    public VideoFrame(FFHandle<AVFrame> handle) : base(handle) { }
 
-    /// Allocates an empty <see cref="AVFrame"/>
-    public VideoFrame()
+    public VideoFrame(PictureFormat fmt)
+        : this(fmt.Width, fmt.Height, fmt.PixelFormat, fmt.AspectRatio)
     {
         
     }
+    
+    public VideoFrame(FFHandle<AVFrame> handle) : base(handle) { }
+
+    /// Allocates an empty <see cref="AVFrame"/>
+    public VideoFrame(){ }
     
     #endregion
 
@@ -151,17 +172,17 @@ public sealed class VideoFrame : MediaFrame
 
     public (int Width, int Height) GetPlaneSize(int plane)
     {
-        unsafe
-        {
-            ThrowIfDisposed();
-
-            var size = (Width, Height);
+        unsafe {
+            ref var handle = ref Handle.Ref;
+            
+            var size = (handle.width, handle.height);
 
             //https://github.com/FFmpeg/FFmpeg/blob/c558fcf41e2027a1096d00b286954da2cc4ae73f/libavutil/imgutils.c#L111
             if (plane == 0) {
                 return size;
             }
-            var desc = av_pix_fmt_desc_get(PixelFormat);
+            
+            var desc = av_pix_fmt_desc_get((AVPixelFormat)handle.format);
             if (desc == null || (desc->flags & (int)AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_HWACCEL) is not 0) {
                 throw new InvalidOperationException();
             }
@@ -171,14 +192,15 @@ public sealed class VideoFrame : MediaFrame
                 if (desc->comp[i].plane != plane) continue;
                 
                 if (i is 1 or 2 && (desc->flags & (int)AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_RGB) is 0) {
-                    size.Width = CeilShr(size.Width, desc->log2_chroma_w);
-                    size.Height = CeilShr(size.Height, desc->log2_chroma_h);
+                    size.width = CeilShr(size.width, desc->log2_chroma_w);
+                    size.height = CeilShr(size.height, desc->log2_chroma_h);
                 }
                 return size;
             }
             
             throw new ArgumentOutOfRangeException(nameof(plane));
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static int CeilShr(int x, int s) => (x + (1 << s) - 1) >> s;
         }
     }
@@ -307,11 +329,17 @@ public sealed class VideoFrame : MediaFrame
     
     public void Save(string fileName, PictureFormat format, OutputFormat outputFormat)
     {
-        if(Width <= 0 || Height <= 0)
+        ref var handle = ref Handle.Ref;
+        
+        if(handle.width <= 0 || handle.height <= 0)
             throw new InvalidOperationException("Frame has zero dimensions; ensure you decoded a video frame before calling Save().");
         
         if (format.Width <= 0 || format.Height <= 0)
-            format = new PictureFormat(Width, Height, PixelFormat);
+            format = new PictureFormat(
+                handle.width,
+                handle.height,
+                (AVPixelFormat)handle.format,
+                handle.sample_aspect_ratio);
         
         if (IsHardwareFrame) {
             using var tmp = new VideoFrame();

@@ -1,5 +1,3 @@
-using CommunityToolkit.HighPerformance;
-
 using FFmpegBindings.Linked;
 using FrameExtractor;
 

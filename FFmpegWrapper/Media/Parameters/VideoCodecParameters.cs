@@ -4,9 +4,26 @@ public class VideoCodecParameters : MediaCodecParameters
 {
     
     #region Properties
+
+    public PictureColorspace Colorspace {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            ref var handle = ref Handle.Ref;
+            
+            return new PictureColorspace(
+                handle.color_space,
+                handle.color_primaries,
+                handle.color_trc,
+                handle.color_range,
+                handle.chroma_location);
+        }
+    }
     
     /// <inheritdoc cref="AVCodecParameters.framerate"/>
     public Rational FrameRate => Handle.Ref.framerate;
+    
+    /// <inheritdoc cref="AVCodecParameters.video_delay" />
+    public int VideoDelay => Handle.Ref.video_delay;
     
     public PictureFormat PictureFormat {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

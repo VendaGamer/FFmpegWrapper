@@ -20,7 +20,7 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
 {
 
     /// <summary>
-    /// Gets the color matrix coefficients that define YUV↔RGB conversion.
+    /// Color matrix coefficients that define YUV↔RGB conversion.
     /// </summary>
     /// <remarks>
     /// Common values include BT.709 (HD), BT.601 (SD), and BT.2020 (UHD).
@@ -28,7 +28,7 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
     public readonly AVColorSpace Matrix;
 
     /// <summary>
-    /// Gets the color primaries that define the color gamut.
+    /// Color primaries that define the color gamut.
     /// </summary>
     /// <remarks>
     /// Defines the chromaticity coordinates of the red, green, and blue primaries.
@@ -37,7 +37,7 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
     public readonly AVColorPrimaries Primaries;
     
     /// <summary>
-    /// Gets the transfer characteristics (gamma curve/EOTF).
+    /// Transfer characteristics (gamma curve/EOTF).
     /// </summary>
     /// <remarks>
     /// Defines how electrical signal values map to light output.
@@ -46,13 +46,15 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
     public readonly AVColorTransferCharacteristic Transfer;
     
     /// <summary>
-    /// Gets the color range (full or limited).
+    /// Color range (full or limited).
     /// </summary>
     /// <remarks>
     /// Limited range uses values 16-235 for luma and 16-240 for chroma in 8-bit.
     /// Full range uses the complete 0-255 range in 8-bit.
     /// </remarks>
     public readonly AVColorRange Range;
+    
+    public readonly AVChromaLocation Location;
     
     /// <summary>
     /// Gets a value indicating whether this colorspace represents HDR content.
@@ -91,72 +93,19 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
     /// <param name="primaries">The color primaries.</param>
     /// <param name="trc">The transfer characteristics.</param>
     /// <param name="range">The color range.</param>
-    public PictureColorspace(AVColorSpace matrix, AVColorPrimaries primaries, AVColorTransferCharacteristic trc, AVColorRange range)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public PictureColorspace(
+        AVColorSpace matrix,
+        AVColorPrimaries primaries,
+        AVColorTransferCharacteristic trc,
+        AVColorRange range,
+        AVChromaLocation location)
     {
         Matrix = matrix;
         Primaries = primaries;
         Transfer = trc;
         Range = range;
-    }
-    
-    /// <summary>
-    /// Creates a colorspace configuration for standard HD content (BT.709).
-    /// </summary>
-    /// <param name="fullRange">Whether to use full range (0-255) or limited range (16-235).</param>
-    /// <returns>A <see cref="PictureColorspace"/> configured for HD content.</returns>
-    public static PictureColorspace CreateHD(bool fullRange = false)
-    {
-        return new PictureColorspace(
-            AVColorSpace.AVCOL_SPC_BT709,
-            AVColorPrimaries.AVCOL_PRI_BT709,
-            AVColorTransferCharacteristic.AVCOL_TRC_BT709,
-            fullRange ? AVColorRange.AVCOL_RANGE_JPEG : AVColorRange.AVCOL_RANGE_MPEG
-        );
-    }
-    
-    /// <summary>
-    /// Creates a colorspace configuration for UHD HDR content (BT.2020 + PQ).
-    /// </summary>
-    /// <param name="fullRange">Whether to use full range or limited range.</param>
-    /// <returns>A <see cref="PictureColorspace"/> configured for UHD HDR content.</returns>
-    public static PictureColorspace CreateUHD_HDR_PQ(bool fullRange = false)
-    {
-        return new PictureColorspace(
-            AVColorSpace.AVCOL_SPC_BT2020_NCL,
-            AVColorPrimaries.AVCOL_PRI_BT2020,
-            AVColorTransferCharacteristic.AVCOL_TRC_SMPTE2084, // PQ
-            fullRange ? AVColorRange.AVCOL_RANGE_JPEG : AVColorRange.AVCOL_RANGE_MPEG
-        );
-    }
-    
-    /// <summary>
-    /// Creates a colorspace configuration for UHD HDR content (BT.2020 + HLG).
-    /// </summary>
-    /// <param name="fullRange">Whether to use full range or limited range.</param>
-    /// <returns>A <see cref="PictureColorspace"/> configured for UHD HDR content with HLG.</returns>
-    public static PictureColorspace CreateUHD_HDR_HLG(bool fullRange = false)
-    {
-        return new PictureColorspace(
-            AVColorSpace.AVCOL_SPC_BT2020_NCL,
-            AVColorPrimaries.AVCOL_PRI_BT2020,
-            AVColorTransferCharacteristic.AVCOL_TRC_ARIB_STD_B67, // HLG
-            fullRange ? AVColorRange.AVCOL_RANGE_JPEG : AVColorRange.AVCOL_RANGE_MPEG
-        );
-    }
-    
-    /// <summary>
-    /// Creates a colorspace configuration for standard definition content (BT.601).
-    /// </summary>
-    /// <param name="fullRange">Whether to use full range or limited range.</param>
-    /// <returns>A <see cref="PictureColorspace"/> configured for SD content.</returns>
-    public static PictureColorspace CreateSD(bool fullRange = false)
-    {
-        return new PictureColorspace(
-            AVColorSpace.AVCOL_SPC_BT470BG, // or SMPTE170M for NTSC
-            AVColorPrimaries.AVCOL_PRI_BT470BG,
-            AVColorTransferCharacteristic.AVCOL_TRC_BT709, // Often BT.709 gamma is used even for SD
-            fullRange ? AVColorRange.AVCOL_RANGE_JPEG : AVColorRange.AVCOL_RANGE_MPEG
-        );
+        Location = location;
     }
     
     /// <summary>
@@ -225,8 +174,11 @@ public readonly struct PictureColorspace : IEquatable<PictureColorspace>
     /// <param name="other">The other colorspace to compare.</param>
     /// <returns>True if the colorspaces are equal; otherwise, false.</returns>
     public bool Equals(PictureColorspace other) =>
-        Matrix == other.Matrix && Primaries == other.Primaries && 
-        Transfer == other.Transfer && Range == other.Range;
+        Matrix == other.Matrix &&
+        Primaries == other.Primaries && 
+        Transfer == other.Transfer &&
+        Range == other.Range &&
+        Location == other.Location;
 
     /// <inheritdoc />
     public override bool Equals(object? obj)

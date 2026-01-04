@@ -101,17 +101,19 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
                 throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
             }
             
-            AVStream* stream = avformat_new_stream(_handle, encoder.Handle.Raw->codec);
+            var encHandle = encoder.Handle.Raw;
+            
+            AVStream* stream = avformat_new_stream(_handle, encHandle->codec);
             if (stream is null)
                 throw new OutOfMemoryException("Could not allocate stream");
                 
             stream->id = (int)_handle->nb_streams - 1;
             stream->time_base = encoder.TimeBase;
 
-            //Some formats want stream headers to be separate.
+            avcodec_parameters_from_context(stream->codecpar, encHandle);
             
             if ((_handle->oformat->flags & (int)AVFormatCapabilityFlags.AVFMT_GLOBALHEADER) != 0) {
-                encoder.Handle.Raw->flags |= (int)AV_CODEC_FLAGS.AV_CODEC_FLAG_GLOBAL_HEADER;
+                encHandle->flags |= (int)AV_CODEC_FLAGS.AV_CODEC_FLAG_GLOBAL_HEADER;
             }
 
             var st = new MediaStream(stream);
@@ -164,25 +166,23 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             if (IsOpen) {
                 throw new InvalidOperationException("Muxer is already open.");
             }
-            foreach (MediaStream stream in Streams) {
-                //TODO:
-                // avcodec_parameters_from_context(stream.Handle.Ref.codecpar, some_handle)
-                //     .CheckError("Could not copy the encoder parameters to the stream.");
-                
-            }
             
-            var opts = MediaDictionaryOwner.CreateFromEntries(options);
+            AVDictionary* opts = null;
+        
+            foreach (var entry in options) {
+                av_dict_set(&opts, entry.Key.RawHandle, entry.Value.RawHandle, 0).CheckError();
+            }
 
-            avformat_write_header(_handle, (FFHandleSource<AVDictionary>)opts)
-                .CheckError("Could not write header to output file");
+            avformat_write_header(_handle, &opts).CheckError("Could not write header to output file");
 
             try {
                 if (!ignoreUnknownOptions && av_dict_count(opts) > 0) {
                     string invalidKeys = string.Join("', '", new MediaDictionaryOwner(opts));
                     throw new InvalidOperationException($"Unknown or invalid muxer options (keys: '{invalidKeys}')");
                 }
-            } finally {
-                av_dict_free(opts);
+            }
+            finally {
+                av_dict_free(&opts);
             }
             IsOpen = true;
         }
@@ -256,6 +256,12 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         av_write_trailer(Handle.Raw);
     }
 
+    protected override void FreeManaged()
+    {
+        _ownedIOContext?.Dispose();
+        _tempPacket?.Dispose();
+    }
+
     /// <inheritdoc />
     protected unsafe override void Free()
     {
@@ -263,8 +269,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             av_write_trailer(_handle);
         }
         avformat_free_context(_handle);
-        _ownedIOContext?.Dispose();
-        _tempPacket?.Dispose();
     }
 
     #endregion

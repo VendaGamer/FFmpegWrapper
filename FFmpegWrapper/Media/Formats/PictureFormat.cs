@@ -35,7 +35,7 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// May be 0/1 if unknown or undefined. For square pixels, this should be 1/1.
     /// Non-square pixels are common in some video formats (e.g., anamorphic content).
     /// </remarks>
-    public Rational PixelAspectRatio { get; }
+    public Rational AspectRatio { get; }
 
     /// <summary>
     /// Gets the number of color planes in this pixel format.
@@ -66,7 +66,7 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
         Width = width;
         Height = height;
         PixelFormat = pixelFormat;
-        PixelAspectRatio = Rational.Zero;
+        AspectRatio = Rational.Zero;
     }
     
     /// <summary>
@@ -75,13 +75,13 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// <param name="width">The width of the picture in pixels.</param>
     /// <param name="height">The height of the picture in pixels.</param>
     /// <param name="pixelFormat">The FFmpeg pixel format.</param>
-    /// <param name="pixelAspectRatio">The pixel aspect ratio (width/height of individual pixels).</param>
-    public PictureFormat(int width, int height, AVPixelFormat pixelFormat, Rational pixelAspectRatio)
+    /// <param name="aspectRatio">The pixel aspect ratio (width/height of individual pixels).</param>
+    public PictureFormat(int width, int height, AVPixelFormat pixelFormat, Rational aspectRatio)
     {
         Width = width;
         Height = height;
         PixelFormat = pixelFormat;
-        PixelAspectRatio = pixelAspectRatio;
+        AspectRatio = aspectRatio;
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     /// <param name="newHeight">The target height in pixels.</param>
     public PictureFormat GetScaled(int newWidth, int newHeight)
     {
-        return new PictureFormat(newWidth, newHeight, PixelFormat, PixelAspectRatio);
+        return new PictureFormat(newWidth, newHeight, PixelFormat, AspectRatio);
     }
     
     /// <summary>
@@ -114,7 +114,7 @@ public readonly struct PictureFormat : IEquatable<PictureFormat>
     public bool Equals(PictureFormat other) =>
         other.Width == Width && other.Height == Height && 
         other.PixelFormat == PixelFormat &&
-        other.PixelAspectRatio.Equals(PixelAspectRatio);
+        other.AspectRatio.Equals(AspectRatio);
 
     /// <summary>
     /// Determines whether the specified object is equal to this instance.

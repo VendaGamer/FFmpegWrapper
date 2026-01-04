@@ -91,7 +91,7 @@ public sealed class FFMpegService
                 if (decoder.ReceiveFrame(frame.Handle))
                 {
                     frame.Save(filePath, new PictureFormat(0,0, AVPixelFormat.AV_PIX_FMT_YUV420P));
-                    return new AVImage(filePath, frame.PixelFormat);
+                    return new AVImage(filePath, frame.Format);
                 }
             }
             else
@@ -209,10 +209,10 @@ public sealed class FFMpegService
                 // Convert pixel format
                 sws.Convert(decFrame.Handle, encFrame.Handle);
                 using var muxer = new MediaMuxer(Encoding.UTF8.GetBytes(outputPath));
-                muxer.AddStream(encoder);
+                var outStream = muxer.AddStream(encoder);
                 muxer.Open();
-                muxer.EncodeAndWrite(stream, encoder, encFrame.Handle);
-                images[i] = new AVImage(outputPath, outFormat.PixelFormat);
+                muxer.EncodeAndWrite(outStream, encoder, encFrame.Handle);
+                images[i] = new AVImage(outputPath, outFormat);
                 break;
             }
         }

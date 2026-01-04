@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
+using System.Runtime.InteropServices;
+
 using Abstractions;
 
 public abstract class MediaFrame : FFObject<AVFrame>
@@ -37,35 +39,18 @@ public abstract class MediaFrame : FFObject<AVFrame>
     public long? Duration {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
-                var handle = Handle.Raw;
+            var duration = Handle.Ref.duration;
                 
-                return handle->duration is 0 ? Handle.Raw->duration : null;
-            }
+            return duration is 0 ? duration : null;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set {
-            unsafe {
-                var handle = Handle.Raw;
-
-                if (value is null)
-                    handle->duration = 0;
-                else
-                    handle->duration = value.Value;
-            }
-        }
+        set => Handle.Ref.duration = value ?? 0;
     }
 
     /// <inheritdoc cref="AVFrame.side_data"/>
     public FrameSideDataList SideData {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get {
-            unsafe
-            {
-                return new FrameSideDataList(_handle);
-            }
-        }
+        get => new(Handle);
     }
 
     public ReadOnlySpan<int> LineSize {
@@ -76,18 +61,18 @@ public abstract class MediaFrame : FFObject<AVFrame>
             }
         }
     }
-    
-    public unsafe byte** Data => &_handle->data._0;
 
-    public int Stride {
-        get {
-            unsafe
-            {
-                return Handle.Ref.linesize[0];
-            }
-        }
+    public unsafe byte** Data {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => &_handle->data._0;
     }
 
+    public int Stride {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.linesize[0];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static MediaFrame CreateFromType(AVMediaType type)
         => type switch {
             AVMediaType.AVMEDIA_TYPE_VIDEO => new VideoFrame(),
@@ -103,6 +88,7 @@ public abstract class MediaFrame : FFObject<AVFrame>
     #endregion
     
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected override unsafe void Free()
     {
         if (_handle is not null) {

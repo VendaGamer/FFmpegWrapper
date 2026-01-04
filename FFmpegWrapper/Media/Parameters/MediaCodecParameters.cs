@@ -68,25 +68,11 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
     /// <inheritdoc cref="AVCodecParameters.field_order" />
     public AVFieldOrder FieldOrder => Handle.Ref.field_order;
 
-    /// <inheritdoc cref="AVCodecParameters.color_range" />
-    public AVColorRange ColorRange => Handle.Ref.color_range;
-
-    /// <inheritdoc cref="AVCodecParameters.color_primaries" />
-    public AVColorPrimaries ColorPrimaries => Handle.Ref.color_primaries;
-
-    /// <inheritdoc cref="AVCodecParameters.color_trc" />
-    public AVColorTransferCharacteristic ColorTrc => Handle.Ref.color_trc;
-
-    /// <inheritdoc cref="AVCodecParameters.color_space" />
-    public AVColorSpace ColorMatrix => Handle.Ref.color_space;
-
     /// <inheritdoc cref="AVCodecParameters.chroma_location" />
     public AVChromaLocation ChromaLocation => Handle.Ref.chroma_location;
 
-    public PictureColorspace Colorspace => new(ColorMatrix, ColorPrimaries, ColorTrc, ColorRange);
 
-    /// <inheritdoc cref="AVCodecParameters.video_delay" />
-    public int VideoDelay => Handle.Ref.video_delay;
+
 
     //Audio fields
 

@@ -2,9 +2,10 @@ namespace FFmpegWrapper.Media.Frames;
 
 using System.Text;
 
-public struct FrameSideDataList : IFFHandleObserver<AVFrame>
+public readonly struct FrameSideDataList : IFFHandleObserver<AVFrame>
 {
     public FFHandle<AVFrame> Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
                 return _handle;
@@ -12,17 +13,13 @@ public struct FrameSideDataList : IFFHandleObserver<AVFrame>
         }
     }
 
-    internal unsafe AVFrame* _handle;
     public int Count {
-        get {
-            unsafe
-            {
-                return Handle.Raw->nb_side_data;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.nb_side_data;
     }
 
     public FrameSideData this[int index] {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             if (index > Count || index < 0) {
                 throw new ArgumentOutOfRangeException();
@@ -33,7 +30,10 @@ public struct FrameSideDataList : IFFHandleObserver<AVFrame>
             }
         }
     }
+    
+    internal readonly unsafe AVFrame* _handle;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public FrameSideDataList(FFHandle<AVFrame> handle)
     {
         unsafe
@@ -43,35 +43,48 @@ public struct FrameSideDataList : IFFHandleObserver<AVFrame>
     }
 
     /// <summary> Returns the side data entry for the given type, or null if not present. </summary>
-    public FrameSideData? Get(AVFrameSideDataType type)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryGet(AVFrameSideDataType type, out FrameSideData sideData)
     {
         unsafe
         {
             AVFrameSideData* entry = av_frame_get_side_data(Handle, type);
-            return entry != null ? new FrameSideData(entry) : null;
+            
+            if (entry is not null) {
+                sideData = new FrameSideData(entry);
+                return true;
+            }
+            
+            sideData = default;
+            return false;
         }
     }
 
     /// <summary> Allocates and adds a new a side data entry. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public FrameSideData Add(AVFrameSideDataType type, nuint size)
     {
         unsafe
         {
             var entry = av_frame_new_side_data(Handle, type, size);
+            
             if (entry == null) {
-                throw new OutOfMemoryException();
+                throw new Exception("Failed to create new side data");
             }
             return new FrameSideData(entry);
         }
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Remove(AVFrameSideDataType type)
     {
-        unsafe
-        {
-            int prevCount = Count;
-            av_frame_remove_side_data(Handle, type);
-            return Count != prevCount;
+        unsafe {
+            var handle = Handle.Raw;
+            int prevCount = handle->nb_side_data;
+            
+            av_frame_remove_side_data(handle, type);
+            
+            return handle->nb_side_data != prevCount;
         }
     }
 
@@ -92,10 +105,8 @@ public struct FrameSideDataList : IFFHandleObserver<AVFrame>
     /// <summary> Returns the value of an <see cref="AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX"/> entry. </summary>
     public ReadOnlySpan<int> GetDisplayMatrix()
     {
-        var martrix = Get(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX);
-
-        if (martrix is not null) {
-            return martrix.Value.GetDataSpan<int>();
+        if (TryGet(AVFrameSideDataType.AV_FRAME_DATA_DISPLAYMATRIX, out var matrix)) {
+            return matrix.GetDataSpan<int>();
         }
         
         return ReadOnlySpan<int>.Empty;
@@ -114,9 +125,10 @@ public struct FrameSideDataList : IFFHandleObserver<AVFrame>
     
 }
 
-public readonly struct FrameSideData(FFHandle<AVFrameSideData> handle)
+public readonly struct FrameSideData
 {
     public FFHandle<AVFrameSideData> Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
                 return _handle;
@@ -125,31 +137,43 @@ public readonly struct FrameSideData(FFHandle<AVFrameSideData> handle)
     }
 
     public Span<byte> Data {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
+            unsafe {
                 return new Span<byte>(_handle->data, (int)_handle->size);
             }
         }
     }
+    
+    public AVFrameSideDataType Type {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.type;
+    }
 
-    public MediaDictionaryOwner Metadata {
+    public ObservedMediaDictionary Metadata {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
-                return new MediaDictionaryOwner(Handle.Ref.metadata);
+            unsafe {
+                return new ObservedMediaDictionary(&Handle.Raw->metadata);
             }
         }
     }
     
-    internal readonly unsafe AVFrameSideData* _handle = handle;
+    internal readonly unsafe AVFrameSideData* _handle;
 
-    public AVFrameSideDataType Type => Handle.Ref.type;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public FrameSideData(FFHandle<AVFrameSideData> handle)
+    {
+        unsafe {
+            _handle = handle;
+        }
+    }
 
     /// <summary>
     /// Returns the side data payload reinterpreted as a <typeparamref name="T"/> pointer, 
     /// or null if the payload is smaller than <c>sizeof(T)</c>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<T> GetDataSpan<T>() where T : unmanaged
     {
         unsafe {
@@ -157,12 +181,13 @@ public readonly struct FrameSideData(FFHandle<AVFrameSideData> handle)
             if (_handle->size % (nuint)sizeof(T) is 0) {
                 return new ReadOnlySpan<T>(handle->data, (int)handle->size);
             }
-
+            
             return ReadOnlySpan<T>.Empty;
         }
     }
     
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString()
     {
         unsafe {

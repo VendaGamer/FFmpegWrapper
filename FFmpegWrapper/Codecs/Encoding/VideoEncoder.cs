@@ -54,18 +54,24 @@ public class VideoEncoder : MediaEncoder
         get {
             ref var handle = ref Handle.Ref;
             
-            return new PictureColorspace(handle.colorspace, handle.color_primaries,
-                handle.color_trc, handle.color_range);
-            
+            return new PictureColorspace(
+                handle.colorspace,
+                handle.color_primaries,
+                handle.color_trc,
+                handle.color_range,
+                handle.chroma_sample_location);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
+            
             ref var handle = ref Handle.Ref;
+            
             handle.colorspace = value.Matrix;
             handle.color_primaries = value.Primaries;
             handle.color_trc = value.Transfer;
             handle.color_range = value.Range;
+            handle.chroma_sample_location = value.Location;
         }
     }
 

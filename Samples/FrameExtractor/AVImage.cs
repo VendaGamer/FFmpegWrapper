@@ -1,7 +1,5 @@
-using FFmpegBindings.Abstractions;
+using FFmpegWrapper.Media.Formats;
 
-public class AVImage(string filePath, AVPixelFormat pixelFormat)
-{
-    public readonly string FilePath = filePath;
-    public readonly AVPixelFormat PixelFormat = pixelFormat;
-}
+namespace FrameExtractor;
+
+public record AVImage(string FilePath, PictureFormat PixelFormat);

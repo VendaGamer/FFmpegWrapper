@@ -46,14 +46,16 @@ public class VideoDecoder : MediaDecoder
     }
 
     public PictureColorspace Colorspace {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
-                ThrowIfDisposed();
+            ref var handle = ref Handle.Ref;
             
-                return new PictureColorspace(_handle->colorspace, _handle->color_primaries,
-                    _handle->color_trc, _handle->color_range);
-            }
+            return new PictureColorspace(
+                handle.colorspace,
+                handle.color_primaries,
+                handle.color_trc,
+                handle.color_range,
+                handle.chroma_sample_location);
         }
     }
 

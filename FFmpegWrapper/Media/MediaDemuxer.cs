@@ -235,6 +235,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     protected override unsafe void Free()
     {
         _ioContext?.Dispose();
-        fixed (AVFormatContext** ptr = &_handle) avformat_close_input(ptr);
+        fixed (AVFormatContext** ptr = &_handle)
+            avformat_close_input(ptr);
     }
 }
