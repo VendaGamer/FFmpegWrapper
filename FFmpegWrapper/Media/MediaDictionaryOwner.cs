@@ -1,6 +1,7 @@
 namespace FFmpegWrapper.Media;
 
 using System.Collections;
+using System.Diagnostics;
 using System.Text;
 using Abstractions;
 using Extensions;
@@ -8,6 +9,8 @@ using Extensions;
 /// <summary>
 /// Efficient wrapper for <see cref="AVDictionary"/>, providing convenient methods for dictionary manipulation.
 /// </summary>
+
+[DebuggerDisplay("DecoderConfigs: {decoderConfigs.Count}, EncoderConfigs: {encoderConfigs.Count}")]
 public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<Utf8KeyValue>
 {
     /// <summary>
@@ -105,6 +108,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     /// <summary>
     /// Sets the value associated with the given key, overwriting it if necessary.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetValue(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value,
         AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE |
                             AVDictFlags.AV_DICT_DONT_STRDUP_VAL |

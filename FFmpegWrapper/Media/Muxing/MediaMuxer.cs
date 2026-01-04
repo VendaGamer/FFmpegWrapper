@@ -39,8 +39,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     
     #region Constructors
     
-    public MediaMuxer(FFHandle<AVFormatContext> handle): base(handle) { }
-
     public MediaMuxer(ReadOnlySpan<byte> filename)
     {
         unsafe
@@ -61,22 +59,15 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         _ownedIOContext = ioContext;
     }
 
-    public MediaMuxer(
+    public unsafe MediaMuxer(
         IFFHandleOwner<AVIOContext> ioContext,
-        FFHandle<AVOutputFormat> format)
+        FFHandle<AVOutputFormat> format) : this(avformat_alloc_context())
     {
-        unsafe
-        {
-            _handle = avformat_alloc_context();
-        
-            if (_handle == null) {
-                throw new OutOfMemoryException("Could not allocate muxer");
-            }
-        
-            _handle->oformat = format;
-            _handle->pb = ioContext.Handle;
-        }
+        _handle->oformat = format;
+        _handle->pb = ioContext.Handle;
     }
+    
+    public MediaMuxer(FFHandle<AVFormatContext> handle) : base(handle) { }
 
     public MediaMuxer(FFHandle<AVIOContext> ioContextHandle)
     {
@@ -109,12 +100,11 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             if (IsOpen) {
                 throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
             }
-
-
+            
             AVStream* stream = avformat_new_stream(_handle, encoder.Handle.Raw->codec);
-            if (stream == null) {
+            if (stream is null)
                 throw new OutOfMemoryException("Could not allocate stream");
-            }
+                
             stream->id = (int)_handle->nb_streams - 1;
             stream->time_base = encoder.TimeBase;
 
@@ -269,16 +259,11 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <inheritdoc />
     protected unsafe override void Free()
     {
-        av_write_trailer(_handle);
-
-        avformat_free_context(_handle);
-        
-        fixed (AVFormatContext** ptr = &_handle) {
-            avformat_close_input(ptr);
+        if (IsOpen) {
+            av_write_trailer(_handle);
         }
-
+        avformat_free_context(_handle);
         _ownedIOContext?.Dispose();
-        
         _tempPacket?.Dispose();
     }
 

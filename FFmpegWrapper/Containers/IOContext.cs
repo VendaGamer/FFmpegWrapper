@@ -4,91 +4,20 @@ using System.Runtime.InteropServices;
 
 using Abstractions;
 
-public abstract unsafe class IOContext : FFObject<AVIOContext>
+public abstract class IOContext : FFObject<AVIOContext>
 {
-    public bool CanRead => _readFn != null;
-    public bool CanWrite => _writeFn != null;
-    public bool CanSeek => _seekFn != null;
-    
-    private avio_alloc_context_read_packet? _readFn;
-    private avio_alloc_context_write_packet? _writeFn;
-    private avio_alloc_context_seek? _seekFn;
 
-    protected IOContext(nuint bufferSize, bool canRead, bool canWrite, bool canSeek)
-    {
-        if (!(canRead ^ canWrite)) {
-            throw new InvalidOperationException("IOContext must be either readable or writeable");
-        }
-        var buffer = (byte*)av_mallocz(bufferSize);
-        
-        _readFn = canRead ? ReadBridge : null;
-        _writeFn = canWrite ? WriteBridge : null;
-        _seekFn = canSeek ? SeekBridge : null;
-
-        var readPtr = (delegate* unmanaged[Cdecl]<void*, byte*, int, int>)
-            Marshal.GetFunctionPointerForDelegate(_readFn);
-
-        var writePtr = (delegate* unmanaged[Cdecl]<void*, byte*, int, int>)
-            Marshal.GetFunctionPointerForDelegate(_writeFn);
-
-        var seekPtr = (delegate* unmanaged[Cdecl]<void*, long, int, long>)
-            Marshal.GetFunctionPointerForDelegate(_writeFn);
-        
-        
-        _handle = avio_alloc_context(
-            buffer, (int)bufferSize, canWrite ? 1 : 0, null,
-            readPtr, writePtr, seekPtr
-        );
-        return;
-
-        int ReadBridge(void* opaque, byte* buffer, int length)
-        {
-            int bytesRead = Read(new Span<byte>(buffer, length));
-            return bytesRead > 0 ? bytesRead : (int)AVError.AVERROR_EOF;
-        }
-        int WriteBridge(void* opaque, byte* buffer, int length)
-        {
-            Write(new ReadOnlySpan<byte>(buffer, length));
-            return length;
-        }
-        long SeekBridge(void* opaque, long offset, int whence)
-        {
-            if (whence == AVSEEK_SIZE) {
-                return GetLength() ?? -38; //ENOSYS
-            }
-            return Seek(offset, (SeekOrigin)whence);
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected unsafe virtual int ReadPacket(void* opaque, byte* buf, int bufSize)
+        => avio_read(Handle, buf, bufSize);
 
     /// <summary> Forces the internal buffer to be written to the output stream. </summary>
     public void Flush()
     {
-        if (!CanWrite) {
-            throw new InvalidOperationException();
+        unsafe
+        {
+            avio_flush(_handle);
         }
-        avio_flush(_handle);
-    }
-
-    /// <summary> Creates an IOContext that reads from the given stream. </summary>
-    /// <param name="leaveOpen"> If true, don't dispose the stream along with the IOContext. </param>
-    /// <param name="bufferSize"> IOContext internal buffer size. </param>
-    public static IOContext CreateInputFromStream(Stream stream, bool leaveOpen = false, nuint bufferSize = 4096)
-    {
-        if (!stream.CanRead) {
-            throw new InvalidOperationException("Stream must be readable.");
-        }
-        return new StreamIOContext(stream, read: true, leaveOpen, bufferSize);
-    }
-
-    /// <summary> Creates an IOContext that writes to the given stream. </summary>
-    /// <param name="leaveOpen"> If true, don't dispose the stream along with the IOContext. </param>
-    /// <param name="bufferSize"> IOContext internal buffer size. </param>
-    public static IOContext CreateOutputFromStream(Stream stream, bool leaveOpen = false, nuint bufferSize = 4096)
-    {
-        if (!stream.CanWrite) {
-            throw new InvalidOperationException("Stream must be writeable.");
-        }
-        return new StreamIOContext(stream, read: false, leaveOpen, bufferSize);
     }
 
     /// <summary> Reads data from the underlying stream to <paramref name="buffer"/>. </summary>
@@ -104,7 +33,7 @@ public abstract unsafe class IOContext : FFObject<AVIOContext>
     /// <summary> Returns the number of bytes in the underlying stream. </summary>
     protected virtual long? GetLength() => null;
 
-    protected override void Free()
+    protected override unsafe void Free()
     {
         if (_handle != null) {
             fixed (AVIOContext** c = &_handle) avio_closep(c);

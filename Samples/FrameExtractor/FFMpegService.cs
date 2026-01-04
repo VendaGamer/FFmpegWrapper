@@ -210,6 +210,7 @@ public sealed class FFMpegService
                 sws.Convert(decFrame.Handle, encFrame.Handle);
                 using var muxer = new MediaMuxer(Encoding.UTF8.GetBytes(outputPath));
                 muxer.AddStream(encoder);
+                muxer.Open();
                 muxer.EncodeAndWrite(stream, encoder, encFrame.Handle);
                 images[i] = new AVImage(outputPath, outFormat.PixelFormat);
                 break;

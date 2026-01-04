@@ -1,7 +1,6 @@
-﻿namespace FFmpegWrapper.Containers;
+﻿namespace FFmpegWrapper.Media.Parameters;
 
 using Abstractions;
-
 using Media;
 
 public class MediaCodecParameters : FFObject<AVCodecParameters>
@@ -63,24 +62,8 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
 
     /// <inheritdoc cref="AVCodecParameters.level" />
     public int Level => Handle.Ref.level;
+    
 
-    //Video fields
-
-    /// <inheritdoc cref="AVCodecParameters.width" />
-    public int Width => Handle.Ref.width;
-
-    /// <inheritdoc cref="AVCodecParameters.width" />
-    public int Height => Handle.Ref.height;
-
-    public AVPixelFormat PixelFormat => (AVPixelFormat)Handle.Ref.format;
-
-    /// <inheritdoc cref="AVCodecParameters.sample_aspect_ratio" />
-    public Rational PixelAspectRatio => Handle.Ref.sample_aspect_ratio;
-
-    public PictureFormat PictureFormat => new(Width, Height, PixelFormat, PixelAspectRatio);
-
-    /// <inheritdoc cref="AVCodecParameters.framerate"/>
-    public Rational FrameRate => Handle.Ref.framerate;
 
     /// <inheritdoc cref="AVCodecParameters.field_order" />
     public AVFieldOrder FieldOrder => Handle.Ref.field_order;

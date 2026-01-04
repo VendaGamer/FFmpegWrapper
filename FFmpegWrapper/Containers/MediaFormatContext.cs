@@ -4,7 +4,7 @@ using Abstractions;
 using Extensions;
 using Media;
 
-public abstract class FormatContext : FFObject<AVFormatContext>
+public abstract class MediaFormatContext : FFObject<AVFormatContext>
 {
     public long FileSize {
         get {
@@ -41,14 +41,14 @@ public abstract class FormatContext : FFObject<AVFormatContext>
         }
     }
     
-    private unsafe FormatContext(AVOutputFormat* outputFormat, ReadOnlySpan<byte> formatName, ReadOnlySpan<byte> filename)
+    private unsafe MediaFormatContext(AVOutputFormat* outputFormat, ReadOnlySpan<byte> formatName, ReadOnlySpan<byte> filename)
     {
         fixed (AVFormatContext** ptr = &_handle) {
             avformat_alloc_output_context2(ptr, outputFormat, formatName.RawHandle, filename.RawHandle);
         }
     }
 
-    protected unsafe FormatContext() : base(avformat_alloc_context()) { }
+    protected unsafe MediaFormatContext() : base(avformat_alloc_context()) { }
     
     /// <inheritdoc/>
     protected override unsafe void Free()
