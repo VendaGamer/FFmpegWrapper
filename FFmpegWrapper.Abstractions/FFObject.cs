@@ -3,8 +3,6 @@ namespace FFmpegWrapper.Abstractions;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 
-using CommunityToolkit.HighPerformance;
-
 using Core;
 
 /// <summary>
@@ -35,6 +33,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     internal unsafe TRaw* _handle;
 
     public FFHandle<TRaw> Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
                 return _handle;
@@ -42,6 +41,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected FFObject()
     {
         
@@ -59,21 +59,16 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Dispose(bool disposing)
     {
         if (_disposed) return;
-        try {
 
-            if (disposing) {
-                FreeManaged();
-            }
-
-            Free();
-
-        } catch (ObjectDisposedException e) {
-            Console.WriteLine(e);
+        if (disposing) {
+            FreeManaged();
         }
 
+        Free();
 
         _disposed = true;
     }
@@ -103,6 +98,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     /// </para>
     /// </remarks>
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     ~FFObject() => Dispose(false);
     
     /// <summary>
@@ -136,6 +132,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     /// the underlying FFmpeg structure to ensure the object is still valid for use.
     /// </para>
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void ThrowIfDisposed()
     {
         if (_disposed) {
@@ -160,6 +157,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     /// will have no effect.
     /// </para>
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose()
     {
         GC.SuppressFinalize(this);
@@ -174,7 +172,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe implicit operator FFHandle<TRaw>(FFObject<TRaw> ffObject) => ffObject.Handle;
+    public static implicit operator FFHandle<TRaw>(FFObject<TRaw> ffObject) => ffObject.Handle;
     
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

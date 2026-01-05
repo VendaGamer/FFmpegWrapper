@@ -25,11 +25,18 @@ public class VideoCodecParameters : MediaCodecParameters
     /// <inheritdoc cref="AVCodecParameters.video_delay" />
     public int VideoDelay => Handle.Ref.video_delay;
     
+    public AVFieldOrder FieldOrder => Handle.Ref.field_order;
+    
     public PictureFormat PictureFormat {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             ref var handle = ref Handle.Ref;
-            return new PictureFormat(handle.width, handle.height, (AVPixelFormat)handle.format, handle.sample_aspect_ratio);
+            
+            return new PictureFormat(
+                handle.width,
+                handle.height,
+                (AVPixelFormat)handle.format,
+                handle.sample_aspect_ratio);
         }
     }
     

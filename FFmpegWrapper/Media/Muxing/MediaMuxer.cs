@@ -27,6 +27,22 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     
     public bool IsOpen { get; private set; }
 
+    public OutputFormat OutputFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return new OutputFormat(Handle.Ref.oformat);
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set {
+            unsafe {
+                Handle.Ref.oformat = value.Handle;
+            }
+        }
+    }
+
     #endregion
 
     #region Fields
@@ -38,6 +54,11 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     #endregion
     
     #region Constructors
+
+    public unsafe MediaMuxer() : this(avformat_alloc_context())
+    {
+        
+    }
     
     public MediaMuxer(ReadOnlySpan<byte> filename)
     {
@@ -61,9 +82,9 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
     public unsafe MediaMuxer(
         IFFHandleOwner<AVIOContext> ioContext,
-        FFHandle<AVOutputFormat> format) : this(avformat_alloc_context())
+        FFHandle<AVOutputFormat> outputFormat) : this()
     {
-        _handle->oformat = format;
+        _handle->oformat = outputFormat;
         _handle->pb = ioContext.Handle;
     }
     
@@ -222,16 +243,20 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <summary> Encodes the given frame and muxes the resulting packets to the output file. </summary>
     public void EncodeAndWrite(MediaStream stream, MediaEncoder encoder, FFHandle<AVFrame> frame)
     {
-        _tempPacket ??= new MediaPacket();
-        encoder.SendFrame(frame);
-        
-        while (encoder.ReceivePacket(_tempPacket)) {
-            unsafe
-            {
+        unsafe
+        {
+            avformat_write_header(_handle, null).CheckError("Could not write header to output file");
+            _tempPacket ??= new MediaPacket();
+            encoder.SendFrame(frame);
+
+            while (encoder.ReceivePacket(_tempPacket)) {
+
                 _tempPacket.RescaleTS(encoder.TimeBase, stream.TimeBase);
                 _tempPacket.StreamIndex = stream.Index;
                 av_interleaved_write_frame(_handle, _tempPacket.Handle).CheckError("Failed to write packet");
             }
+            
+            av_write_trailer(_handle);
         }
     }
 
@@ -249,7 +274,9 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     {
         AVDictionary* opt = options;
         avformat_write_header(Handle.Raw, &opt);
+        IsOpen = true;
     }
+    
 
     public unsafe void WriteTrailer()
     {

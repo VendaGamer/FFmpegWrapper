@@ -71,11 +71,11 @@ public abstract class MediaEncoder : CodecBase
     #endregion
     
 
-    public bool ReceivePacket(MediaPacket pkt)
+    public bool ReceivePacket(FFHandle<AVPacket> packetHandle)
     {
         unsafe
         {
-            var result = (LavResult)avcodec_receive_packet(Handle, pkt.Handle);
+            var result = (LavResult)avcodec_receive_packet(Handle, packetHandle);
             
             if (result is not (LavResult.Success or LavResult.TryAgain or LavResult.EndOfFile)) {
                 result.ThrowIfError("Could not encode packet");
@@ -84,7 +84,7 @@ public abstract class MediaEncoder : CodecBase
         }
     }
     
-    public bool SendFrame(FFHandle<AVFrame> frame = default)
+    public bool SendFrame(NullableFFHandle<AVFrame> frame)
     {
         unsafe
         {

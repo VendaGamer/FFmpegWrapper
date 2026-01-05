@@ -25,29 +25,28 @@ public sealed class FFMpegService
 {
     private static bool isInitialized = false;
     public static Action? Init { get; set; }
-    
-    private static readonly Dictionary<AVLog, ConsoleColor> logColors = new()
-    {
-        { AVLog.AV_LOG_DEBUG, ConsoleColor.Cyan},
-        { AVLog.AV_LOG_INFO, ConsoleColor.White},
-        { AVLog.AV_LOG_VERBOSE, ConsoleColor.Gray},
-        { AVLog.AV_LOG_WARNING, ConsoleColor.Yellow},
-        { AVLog.AV_LOG_ERROR, ConsoleColor.Red},
-        { AVLog.AV_LOG_FATAL, ConsoleColor.DarkRed},
-        { AVLog.AV_LOG_PANIC, ConsoleColor.DarkMagenta},
-        { AVLog.AV_LOG_TRACE , ConsoleColor.DarkGreen},
+
+    private static readonly Dictionary<AVLog, ConsoleColor> logColors = new() {
+        { AVLog.AV_LOG_DEBUG, ConsoleColor.Cyan },
+        { AVLog.AV_LOG_INFO, ConsoleColor.White },
+        { AVLog.AV_LOG_VERBOSE, ConsoleColor.Gray },
+        { AVLog.AV_LOG_WARNING, ConsoleColor.Yellow },
+        { AVLog.AV_LOG_ERROR, ConsoleColor.Red },
+        { AVLog.AV_LOG_FATAL, ConsoleColor.DarkRed },
+        { AVLog.AV_LOG_PANIC, ConsoleColor.DarkMagenta },
+        { AVLog.AV_LOG_TRACE, ConsoleColor.DarkGreen },
     };
+
     public FFMpegService()
     {
-        if (!isInitialized)
-        {
-            if (Init is not null)
-            {
+        if (!isInitialized) {
+            if (Init is not null) {
                 Init();
                 isInitialized = true;
             }
         }
     }
+
     /// <summary>
     ///  Saves Image from video
     /// </summary>
@@ -57,54 +56,46 @@ public sealed class FFMpegService
     /// <returns>Image info</returns>
     public AVImage? SampleImage(string pathToVideo, TimeSpan timestamp, string fileName)
     {
-        var filePath = 
-            Path.IsPathRooted(fileName) ?
-                Path.GetFullPath(fileName) :
-                Path.Combine("./", fileName);
-            
+        var filePath =
+            Path.IsPathRooted(fileName) ? Path.GetFullPath(fileName) : Path.Combine("./", fileName);
+
         var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
             Directory.CreateDirectory(directory);
         }
-            
+
         using var demuxer = new MediaDemuxer(Encoding.UTF8.GetBytes(pathToVideo));
         using var packet = new MediaPacket();
         using var frame = new VideoFrame();
 
-        if (!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var stream))
-        {
+        if (!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var stream)) {
             stream = demuxer.Streams[0];
         }
-            
-        using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream.Handle,false);
-        
+
+        using var decoder = (VideoDecoder)demuxer.CreateStreamDecoder(stream.Handle, false);
+
         demuxer.Seek(timestamp, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD, stream);
         decoder.Open();
 
-        while (demuxer.Read(packet.Handle))
-        {
+        while (demuxer.Read(packet.Handle)) {
             if (packet.StreamIndex != stream.Index) continue; //Ignore packets from other streams
 
-            if (decoder.TrySendPacket(packet.Handle) is LavResult.Success)
-            {
-                if (decoder.ReceiveFrame(frame.Handle))
-                {
-                    frame.Save(filePath, new PictureFormat(0,0, AVPixelFormat.AV_PIX_FMT_YUV420P));
+            if (decoder.TrySendPacket(packet.Handle) is LavResult.Success) {
+                if (decoder.ReceiveFrame(frame.Handle)) {
+                    frame.Save(filePath, new PictureFormat(0, 0, AVPixelFormat.AV_PIX_FMT_YUV420P));
                     return new AVImage(filePath, frame.Format);
                 }
-            }
-            else
-            {
+            } else {
                 decoder.Flush();
             }
         }
+
         return null;
     }
 
     public AVImage? SampleImage(Uri mediaUri, TimeSpan timestamp, string fileName)
     {
-        return SampleImage(mediaUri.AbsoluteUri,timestamp,fileName);
+        return SampleImage(mediaUri.AbsoluteUri, timestamp, fileName);
     }
 
     /// <summary>
@@ -137,9 +128,8 @@ public sealed class FFMpegService
         }
             
         using var demuxer = new MediaDemuxer(Encoding.UTF8.GetBytes(pathToVideo));
-        using var packet = new MediaPacket();
+        using var decPacket = new MediaPacket();
         using var decFrame = new VideoFrame();
-
             
         if (!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var stream))
         {
@@ -151,22 +141,14 @@ public sealed class FFMpegService
         var outputFormat = OutputFormat.FindByExtension(Encoding.UTF8.GetBytes($"dummy.{fileExtension}"));
         var outCodec = MediaCodec.GetEncoder(outputFormat.VideoCodec);
         
-        var outFormat = new PictureFormat(decoder.Width, decoder.Height,
+        var outputPictureFormat = new PictureFormat(decoder.Width, decoder.Height,
             outCodec.GetBestPixelFormat(decoder.PixelFormat));
         
-        using var encoder = new VideoEncoder(outCodec.Handle, outFormat, decoder.FrameRate);
-        using var encFrame = new VideoFrame(outFormat);
+        using var encFrame = new VideoFrame(outputPictureFormat);
+        using var sws = new SwScaler(decoder.FrameFormat, outputPictureFormat);
         
-        using var sws = new SwScaler(decoder.FrameFormat, outFormat);
-        sws.SetColorspace(decoder.Colorspace, encoder.Colorspace);
+        decoder.SetThreadCount(0);
         
-        // Configure encoder for specific formats
-        encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
-        encoder.GlobalQuality = 32 * FFmpegConstants.FF_QP2LAMBDA;
-        encoder.SetThreadCount(0, true);
-        decoder.SetThreadCount(0, true);
-        
-        encoder.Open();
         decoder.Open();
         
         var startTime = stream.GetTimestamp(stream.StartTime ?? 0);
@@ -188,36 +170,63 @@ public sealed class FFMpegService
             var curTime = startTime + (interval * i);
             Console.WriteLine($"current time: {curTime}");
             
-            var outputPath = $"{filePath}{i}.{fileExtension}";
-            
             if(demuxer.Seek(curTime, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD, stream))
             {
                 decoder.Flush();
-            } 
+            }
             
-            while (demuxer.Read(packet.Handle))
+            while (demuxer.Read(decPacket.Handle))
             {
-                if (packet.StreamIndex != stream.Index)
+                if (decPacket.StreamIndex != stream.Index)
                     continue;
 
-                if (decoder.TrySendPacket(packet.Handle) is not LavResult.Success)
+                if (decoder.TrySendPacket(decPacket.Handle) is not LavResult.Success)
                     continue;
 
                 if (!decoder.ReceiveFrame(decFrame.Handle))
                     continue;
                 
-                // Convert pixel format
                 sws.Convert(decFrame.Handle, encFrame.Handle);
-                using var muxer = new MediaMuxer(Encoding.UTF8.GetBytes(outputPath));
+                
+                // Create individual file for this frame
+                var frameOutputPath = $"{filePath}{(i+1):D3}.{fileExtension}";
+                
+                // Create a new encoder and muxer for each frame
+                using var encoder = new VideoEncoder(outCodec.Handle, outputPictureFormat, new Rational(1, 1));
+                sws.SetColorspace(decoder.Colorspace, encoder.Colorspace);
+                
+                encoder.Handle.Ref.strict_std_compliance = (int)FFCompliance.FF_COMPLIANCE_UNOFFICIAL;
+                
+                // Set quality
+                if (outCodec.Handle.Ref.id == AVCodecID.AV_CODEC_ID_MJPEG)
+                {
+                    encoder.GlobalQuality = 2 * FFmpegConstants.FF_QP2LAMBDA;
+                }
+                else
+                {
+                    encoder.GlobalQuality = 32 * FFmpegConstants.FF_QP2LAMBDA;
+                }
+                
+                encoder.SetThreadCount(0);
+                encoder.Open();
+                
+                using var muxer = new MediaMuxer(Encoding.UTF8.GetBytes(frameOutputPath));
                 var outStream = muxer.AddStream(encoder);
-                muxer.Open();
-                muxer.EncodeAndWrite(outStream, encoder, encFrame.Handle);
-                images[i] = new AVImage(outputPath, outFormat);
+                muxer.OutputFormat = outputFormat;
+                
+                using var encPacket = new MediaPacket();
+                encPacket.StreamIndex = outStream.Index;
+                encoder.SendFrame(encFrame.Handle);
+                
+                muxer.WriteHeader();
+                muxer.Write(encPacket.Handle);
+                muxer.WriteTrailer();
+                
+                images[i] = new AVImage(frameOutputPath, outputPictureFormat);
                 break;
             }
         }
             
         return images;
     }
-
 }

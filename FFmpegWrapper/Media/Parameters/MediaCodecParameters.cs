@@ -3,55 +3,69 @@
 using Abstractions;
 using Media;
 
-public class MediaCodecParameters : FFObject<AVCodecParameters>
+public abstract class MediaCodecParameters : FFObject<AVCodecParameters>
 {
-    public MediaCodecParameters(FFHandle<AVCodecParameters> handle)
-    {
-        unsafe {
-            _handle = handle;
-        }
-    }
-
-    public MediaCodecParameters()
-    {
-        unsafe {
-            _handle = avcodec_parameters_alloc();
-        }
-    }
-    
     /// <inheritdoc cref="AVCodecParameters.codec_type" />
-    public AVMediaType CodecType => Handle.Ref.codec_type;
+    public ref AVMediaType CodecType {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.codec_type;
+    }
 
     /// <inheritdoc cref="AVCodecParameters.codec_id" />
-    public AVCodecID CodecId => Handle.Ref.codec_id;
+    public ref AVCodecID CodecId {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.codec_id;
+    }
 
     /// <inheritdoc cref="AVCodecParameters.codec_tag" />
-    public uint CodecTag => Handle.Ref.codec_tag;
+    public ref uint CodecTag {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.codec_tag;
+    }
 
     /// <inheritdoc cref="AVCodecParameters.extradata" />
     public ReadOnlySpan<byte> ExtraData {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return new ReadOnlySpan<byte>(Handle.Ref.extradata, Handle.Ref.extradata_size);
+                ref var handle = ref Handle.Ref;
+                
+                return new ReadOnlySpan<byte>(handle.extradata, handle.extradata_size);
             }
+        }
+        set {
+            
         }
     }
 
     /// <inheritdoc cref="AVCodecParameters.bit_rate" />
-    public long BitRate => Handle.Ref.bit_rate;
+    public ref long BitRate {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.bit_rate;
+    }
 
     /// <inheritdoc cref="AVCodecParameters.bits_per_coded_sample" />
-    public int BitsPerCodedSample => Handle.Ref.bits_per_coded_sample;
+    public ref int BitsPerCodedSample {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.bits_per_coded_sample;
+    }
 
     /// <inheritdoc cref="AVCodecParameters.bits_per_raw_sample" />
-    public int BitsPerRawSample => Handle.Ref.bits_per_raw_sample;
+    public ref int BitsPerRawSample {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.bits_per_raw_sample;
+    }
 
     /// <inheritdoc cref="AVCodecParameters.profile" />
-    public int Profile => Handle.Ref.profile;
+    public ref int Profile {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.profile;
+    }
 
     /// <summary> Shorthand for <c>ffmpeg.avcodec_profile_name(CodecId, Profile)</c>. </summary>
     public ReadOnlySpan<byte> ProfileName {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -59,48 +73,22 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
             }
         }
     }
-
-    /// <inheritdoc cref="AVCodecParameters.level" />
-    public int Level => Handle.Ref.level;
     
-
-
-    /// <inheritdoc cref="AVCodecParameters.field_order" />
-    public AVFieldOrder FieldOrder => Handle.Ref.field_order;
-
-    /// <inheritdoc cref="AVCodecParameters.chroma_location" />
-    public AVChromaLocation ChromaLocation => Handle.Ref.chroma_location;
-
-
-
-
-    //Audio fields
-
-    /// <inheritdoc cref="AVCodecParameters.sample_rate" />
-    public int SampleRate => Handle.Ref.sample_rate;
-
-    /// <inheritdoc cref="AVCodecParameters.block_align" />
-    public int BlockAlign => Handle.Ref.block_align;
-
-    /// <inheritdoc cref="AVCodecParameters.frame_size" />
-    public int FrameSize => Handle.Ref.frame_size;
-
-    /// <inheritdoc cref="AVCodecParameters.initial_padding" />
-    public int InitialPaddingSamples => Handle.Ref.initial_padding;
-
-    /// <inheritdoc cref="AVCodecParameters.trailing_padding" />
-    public int TrailingPaddingSamples => Handle.Ref.trailing_padding;
-
-    /// <inheritdoc cref="AVCodecParameters.seek_preroll" />
-    public int SeekPrerollSamples => Handle.Ref.seek_preroll;
-
-    /// <inheritdoc cref="AVCodecParameters.ch_layout" />
-    public ChannelLayout ChannelLayout => new(Handle.Ref.ch_layout);
-
-    public int NumChannels => Handle.Ref.ch_layout.nb_channels;
-    public AVSampleFormat SampleFormat => (AVSampleFormat)Handle.Ref.format;
-
-    public AudioFormat AudioFormat => new(SampleFormat, SampleRate, ChannelLayout);
+    
+    /// <summary>
+    /// Levels constrain decoder capability requirements (for example, maximum resolution, bitrate,
+    /// decoded picture buffer size, or macroblocks-per-second) for codecs that define
+    /// profiles and levels such as H.264/AVC, HEVC, or MPEG-4 Part 2.
+    ///
+    /// The stored value is the integer level identifier specified by the codec
+    /// standard (e.g., H.264 Level 4.1 is represented as <c>41</c>). For codecs
+    /// that do not define levels, or when the level is unknown, this value is
+    /// typically <c>0</c>.
+    /// </summary>
+    public ref int Level {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.level;
+    }
 
     /// <inheritdoc cref="AVCodecParameters.coded_side_data"/>
     public PacketSideDataList CodedSideData {
@@ -113,6 +101,16 @@ public class MediaCodecParameters : FFObject<AVCodecParameters>
                     &raw->nb_coded_side_data);
             }
         }
+    }
+    
+    protected MediaCodecParameters(FFHandle<AVCodecParameters> handle) : base(handle)
+    {
+        
+    }
+
+    protected unsafe MediaCodecParameters() : base(avcodec_parameters_alloc())
+    {
+        
     }
 
     public bool Equals(MediaCodecParameters other)

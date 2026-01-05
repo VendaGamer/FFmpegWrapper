@@ -10,7 +10,7 @@ public static class FFHelper
     {
         unsafe
         {
-            byte* buf = stackalloc byte[AV_ERROR_MAX_STRING_SIZE + 1];
+            byte* buf = stackalloc byte[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(errno, buf, AV_ERROR_MAX_STRING_SIZE);
             return Marshal.PtrToStringAnsi((nint)buf)!;
         }
