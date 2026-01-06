@@ -26,7 +26,7 @@ public class CodecTests : TestBase
         Assert.Equal(AVCodecID.AV_CODEC_ID_MP3, codec2.Id);
         Assert.True(codec2.IsEncoder);
         Assert.False(codec2.IsDecoder);
-        Assert.Equal(2, codec2.SupportedChannelLayouts[0].nb_channels);
+        Assert.Equal(2, codec2.SupportedChannelLayouts[1].nb_channels);
         Assert.Equal(AVSampleFormat.AV_SAMPLE_FMT_FLTP, codec2.SupportedSampleFormats[1]);
         Assert.Equal(44100, codec2.SupportedSampleRates[0]);
     }

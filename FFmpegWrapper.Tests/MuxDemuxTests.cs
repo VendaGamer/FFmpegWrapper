@@ -21,8 +21,6 @@ public unsafe class MuxDemuxTests : TestBase
         Assert.Equal(1234, pkt.Handle.Ref.pts);
         Assert.Equal(2048, pkt.Data.Length);
 
-        Assert.Equal(0, pkt.Data.Length);
-
         pkt.Dispose();
         Assert.Throws<ObjectDisposedException>(() => _ = pkt.Handle);
     }
@@ -48,9 +46,9 @@ public unsafe class MuxDemuxTests : TestBase
     [Fact]
     public void DemuxMetadata()
     {
-        var demuxer = new MediaDemuxer("Resources/demux_test.mkv"u8);
+        var demuxer = new MediaDemuxer("Resources/BigBuckBunny.mp4"u8);
 
-        Assert.Equal(5, demuxer.Duration!.Value.TotalSeconds, 0);
+        Assert.Equal(596, demuxer.Duration!.Value.TotalSeconds, 0);
         Assert.Equal(2, demuxer.Streams.Length);
 
         Assert.Equal("Test Media File"u8, demuxer.Metadata["title"u8]);
@@ -58,8 +56,8 @@ public unsafe class MuxDemuxTests : TestBase
         demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var vs);
         Assert.Equal(AVCodecID.AV_CODEC_ID_H264, vs.CodecPars.CodecId);
         Assert.Equal(AVPixelFormat.AV_PIX_FMT_YUV420P, vs.CodecPars.PictureFormat.PixelFormat);
-        Assert.Equal(320, vs.CodecPars.PictureFormat.Width);
-        Assert.Equal(240, vs.CodecPars.PictureFormat.Height);
+        Assert.Equal(1280, vs.CodecPars.PictureFormat.Width);
+        Assert.Equal(720, vs.CodecPars.PictureFormat.Height);
 
         demuxer.Dispose();
         Assert.Throws<ObjectDisposedException>(() => _ = demuxer.Handle);

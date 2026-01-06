@@ -23,9 +23,6 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
     }
 
-    /// <inheritdoc cref="AVFormatContext.metadata" />
-    public readonly MediaDictionaryOwner Metadata;
-
     public bool CanSeek {
         get {
             unsafe
@@ -34,7 +31,17 @@ public class MediaDemuxer : FFObject<AVFormatContext>
             }
         }
     }
-    
+
+    public ObservedMediaDictionary Metadata {
+        [MethodImpl]
+        get {
+            unsafe
+            {
+                return new(&Handle.Raw->metadata);
+            }
+        }
+    }
+
     #endregion
     
     
@@ -70,7 +77,6 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         unsafe
         {
             _handle = ctx;
-            Metadata = new MediaDictionaryOwner(_handle->metadata);
         }
     }
 

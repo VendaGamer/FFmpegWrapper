@@ -140,25 +140,25 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
         _handle = handle;
     }
 
-    /// <summary> Array of supported frame rates, or empty if any. </summary>
+    /// <summary> Span of supported frame rates, or empty if any. </summary>
     public ReadOnlySpan<Rational> SupportedFrameRates
         => GetSupported<Rational>(AVCodecConfig.AV_CODEC_CONFIG_CHANNEL_LAYOUT);
 
-    /// <summary> Array of supported pixel formats, or empty if any. </summary>
+    /// <summary> Span of supported pixel formats, or empty if any. </summary>
     public readonly ReadOnlySpan<AVPixelFormat> SupportedPixelFormats
         => GetSupported<AVPixelFormat>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
 
-    /// <summary> Array of supported audio sample rates, or empty if any. </summary>
+    /// <summary> Span of supported audio sample rates, or empty if any. </summary>
     public readonly ReadOnlySpan<int> SupportedSampleRates
         => GetSupported<int>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_RATE);
 
-    /// <summary> Array of supported sample formats, or empty if any. </summary>
+    /// <summary> Span of supported sample formats, or empty if any. </summary>
     public readonly ReadOnlySpan<AVSampleFormat> SupportedSampleFormats
         => GetSupported<AVSampleFormat>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_FORMAT);
 
-    /// <summary> Array of supported channel layouts, or empty if any. </summary>
+    /// <summary> Span of supported channel layouts, or empty if any. </summary>
     public readonly ReadOnlySpan<AVChannelLayout> SupportedChannelLayouts
-        => GetSupported<AVChannelLayout>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
+        => GetSupported<AVChannelLayout>(AVCodecConfig.AV_CODEC_CONFIG_CHANNEL_LAYOUT);
 
     private ReadOnlySpan<T> GetSupported<T>(AVCodecConfig config) where T : unmanaged
     {

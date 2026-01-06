@@ -2,11 +2,10 @@ namespace FFmpegWrapper.Configuration;
 
 using System.Collections.Generic;
 using Core;
-
 using Extensions;
 
 /// <summary> Represents an option accepted by a ffmpeg object. </summary>
-public readonly struct ContextOption
+public readonly struct ContextOption(FFHandle<AVOption> handle)
 {
     public FFHandle<AVOption> Handle {
         get {
@@ -15,15 +14,47 @@ public readonly struct ContextOption
             }
         }
     }
+    
+    public ReadOnlySpan<byte> Name {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.name);
+            }
+        }
+    }
+    
+    public ReadOnlySpan<byte> Description {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.help);
+            }
+        }
+    }
 
-    public readonly string Name;
-    public readonly string Description;
-    public AVOptionType Type => Handle.Ref.type;
-    public double MinValue => Handle.Ref.min;
-    public double MaxValue => Handle.Ref.max;
+
+    public AVOptionType Type {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.type;
+    }
+
+    public double MinValue {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.min;
+    } 
+    public double MaxValue {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.max;
+    }
 
     /// <summary> Offset to the field containing this option, relative to the object pointer. </summary>
-    public int Offset => Handle.Ref.offset;
+    public int Offset {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.offset;
+    }
 
     public OptionValue? DefaultValue {
         get {
@@ -34,20 +65,8 @@ public readonly struct ContextOption
         }
     }
 
-    private readonly unsafe AVOption* _handle;
+    private readonly unsafe AVOption* _handle = handle;
 
-    //TODO: Expose Option.DefaultValue
-    //public OptionValue? DefaultValue => throw new NotImplementedException();
-
-    public ContextOption(FFHandle<AVOption> handle)
-    {
-        unsafe
-        {
-            _handle = handle;
-            Name = FFHelper.PtrToStringUtf8(_handle->name);
-            Description = FFHelper.PtrToStringUtf8(_handle->name);
-        }
-    }
 
     /// <summary> Returns a list of acceptable pre-defined input values. </summary>
     public IReadOnlyList<ContextOption> GetNamedValues()
@@ -95,7 +114,6 @@ public readonly struct ContextOption
             AVOptionType.AV_OPT_TYPE_INT => av_opt_set_int(obj, namePtr, value._handle->i64, (int)flags),
             AVOptionType.AV_OPT_TYPE_DOUBLE => av_opt_set_double(obj, namePtr, value._handle->dbl, (int)flags),
             AVOptionType.AV_OPT_TYPE_RATIONAL => av_opt_set_q(obj, namePtr, value._handle->q, (int)flags),
-
         };
         
         if (ret < 0) {
@@ -106,12 +124,12 @@ public readonly struct ContextOption
     }
 
     /// <summary> Gets the value of an option in <paramref name="obj"/> as a string. </summary>
-    public static unsafe string GetAsString(void* obj, FFHandle<byte> name, AVOptionSearchFlags flags = 0)
+    public static unsafe string GetAsString(void* obj, ReadOnlySpan<byte> name, AVOptionSearchFlags flags = 0)
     {
         byte* value;
-        av_opt_get(obj, name.Raw, (int)flags, &value);
+        av_opt_get(obj, name.RawHandle, (int)flags, &value);
 
-        string str = FFHelper.PtrToStringUtf8(value);
+        var str = FFHelper.PtrToStringUtf8(value);
         av_free(value);
         return str;
     }
@@ -164,5 +182,9 @@ public readonly struct ContextOption
         return opts;
     }
 
-    public override string ToString() => Name + ": " + Type.ToString().ToLower().Substring("AV_OPT_TYPE_".Length);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override string ToString()
+    {
+        return $"{FFHelper.SpanToStringUtf8(Name)}: {Type.ToString().ToLower().Substring("AV_OPT_TYPE_".Length)}";
+    }
 }

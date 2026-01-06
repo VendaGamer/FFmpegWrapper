@@ -30,7 +30,7 @@ public readonly ref struct FFHandle<T>
     public FFHandle(ref T handle)
     {
         if(Unsafe.IsNullRef(ref handle))
-            throw new ArgumentNullException(nameof(handle));
+            throw new ObjectDisposedException(nameof(handle));
         
         unsafe {
             Raw = (T*) Unsafe.AsPointer(ref handle);
@@ -41,7 +41,7 @@ public readonly ref struct FFHandle<T>
     public unsafe FFHandle(T* raw)
     {
         if(raw is null)
-            throw new ArgumentNullException(nameof(raw));
+            throw new ObjectDisposedException(nameof(raw));
         
         Raw = raw;
     }

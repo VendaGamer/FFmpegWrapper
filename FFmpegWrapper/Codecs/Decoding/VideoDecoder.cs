@@ -1,48 +1,32 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
 using System.Runtime.InteropServices;
-
 using Extensions;
-
 using Hardware;
 using Media;
 
 public class VideoDecoder : MediaDecoder
 {
-    public int Width {
-        get {
-            unsafe
-            {
-                return Handle.Raw->width;
-            }
-        }
-    }
-
-    public int Height {
-        get {
-            unsafe
-            {
-                return Handle.Raw->height;
-            }
-        }
-    }
-
-    public AVPixelFormat PixelFormat {
-        get {
-            unsafe
-            {
-                return Handle.Raw->pix_fmt;
-            }
-        }
-    }
-
     public PictureFormat FrameFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
-                return new PictureFormat(Width, Height, PixelFormat, Handle.Raw->sample_aspect_ratio);
-            }
+            ref var handle = ref Handle.Ref;
+            
+            return new PictureFormat(
+                handle.width,
+                handle.height,
+                handle.pix_fmt,
+                handle.sample_aspect_ratio
+                );
         }
+    }
+    
+    /// <summary>
+    /// Unaccelerated format
+    /// </summary>
+    public AVPixelFormat SoftwarePixelFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.sw_pix_fmt;
     }
 
     public PictureColorspace Colorspace {

@@ -89,6 +89,10 @@ public sealed class VideoFrame : MediaFrame
     {
         unsafe
         {
+            if (width <= 0 || height <= 0) {
+                throw new ArgumentException("Invalid frame dimensions.");
+            }
+            
             _handle->width = width;
             _handle->height = height;
             _handle->format = (int)fmt;
@@ -114,16 +118,12 @@ public sealed class VideoFrame : MediaFrame
     public VideoFrame(PictureFormat fmt)
         : this(fmt.Width, fmt.Height, fmt.PixelFormat, fmt.AspectRatio)
     {
-        
+
     }
 
     public VideoFrame(FFHandle<AVFrame> handle) : base(handle)
     {
-        unsafe {
-            if (_handle->width <= 0 || _handle->height <= 0) {
-                throw new ArgumentException("Invalid frame dimensions.");
-            }
-        }
+
     }
 
     /// Allocates an empty <see cref="AVFrame"/>
@@ -149,9 +149,7 @@ public sealed class VideoFrame : MediaFrame
 
             GetPlaneSpan<T>(plane, out int stride);
             
-            return new Span<T>((void*)Handle.Ref.data[plane][y * stride],
-                Math.Abs(stride / sizeof(T)));
-            
+            return new Span<T>((void*)Handle.Ref.data[plane][y * stride], stride);
         }
     }
 

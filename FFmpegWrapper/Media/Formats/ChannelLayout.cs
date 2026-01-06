@@ -68,11 +68,23 @@ public readonly struct ChannelLayout(AVChannelLayout native) : IFFWrapped<AVChan
 #endregion
     
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AVChannel GetChannel(uint index)
     {
         unsafe
         {
             return av_channel_layout_channel_from_index(Handle, index);
+        }
+    }
+
+
+    public AVChannel this[uint index] {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return av_channel_layout_channel_from_index(Handle, index);
+            }
         }
     }
     
@@ -110,7 +122,7 @@ public readonly struct ChannelLayout(AVChannelLayout native) : IFFWrapped<AVChan
         {
             ChannelLayout layout = default;
             if (av_channel_layout_from_string(layout.Handle, str.RawHandle) < 0) {
-                throw new ArgumentException();
+                throw new ArgumentException(nameof(str));
             }
             return layout;
         }
@@ -138,18 +150,14 @@ public readonly struct ChannelLayout(AVChannelLayout native) : IFFWrapped<AVChan
     }
 
     /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString()
     {
         unsafe
         {
-            int requiredSize = av_channel_layout_describe(Handle, null, 0).CheckError();
-        
-            Span<byte> buf = stackalloc byte[requiredSize];
-            
-            fixed (byte* ptr = buf) {
-                av_channel_layout_describe(Handle, ptr, (nuint)requiredSize).CheckError();
-            }
-            return FFHelper.SpanToStringUtf8(buf);
+            var buf = stackalloc byte[128];
+            var size = av_channel_layout_describe(Handle, buf, 128).CheckError();
+            return FFHelper.SpanToStringUtf8(new ReadOnlySpan<byte>(buf, size - 1));
         }
     }
 

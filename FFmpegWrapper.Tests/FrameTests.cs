@@ -58,9 +58,9 @@ public class FrameTests: TestBase
         var b = ChannelLayout.FromString("FL+FC+FR"u8);
         Assert.Equal(3, b.NumChannels);
         Assert.Equal(AVChannelOrder.AV_CHANNEL_ORDER_CUSTOM, b.Order);
-        Assert.Equal(AVChannel.AV_CHAN_BOTTOM_FRONT_LEFT, b.GetChannel(0));
-        Assert.Equal(AVChannel.AV_CHAN_BOTTOM_FRONT_CENTER, b.GetChannel(1));
-        Assert.Equal(AVChannel.AV_CHAN_BOTTOM_FRONT_RIGHT, b.GetChannel(2));
+        Assert.Equal(AVChannel.AV_CHAN_FRONT_LEFT, b.GetChannel(0));
+        Assert.Equal(AVChannel.AV_CHAN_FRONT_CENTER, b.GetChannel(1));
+        Assert.Equal(AVChannel.AV_CHAN_FRONT_RIGHT, b.GetChannel(2));
     }
 
     [Fact]
