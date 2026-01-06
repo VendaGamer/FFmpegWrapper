@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Tests;
 
-using FFmpegBindings.DynamicallyLinked;
+using FFmpegBindings.Linked;
 
 public abstract class TestBase
 {

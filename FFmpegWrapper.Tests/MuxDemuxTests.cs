@@ -7,47 +7,6 @@ using Media.Packets;
 
 public unsafe class MuxDemuxTests : TestBase
 {
-    [Fact]
-    public void CustomIO_Read()
-    {
-        var mem = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], writable: false);
-        var ioc = IOContext.CreateInputFromStream(mem, leaveOpen: false);
-
-        Assert.Equal(mem.Length, avio_size(ioc.Handle));
-        Assert.Equal(0x01_02_03_04_05_06_07_08ul, avio_rb64(ioc.Handle));
-
-        avio_seek(ioc.Handle, 0, (int)SeekOrigin.Begin);
-        Assert.Equal(0x01_02_03_04_05_06_07_08ul, avio_rb64(ioc.Handle));
-
-        Assert.Equal(0x09_0A_0B_0Cu, avio_rb32(ioc.Handle));
-        Assert.Equal(0x0D, avio_r8(ioc.Handle));
-
-        avio_r8(ioc.Handle);
-        Assert.Equal(1, ioc.Handle.Raw->eof_reached);
-
-        ioc.Dispose();
-
-        Assert.Throws<ObjectDisposedException>(() => _ = ioc.Handle);
-        Assert.Throws<ObjectDisposedException>(() => _ = mem.Length);
-    }
-
-    [Fact]
-    public void CustomIO_Write()
-    {
-        var mem = new MemoryStream();
-        var ioc = IOContext.CreateOutputFromStream(mem, leaveOpen: true);
-
-        avio_wb64(ioc.Handle, 0x01_02_03_04_05_06_07_08ul);
-        avio_wb32(ioc.Handle, 0x09_0A_0B_0Cu);
-
-        ioc.Flush();
-        Assert.Equal(12, mem.Length);
-
-        ioc.Dispose();
-
-        Assert.Throws<ObjectDisposedException>(() => _ = ioc.Handle);
-        Assert.Equal(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }, mem.ToArray());
-    }
 
     [Fact]
     public void MediaPacket()

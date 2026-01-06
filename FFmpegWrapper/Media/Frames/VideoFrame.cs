@@ -85,26 +85,15 @@ public sealed class VideoFrame : MediaFrame
     #region Constructors
     
     /// <inheritdoc />
-    public VideoFrame(int width, int height, AVPixelFormat fmt, Rational aspectRatio)
+    public VideoFrame(int width, int height, AVPixelFormat fmt) : this()
     {
         unsafe
         {
-            if (width <= 0 || height <= 0) {
-                throw new ArgumentException("Invalid frame dimensions.");
-            }
-        
-            _handle = av_frame_alloc();
-            if (_handle == null) {
-                throw new OutOfMemoryException("Failed to allocate AVFrame.");
-            }
-        
             _handle->width = width;
             _handle->height = height;
             _handle->format = (int)fmt;
-            _handle->sample_aspect_ratio = aspectRatio;
             
-            int result = av_frame_get_buffer(_handle, 0);
-            if (result < 0) {
+            if (av_frame_get_buffer(_handle, 0) < 0) {
                 
                 fixed (AVFrame** ptr = &_handle) {
                     av_frame_free(ptr);
@@ -115,16 +104,33 @@ public sealed class VideoFrame : MediaFrame
         }
     }
 
+    public VideoFrame(int width, int height, AVPixelFormat fmt, Rational aspectRatio) : this(width, height, fmt)
+    {
+        unsafe {
+            _handle->sample_aspect_ratio = aspectRatio;
+        }
+    }
+
     public VideoFrame(PictureFormat fmt)
         : this(fmt.Width, fmt.Height, fmt.PixelFormat, fmt.AspectRatio)
     {
         
     }
-    
-    public VideoFrame(FFHandle<AVFrame> handle) : base(handle) { }
+
+    public VideoFrame(FFHandle<AVFrame> handle) : base(handle)
+    {
+        unsafe {
+            if (_handle->width <= 0 || _handle->height <= 0) {
+                throw new ArgumentException("Invalid frame dimensions.");
+            }
+        }
+    }
 
     /// Allocates an empty <see cref="AVFrame"/>
-    public VideoFrame(){ }
+    public unsafe VideoFrame() : this(av_frame_alloc())
+    {
+        
+    }
     
     #endregion
 
