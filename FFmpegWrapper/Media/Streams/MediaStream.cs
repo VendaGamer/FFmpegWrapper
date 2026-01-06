@@ -32,11 +32,12 @@ public readonly struct MediaStream
     /// <inheritdoc cref="AVStream.r_frame_rate" />
     public Rational RealFrameRate => Handle.Ref.r_frame_rate;
 
-    public MediaDictionaryOwner Metadata {
+    public ObservedMediaDictionary Metadata {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return new MediaDictionaryOwner(Handle.Raw->metadata);
+                return new ObservedMediaDictionary(&Handle.Raw->metadata);
             }
         }
     }
