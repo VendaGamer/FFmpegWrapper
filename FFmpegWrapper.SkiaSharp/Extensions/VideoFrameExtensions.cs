@@ -23,7 +23,6 @@ public static class VideoFrameExtensions
                 var width = handle.width;
                 var height = handle.height;
                 var pixelFormat = (AVPixelFormat)handle.format;
-                
                 var (colorType, needsConversion) = GetSkiaColorType(pixelFormat);
 
                 if (needsConversion) {
@@ -44,7 +43,7 @@ public static class VideoFrameExtensions
                     colorType,
                     SKAlphaType.Premul);
                 
-                return SKImage.FromPixels(imageInfo, dataPtr, stride);
+                return SKImage.FromPixelCopy(imageInfo, dataPtr, stride);
             }
         }
 
@@ -71,7 +70,7 @@ public static class VideoFrameExtensions
                 var dstStride = bitmap.RowBytes;
                 var height = bitmap.Height;
 
-                var src = (byte*)frame.Data[0];
+                var src = frame.Data[0];
                 var dst = (byte*)pixels;
 
 

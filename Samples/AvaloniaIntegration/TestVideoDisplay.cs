@@ -31,7 +31,6 @@ public class VideoFrameVisualHandler : CompositionCustomVisualHandler
             _currentImage = frame.ToSKImage();
         }
         
-        RegisterForNextAnimationFrameUpdate();
     }
 
     public override void OnRender(ImmediateDrawingContext drawingContext)

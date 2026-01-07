@@ -90,13 +90,11 @@ public abstract class MediaDecoder : CodecBase
             ThrowIfDisposed();
             var result = (LavResult)avcodec_receive_frame(_handle, handle);
             
-            if (result is 0) 
-                return true;
             if (result is LavResult.TryAgain or LavResult.EndOfFile)
                 return false;
             
-            (result).ThrowIfError("Could not decode frame");
-            return false;
+            result.ThrowIfError("Could not decode frame");
+            return true;
         }
     }
     
