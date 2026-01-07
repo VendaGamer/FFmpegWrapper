@@ -7,6 +7,9 @@ using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
 
 using FFmpegWrapper.Media.Frames;
+using FFmpegWrapper.SkiaSharp.Extensions;
+
+using SkiaSharp;
 
 /// <summary>
 /// Avalonia control for displaying VideoFrames
@@ -36,11 +39,16 @@ public class VideoFrameControl : Control
     /// </summary>
     public void SetFrame(VideoFrame? frame)
     {
-        _currentFrame = frame;
-        
-        if (_handler != null)
+        if (_customVisual != null && frame != null)
         {
-            Dispatcher.UIThread.Post(() => _handler.SetVideoFrame(frame));
+            var image = frame.ToSKImageNoCopy();
+
+            // Send both the image AND the frame to keep the frame alive
+            _customVisual.SendHandlerMessage(new VideoFrameVisualHandler.UpdateFrameMessage 
+            { 
+                Image = image,
+                Frame = frame
+            });
         }
     }
 
@@ -55,12 +63,6 @@ public class VideoFrameControl : Control
         ElementComposition.SetElementChildVisual(this, _customVisual);
 
         _customVisual.Size = new Vector(Bounds.Width, Bounds.Height);
-        
-        // Set initial frame if available
-        if (_currentFrame != null)
-        {
-            _handler.SetVideoFrame(_currentFrame);
-        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -74,10 +76,7 @@ public class VideoFrameControl : Control
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
-        
-        if (_customVisual != null)
-        {
-            _customVisual.Size = new Vector(e.NewSize.Width, e.NewSize.Height);
-        }
+
+        _customVisual?.Size = new Vector(e.NewSize.Width, e.NewSize.Height);
     }
 }

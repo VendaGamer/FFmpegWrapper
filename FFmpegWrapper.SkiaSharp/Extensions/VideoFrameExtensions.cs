@@ -11,6 +11,7 @@ public static class VideoFrameExtensions
 {
     extension(VideoFrame frame)
     {
+        
         /// <summary>
         /// Creates an SKImage from the VideoFrame. The image holds a reference to the frame data.
         /// Ensure the VideoFrame is not disposed while using the returned SKImage.
@@ -24,7 +25,7 @@ public static class VideoFrameExtensions
                 var height = handle.height;
                 var pixelFormat = (AVPixelFormat)handle.format;
                 var (colorType, needsConversion) = GetSkiaColorType(pixelFormat);
-
+                
                 if (needsConversion) {
                     return ToSKImageWithConversion(frame, colorType);
                 }
@@ -36,14 +37,52 @@ public static class VideoFrameExtensions
                     stride = -stride;
                     dataPtr = (IntPtr)(handle.data[0] + stride * (height - 1));
                 }
-
+                
                 var imageInfo = new SKImageInfo(
                     width,
                     height,
                     colorType,
                     SKAlphaType.Premul);
                 
+                
                 return SKImage.FromPixelCopy(imageInfo, dataPtr, stride);
+            }
+        }
+        
+        /// <summary>
+        /// Creates an SKImage that directly references the VideoFrame data (zero-copy).
+        /// The VideoFrame MUST be kept alive as long as the SKImage is in use.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public SKImage ToSKImageNoCopy()
+        {
+            unsafe {
+                ref var handle = ref frame.Handle.Ref;
+        
+                var width = handle.width;
+                var height = handle.height;
+                var pixelFormat = (AVPixelFormat)handle.format;
+                var (colorType, needsConversion) = GetSkiaColorType(pixelFormat);
+        
+                if (needsConversion) {
+                    return ToSKImageWithConversion(frame, colorType);
+                }
+        
+                var stride = handle.linesize[0];
+                var dataPtr = (IntPtr)handle.data[0];
+        
+                if (stride < 0) {
+                    stride = -stride;
+                    dataPtr = (IntPtr)(handle.data[0] + stride * (height - 1));
+                }
+        
+                var imageInfo = new SKImageInfo(
+                    width,
+                    height,
+                    colorType,
+                    SKAlphaType.Premul);
+                
+                return SKImage.FromPixels(imageInfo, dataPtr, stride);
             }
         }
 
@@ -86,6 +125,7 @@ public static class VideoFrameExtensions
                     }
                 }
 
+                var pix = bitmap.PeekPixels();
                 bitmap.NotifyPixelsChanged();
             }
         }
@@ -151,11 +191,6 @@ public static class VideoFrameExtensions
             AVPixelFormat.AV_PIX_FMT_BGRA => (SKColorType.Bgra8888, false),
             AVPixelFormat.AV_PIX_FMT_RGBA => (SKColorType.Rgba8888, false),
             AVPixelFormat.AV_PIX_FMT_RGB0 => (SKColorType.Rgb888x, false),
-            AVPixelFormat.AV_PIX_FMT_BGR0 => (SKColorType.Bgra8888, true),
-            AVPixelFormat.AV_PIX_FMT_YUV420P => (SKColorType.Bgra8888, true),
-            AVPixelFormat.AV_PIX_FMT_YUVJ420P => (SKColorType.Bgra8888, true),
-            AVPixelFormat.AV_PIX_FMT_NV12 => (SKColorType.Bgra8888, true),
-            
             _ => (SKColorType.Bgra8888, true)
         };
     }
