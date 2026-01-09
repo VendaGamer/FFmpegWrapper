@@ -11,14 +11,15 @@ public static class SoundFlowExtensions
     {
         public (AudioFormat format, bool needsConversion) ToSoundFlow()
         {
-            var res = format.SampleFormat.ToSoundFlow();
-            
-            if(format.Layout)
-            
+            var sampleRes = format.SampleFormat.ToSoundFlow();
+                
             return (
                 new AudioFormat() {
-                    Layout = 
-                }
+                    Layout = ((AVChannelFlags)format.Layout.Native.u.mask).ToSoundFlow(),
+                    Channels = format.Layout.NumChannels,
+                    Format = sampleRes.sampleFormat
+                },
+                sampleRes.needsConversion
             );
         }
     }
@@ -34,12 +35,24 @@ public static class SoundFlowExtensions
                 _ => (SampleFormat.U8, true),
             };
     }
-
-    extension(FFmpegWrapper.Media.Formats.ChannelLayout layout)
+    
+    extension(AVChannelFlags flags)
     {
-        public (ChannelLayout channelLayout, bool needsConversion) ToSoundFlow()
-            => layout switch {
-                
-            };
+        public ChannelLayout ToSoundFlow()
+            => (ulong)flags switch
+        {
+            var f when (f & (ulong)AVChannelFlags.AV_CH_LAYOUT_MONO) is (ulong)AVChannelFlags.AV_CH_LAYOUT_MONO =>
+                ChannelLayout.Mono,
+            var f when (f & (ulong)AVChannelFlags.AV_CH_LAYOUT_STEREO) is (ulong)AVChannelFlags.AV_CH_LAYOUT_STEREO =>
+                ChannelLayout.Stereo,
+            var f when (f & (ulong)AVChannelFlags.AV_CH_LAYOUT_QUAD) is (ulong)AVChannelFlags.AV_CH_LAYOUT_QUAD =>
+                ChannelLayout.Quad,
+            var f when (f & (ulong)AVChannelFlags.AV_CH_LAYOUT_5POINT1) is not (ulong)AVChannelFlags.AV_CH_LAYOUT_5POINT1 =>
+                ChannelLayout.Surround51,
+            var f when (f & (ulong)AVChannelFlags.AV_CH_LAYOUT_7POINT1) is not (ulong)AVChannelFlags.AV_CH_LAYOUT_7POINT1 =>
+                ChannelLayout.Surround71,
+            
+            _ => ChannelLayout.Unknown
+        };
     }
 }

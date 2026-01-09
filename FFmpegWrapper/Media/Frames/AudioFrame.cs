@@ -51,9 +51,9 @@ public class AudioFrame : MediaFrame
         {
             _handle->format = (int)fmt.SampleFormat;
             _handle->sample_rate = fmt.SampleRate;
-            fmt.Layout.CopyTo(&_handle->ch_layout);
-
+            _handle->ch_layout = fmt.Layout.Native;
             _handle->nb_samples = capacity;
+            
             av_frame_get_buffer(_handle, 0).CheckError("Failed to allocate frame buffers.");
         }
     }

@@ -24,7 +24,7 @@ public readonly ref struct FFHandle<T>
         }
     }
 
-    public unsafe readonly T* Raw;
+    public readonly unsafe T* Raw;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public FFHandle(ref T handle)
@@ -44,6 +44,12 @@ public readonly ref struct FFHandle<T>
             throw new ObjectDisposedException(nameof(raw));
         
         Raw = raw;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal unsafe FFHandle(void* raw)
+    {
+        Raw = (T*)raw;
     }
     
     /// <summary>

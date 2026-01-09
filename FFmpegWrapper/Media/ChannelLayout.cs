@@ -7,9 +7,13 @@ using Extensions;
 public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<ChannelLayout>
 {
     
-#region StaticProperties
+    #region StaticProperties
 
-    public static ImmutableArray<ChannelLayout> StandardChannelLayouts => Utils.GetAllStandardChannelLayouts();
+    public static ImmutableArray<ChannelLayout> StandardChannelLayouts
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Utils.GetAllStandardChannelLayouts();
+    }
 
     /// <summary>
     /// Workaround class.
@@ -48,24 +52,37 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
 
     #endregion
 
-#region Properties
+    #region Properties
 
     internal unsafe AVChannelLayout* Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             fixed (AVChannelLayout* layout = &Native) {
                 return layout;
             }
         }
     }
-        
-    public AVChannelOrder Order => Native.order;
+
+    public AVChannelOrder Order
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Native.order;
+    } 
 
     /// <summary>number of channels</summary>
-    public int NumChannels => Native.nb_channels;
+    public int NumChannels
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Native.nb_channels;
+    }
         
-    AVChannelLayout IFFWrapped<AVChannelLayout>.Native => Native;
+    AVChannelLayout IFFWrapped<AVChannelLayout>.Native
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Native;
+    }
 
-#endregion
+    #endregion
     
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -97,6 +114,7 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
     /// To construct custom ChannelLayout use <see cref="CustomChannelLayout"/>
     /// </remarks>
     /// <param name="native"></param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ChannelLayout(AVChannelLayout native)
     {
         Native = native;
@@ -110,21 +128,23 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
     /// </remarks>
     /// <param name="channelOrder"></param>
     /// <param name="channelNum">Number of channels</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ChannelLayout(AVChannelOrder channelOrder, int channelNum, AVChannelFlags flags)
+        :this(new AVChannelLayout {
+                order = channelOrder,
+                nb_channels = channelNum,
+                opaque = null,
+                u = new AVChannelLayout_u {
+                    map = null,
+                    mask = (ulong)flags
+                }})
     {
-        Native = new AVChannelLayout {
-            order = channelOrder,
-            nb_channels = channelNum,
-            opaque = null,
-            u = new AVChannelLayout_u {
-                map = null,
-                mask = (ulong)flags
-            }
-        };
+        
     }
     
     
     /// <summary> Get the default channel layout for a given number of channels. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChannelLayout GetDefault(int numChannels)
     {
         unsafe
@@ -137,6 +157,7 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
 
     /// <summary> Initialize a native channel layout from a bitmask indicating which channels are present. </summary>
     /// <exception cref="ArgumentException"></exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChannelLayout FromMask(ulong mask)
     {
         unsafe
@@ -149,7 +170,7 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
         }
     }
     
-    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChannelLayout FromString(ReadOnlySpan<byte> str)
     {
         unsafe
@@ -161,27 +182,7 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
             return layout;
         }
     }
-
-    public unsafe void CopyTo(FFHandle<AVChannelLayout> dest)
-    {
-        av_channel_layout_copy(dest, Handle).CheckError();
-    }
     
-    public void CopyTo(IFFHandleObserver<AVChannelLayout> dest)
-    {
-        unsafe
-        {
-            av_channel_layout_copy(dest.Handle, Handle).CheckError();
-        }
-    }
-
-    public void CopyFrom(IFFHandleObserver<AVChannelLayout> source)
-    {
-        unsafe
-        {
-            av_channel_layout_copy(Handle, source.Handle).CheckError();
-        }
-    }
 
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -201,7 +202,7 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
         unsafe
         {
             fixed (AVChannelLayout* a = &Native) {
-                int c = av_channel_layout_compare(a, &other.Native);
+                var c = av_channel_layout_compare(a, &other.Native);
                 return c == 0;
             }
         }

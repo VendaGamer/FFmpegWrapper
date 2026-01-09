@@ -1,4 +1,8 @@
+using System.Numerics;
 using Avalonia.Controls;
+using AvaloniaIntegration.Extensions;
+using SoundFlow.Components;
+using SoundFlow.Interfaces;
 
 namespace AvaloniaIntegration;
 
@@ -39,6 +43,7 @@ public partial class MainWindow : Window
 
     private MiniAudioEngine _audioEngine;
     private AudioPlaybackDevice _playbackDevice;
+    private FFAudioProvider _audioProvider;
     
     public unsafe MainWindow()
     {
@@ -61,20 +66,17 @@ public partial class MainWindow : Window
             throw new Exception("Could not find video stream");
         
         
-        _playbackDevice = _audioEngine.InitializePlaybackDevice(defaultDevice);
+        _playbackDevice = _audioEngine.InitializePlaybackDevice(defaultDevice,
+            _audioStream.CodecPars.AudioFormat.ToSoundFlow().format);
         
         
-        // Get time base for timestamp conversion
         _timeBase = _videoStream.TimeBase.Num / (double)_videoStream.TimeBase.Den;
         _audioQueue = new AudioQueue(_audioStream.CodecPars.AudioFormat, 50);
         
-        // Start playback clock
         _playbackClock = Stopwatch.StartNew();
-        
-        // Use a high-frequency timer to check for frames
         _timer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(1) // Check frequently
+            Interval = TimeSpan.FromMilliseconds(10)
         };
         _timer.Tick += OnTimerTick;
         _timer.Start();

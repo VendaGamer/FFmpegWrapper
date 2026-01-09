@@ -76,6 +76,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     /// <summary>
     /// Should be overriden when owning any disposables
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected virtual void FreeManaged()
     {
         
@@ -118,6 +119,7 @@ public abstract class FFObject<TRaw> : CriticalFinalizerObject, IFFHandleOwner<T
     /// so it should not access other managed objects that might have been finalized.
     /// </para>
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected abstract void Free();
     
     /// <summary>

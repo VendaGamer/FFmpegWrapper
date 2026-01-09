@@ -230,7 +230,7 @@ public class AudioQueue : FFObject<AVAudioFifo>
 
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected unsafe override void Free()
+    protected override unsafe void Free()
     {
         av_audio_fifo_free(Handle);
     }

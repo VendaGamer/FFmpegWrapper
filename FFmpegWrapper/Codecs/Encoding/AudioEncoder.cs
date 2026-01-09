@@ -3,23 +3,27 @@
 public class AudioEncoder : MediaEncoder
 {
     public AVSampleFormat SampleFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.sample_fmt;
-        set {
-            unsafe
-            {
-                ThrowIfOpen();
-                Handle.Ref.sample_fmt = value;
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set
+        {
+            ThrowIfOpen();
+            Handle.Ref.sample_fmt = value;
         }
     }
 
     public int SampleRate {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.sample_rate;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set => Handle.Ref.sample_rate = value;
     }
 
     public ChannelLayout ChannelLayout {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => new(Handle.Ref.ch_layout);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             Handle.Ref.ch_layout = value.Native;
@@ -27,26 +31,25 @@ public class AudioEncoder : MediaEncoder
     }
 
     public AudioFormat Format {
-        get {
-            unsafe
-            {
-                ThrowIfOpen();
-                ThrowIfDisposed();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get
+        {
+            ref var handle = ref Handle.Ref;
                 
-                return new AudioFormat(_handle->sample_fmt, _handle->sample_rate,
-                    new ChannelLayout(_handle->ch_layout));
-            }
+            return new AudioFormat(
+                handle.sample_fmt,
+                handle.sample_rate,
+                handle.ch_layout);
         }
-        set {
-            unsafe
-            {
-                ThrowIfOpen();
-                ThrowIfDisposed();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set
+        {
+            ThrowIfOpen();
+            ref var handle = ref Handle.Ref;
                 
-                _handle->sample_rate = value.SampleRate;
-                _handle->sample_fmt = value.SampleFormat;
-                value.Layout.CopyTo(&_handle->ch_layout);
-            }
+            handle.sample_rate = value.SampleRate;
+            handle.sample_fmt = value.SampleFormat;
+            handle.ch_layout = value.Layout.Native;
         }
     }
 
@@ -69,5 +72,4 @@ public class AudioEncoder : MediaEncoder
         BitRate = bitrate;
         TimeBase = new Rational(1, format.SampleRate);
     }
-    
 }

@@ -3,10 +3,9 @@ namespace FFmpegWrapper.Abstractions;
 using Core;
 
 /// <summary>
-/// Represents unmanaged type of
-/// TODO: comment
+/// Represents wrapper used for directly modifying structures owned by ffmpeg's objects.
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T">Observed handle type</typeparam>
 public interface IFFHandleObserver<T>
     where T : unmanaged
 {
