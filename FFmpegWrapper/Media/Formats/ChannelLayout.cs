@@ -4,7 +4,7 @@ using System.Runtime.ConstrainedExecution;
 
 using Extensions;
 
-public readonly struct ChannelLayout(AVChannelLayout native) : IFFWrapped<AVChannelLayout>, IEquatable<ChannelLayout>
+public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<ChannelLayout>
 {
     
 #region StaticProperties
@@ -88,7 +88,41 @@ public readonly struct ChannelLayout(AVChannelLayout native) : IFFWrapped<AVChan
         }
     }
     
-    public readonly AVChannelLayout Native = native;
+    public readonly AVChannelLayout Native;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <remarks>
+    /// To construct custom ChannelLayout use <see cref="CustomChannelLayout"/>
+    /// </remarks>
+    /// <param name="native"></param>
+    public ChannelLayout(AVChannelLayout native)
+    {
+        Native = native;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <remarks>
+    /// To construct custom ChannelLayout use <see cref="CustomChannelLayout"/>
+    /// </remarks>
+    /// <param name="channelOrder"></param>
+    /// <param name="channelNum">Number of channels</param>
+    public ChannelLayout(AVChannelOrder channelOrder, int channelNum, AVChannelFlags flags)
+    {
+        Native = new AVChannelLayout {
+            order = channelOrder,
+            nb_channels = channelNum,
+            opaque = null,
+            u = new AVChannelLayout_u {
+                map = null,
+                mask = (ulong)flags
+            }
+        };
+    }
+    
     
     /// <summary> Get the default channel layout for a given number of channels. </summary>
     public static ChannelLayout GetDefault(int numChannels)

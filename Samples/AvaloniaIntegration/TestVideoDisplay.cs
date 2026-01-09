@@ -35,7 +35,6 @@ public class VideoFrameVisualHandler : CompositionCustomVisualHandler
 
         using var lease = leaseFeature.Lease();
         var canvas = lease.SkCanvas;
-        
         var bounds = GetRenderBounds();
         
 

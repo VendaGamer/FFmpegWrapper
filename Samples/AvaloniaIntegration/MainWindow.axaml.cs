@@ -14,6 +14,10 @@ using FFmpegWrapper.Media;
 using FFmpegWrapper.Media.Frames;
 using FFmpegWrapper.Media.Packets;
 using FFmpegWrapper.Media.Streams;
+using SoundFlow.Abstracts.Devices;
+using SoundFlow.Backends.MiniAudio;
+using SoundFlow.Enums;
+using SoundFlow.Structs;
 
 public partial class MainWindow : Window
 {
@@ -22,6 +26,7 @@ public partial class MainWindow : Window
     private VideoFrame _currentFrame;
     private MediaPacket _packet;
     private MediaStream _videoStream;
+    private MediaStream _audioStream;
     private DispatcherTimer _timer;
     
     private Stopwatch _playbackClock;
@@ -29,25 +34,39 @@ public partial class MainWindow : Window
     private double _timeBase;
     private bool _isFirstFrame = true;
     private Queue<VideoFrame> _frameQueue = new(MaxQueueSize);
-    private const int MaxQueueSize = 5;
+    private AudioQueue _audioQueue;
+    private const int MaxQueueSize = 50;
+
+    private MiniAudioEngine _audioEngine;
+    private AudioPlaybackDevice _playbackDevice;
     
-    public MainWindow()
+    public unsafe MainWindow()
     {
         InitializeComponent();
         FFmpegLinked.Init();
         
+        _audioEngine = new MiniAudioEngine();
+        var defaultDevice = _audioEngine.PlaybackDevices[0];
+        
         _demuxer = new MediaDemuxer("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"u8);
         _packet = new MediaPacket();
 
-        if (!_demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var stream))
+        if (!_demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out _videoStream))
             throw new Exception("Could not find video stream");
 
-        _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(stream.Handle);
+        _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_videoStream.Handle);
         _currentFrame = new VideoFrame(_decoder.FrameFormat);
-        _videoStream = stream;
+        
+        if (!_demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, out _audioStream))
+            throw new Exception("Could not find video stream");
+        
+        
+        _playbackDevice = _audioEngine.InitializePlaybackDevice(defaultDevice);
+        
         
         // Get time base for timestamp conversion
         _timeBase = _videoStream.TimeBase.Num / (double)_videoStream.TimeBase.Den;
+        _audioQueue = new AudioQueue(_audioStream.CodecPars.AudioFormat, 50);
         
         // Start playback clock
         _playbackClock = Stopwatch.StartNew();

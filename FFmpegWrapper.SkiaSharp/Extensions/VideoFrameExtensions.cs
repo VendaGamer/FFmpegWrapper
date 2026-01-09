@@ -82,9 +82,12 @@ public static class VideoFrameExtensions
                     colorType,
                     SKAlphaType.Premul);
                 
+                
+                
                 return SKImage.FromPixels(imageInfo, dataPtr, stride);
             }
         }
+        
 
         /// <summary>
         /// Copies VideoFrame data into an existing SKBitmap.

@@ -2,21 +2,21 @@
 
 using Abstractions;
 
-public unsafe class AudioQueue : FFObject<AVAudioFifo>
+public class AudioQueue : FFObject<AVAudioFifo>
 {
     /// <summary>
     /// Gets the audio sample format type used by this FIFO buffer.
     /// This determines the data type and bit depth of audio samples (e.g., float, 16-bit signed integer).
     /// </summary>
     /// <value>The AVSampleFormat enumeration value representing the sample format.</value>
-    public AVSampleFormat Format { get; }
-    
+    public readonly AVSampleFormat Format;
+
     /// <summary>
     /// Gets the number of audio channels configured for <see cref=""/>.
     /// This value determines the channel layout (e.g., 1 for mono, 2 for stereo, 6 for 5.1 surround).
     /// </summary>
     /// <value>The number of audio channels, typically ranging from 1 to 8 or more.</value>
-    public int NumChannels { get; }
+    public readonly int NumChannels;
     /// <summary>
     /// Gets the current number of audio samples stored in the FIFO buffer per channel.
     /// This represents the amount of data available for reading.
@@ -26,7 +26,16 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// The total number of sample values in the buffer is Size × NumChannels for interleaved formats.
     /// This property queries the underlying FFmpeg audio FIFO for real-time buffer status.
     /// </remarks>
-    public int Size => av_audio_fifo_size(_handle);
+    public int Size {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return av_audio_fifo_size(_handle);
+            }
+        }
+    }
+
     /// <summary>
     /// Gets the available space in the FIFO buffer for additional audio samples per channel.
     /// This represents how many more samples can be written before the buffer becomes full.
@@ -36,8 +45,16 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// A return value of 0 indicates the buffer is full and cannot accept more data.
     /// This property queries the underlying FFmpeg audio FIFO for real-time space availability.
     /// </remarks>
-    public int Space => av_audio_fifo_space(_handle);
-    
+    public int Space {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return av_audio_fifo_space(Handle);
+            }
+        }
+    }
+
     /// <summary>
     /// Gets the total capacity of the FIFO buffer in samples per channel.
     /// This represents the maximum number of samples the buffer can hold per channel.
@@ -48,41 +65,53 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// total allocated capacity. The capacity remains constant throughout the buffer's lifetime
     /// unless explicitly reallocated.
     /// </remarks>
-    public int Capacity => Space + Size;
+    public int Capacity {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Space + Size;
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AudioQueue(AudioFormat fmt, int initialCapacity)
         : this(fmt.SampleFormat, fmt.NumChannels, initialCapacity) { }
 
-    public AudioQueue(AVSampleFormat fmt, int numChannels, int initialCapacity)
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe AudioQueue(AVSampleFormat fmt, int numChannels, int initialCapacity)
+        : base(av_audio_fifo_alloc(fmt, numChannels, initialCapacity))
     {
         Format = fmt;
         NumChannels = numChannels;
-
-        _handle = av_audio_fifo_alloc(fmt, numChannels, initialCapacity);
-        if (_handle == null) {
-            throw new OutOfMemoryException("Could not allocate the audio FIFO.");
-        }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write(AudioFrame frame)
     {
-        if (frame.SampleFormat != Format || frame.ChannelLayout.NumChannels != NumChannels) {
-            throw new ArgumentException("Incompatible frame format.", nameof(frame));
+        unsafe
+        {
+            if (frame.SampleFormat != Format || frame.ChannelLayout.NumChannels != NumChannels) {
+                throw new ArgumentException("Incompatible frame format.", nameof(frame));
+            }
+            Write(frame.Data, frame.Count);
         }
-        Write(frame.Data, frame.Count);
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write<T>(Span<T> src) where T : unmanaged
     {
-        CheckFormatForInterleavedBuffer(src.Length, sizeof(T));
+        unsafe
+        {
+            CheckFormatForInterleavedBuffer(src.Length, sizeof(T));
 
-        fixed (T* pSrc = src) {
-            Write((byte**)&pSrc, src.Length / NumChannels);
+            fixed (T* pSrc = src) {
+                Write((byte**)&pSrc, src.Length / NumChannels);
+            }
         }
     }
-    public void Write(byte** channels, int count)
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe void Write(byte** channels, int count)
     {
-        ThrowIfDisposed();
-        av_audio_fifo_write(_handle, (void**)channels, count);
+        av_audio_fifo_write(Handle, (void**)channels, count);
     }
     /// <summary>
     /// 
@@ -92,15 +121,19 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// <returns></returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Read(AudioFrame frame, int count)
     {
-        if (count <= 0 || count > frame.Capacity) {
-            throw new ArgumentOutOfRangeException(nameof(count));
+        unsafe
+        {
+            if (count <= 0 || count > frame.Capacity) {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+            if (frame.SampleFormat != Format || frame.ChannelLayout.NumChannels != NumChannels) {
+                throw new InvalidOperationException("Incompatible frame format.");
+            }
+            return frame.Count = Read((void**)frame.Data, count);
         }
-        if (frame.SampleFormat != Format || frame.ChannelLayout.NumChannels != NumChannels) {
-            throw new InvalidOperationException("Incompatible frame format.");
-        }
-        return frame.Count = Read(frame.Data, count);
     }
     
     /// <summary>
@@ -120,14 +153,19 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// based on the configured number of channels. The actual number of bytes read will be
     /// (return_value * NumChannels * sizeof(T)).
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Read<T>(Span<T> dest) where T : unmanaged
     {
-        CheckFormatForInterleavedBuffer(dest.Length, sizeof(T));
+        unsafe
+        {
+            CheckFormatForInterleavedBuffer(dest.Length, sizeof(T));
 
-        fixed (T* pDest = dest) {
-            return Read((byte**)&pDest, dest.Length / NumChannels);
+            fixed (T* pDest = dest) {
+                return Read((void**)&pDest, dest.Length / NumChannels);
+            }
         }
     }
+    
     /// <summary>
     /// Reads audio samples from the FIFO buffer into a native byte pointer array.
     /// This method provides direct access to the underlying FFmpeg av_audio_fifo_read function
@@ -141,10 +179,10 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// <returns>The number of samples per channel that were actually read from the FIFO buffer.
     /// This may be less than the requested count if insufficient data is available.
     /// Returns 0 if no data is available, the buffer is empty, or an error occurred.</returns>
-    public int Read(byte** dest, int count)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe int Read(void** dest, int count)
     {
-        ThrowIfDisposed();
-        return av_audio_fifo_read(_handle, (void**)dest, count);
+        return av_audio_fifo_read(Handle, dest, count);
     }
 
     /// <summary>
@@ -156,10 +194,13 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// This is equivalent to discarding all buffered audio data without reading it.
     /// The buffer's capacity and configuration (format, channels) remain unchanged.
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
-        ThrowIfDisposed();
-        av_audio_fifo_reset(_handle);
+        unsafe
+        {
+            av_audio_fifo_reset(Handle);
+        }
     }
     
     /// <summary>
@@ -178,23 +219,28 @@ public unsafe class AudioQueue : FFObject<AVAudioFifo>
     /// The total number of sample values removed is count × NumChannels for interleaved formats.
     /// After successful completion, the Size property will be reduced by the specified count.
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Drain(int count)
     {
-        ThrowIfDisposed();
-        av_audio_fifo_drain(_handle, count).CheckError();
+        unsafe
+        {
+            av_audio_fifo_drain(Handle, count).CheckError();
+        }
     }
 
     /// <inheritdoc />
-    protected override void Free()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected unsafe override void Free()
     {
-        av_audio_fifo_free(_handle);
+        av_audio_fifo_free(Handle);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CheckFormatForInterleavedBuffer(int length, int sampleSize)
     {
         if (av_get_bytes_per_sample(Format) != sampleSize ||
-            av_sample_fmt_is_planar(Format) != 0 ||
-            length % NumChannels != 0
+            av_sample_fmt_is_planar(Format) is not 0 ||
+            length % NumChannels is not 0
         ) {
             throw new InvalidOperationException("Incompatible buffer format.");
         }
