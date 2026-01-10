@@ -5,6 +5,10 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.Composition;
 using Avalonia.Skia;
+using Avalonia.Vulkan;
+
+using FFmpegBindings.Abstractions;
+
 using FFmpegWrapper.Media.Frames;
 using SkiaSharp;
 
@@ -34,6 +38,7 @@ public class VideoFrameVisualHandler : CompositionCustomVisualHandler
             return;
 
         using var lease = leaseFeature.Lease();
+                
         var canvas = lease.SkCanvas;
         var bounds = GetRenderBounds();
         
@@ -49,7 +54,7 @@ public class VideoFrameVisualHandler : CompositionCustomVisualHandler
         
         var x = (boundsWidth - scaledWidth) / 2;
         var y = (boundsHeight - scaledHeight) / 2;
-
+        
         var destRect = new SKRect(x, y, x + scaledWidth, y + scaledHeight);
         
         canvas.DrawImage(_currentImage, destRect);

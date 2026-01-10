@@ -32,6 +32,7 @@ public readonly struct Rational(int num, int den)
 
     /// <summary> Rescales a timestamp based around an arbitrary time scale to a <see cref="TimeSpan"/>. </summary>
     /// <param name="scale">The scale that represents one second of time.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TimeSpan GetTimeSpan(long timestamp, Rational scale)
     {
         long ticks = Rescale(timestamp, scale, new Rational(1, (int)TimeSpan.TicksPerSecond));
@@ -91,7 +92,7 @@ public readonly struct Rational(int num, int den)
     public static explicit operator double(Rational q) => q.Num / (double)q.Den;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Rational(int num) => new(num, 1);
+    public static implicit operator Rational(int num) => new(1, num);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Rational(AVRational q) => new(q.num, q.den);

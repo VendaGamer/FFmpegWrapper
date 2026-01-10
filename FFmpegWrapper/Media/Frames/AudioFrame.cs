@@ -61,7 +61,7 @@ public class AudioFrame : MediaFrame
         : this(new AudioFormat(fmt, sampleRate, numChannels), capacity) { }
     
     public AudioFrame(FFHandle<AVFrame> handle) : base(handle) { }
-    public AudioFrame() { }
+    public AudioFrame() : base() { }
 
     #endregion
 

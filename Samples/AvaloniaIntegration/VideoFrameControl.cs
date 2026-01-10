@@ -2,6 +2,7 @@
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
@@ -71,6 +72,11 @@ public class VideoFrameControl : Control
         
         _customVisual = null;
         _handler = null;
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        var thread = new Thread(() => { });
     }
 
     protected override void OnSizeChanged(SizeChangedEventArgs e)

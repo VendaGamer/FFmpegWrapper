@@ -110,7 +110,13 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         return ctx;
     }
 
-    /// <summary> Find the "best" stream in the file. The best stream is determined according to various heuristics as the most likely to be what the user expects. </summary>
+    /// <summary>
+    /// Find the "best" stream in the file.
+    /// The best stream is determined according to various heuristics as the most likely to be what the user expects.
+    /// </summary>
+    /// <returns>
+    /// false if no stream of such time exists, true if such stream type found
+    /// </returns>
     public bool TryFindBestStream(AVMediaType type, out MediaStream stream)
     {
         unsafe
@@ -191,7 +197,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <exception cref="InvalidOperationException">If the underlying IO context doesn't support seeks.</exception>
     /// <exception cref="ArgumentException">If <paramref name="stream"/> is not owned by the demuxer.</exception>
     /// <returns>true if succeeded</returns>
-    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options = 0, MediaStream? stream = null)
+    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options = 0, NullableFFHandle<AVStream> stream = default)
     {
         ThrowIfDisposed();
 
@@ -202,16 +208,20 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         int streamIndex;
         long ts;
         
-        if (stream is not null) {
+        if (!stream.IsNull) {
+            unsafe
+            {
+                var handle = stream.Handle.Raw;
             
-            streamIndex = stream.Value.Index;
-            if (Streams[streamIndex].Handle != stream.Value.Handle) {
-                throw new ArgumentException("Specified stream is not owned by the demuxer.");
+            
+                streamIndex = handle->index;
+                if (Streams[streamIndex].Handle != handle) {
+                    throw new ArgumentException("Specified stream is not owned by the demuxer.");
+                }
+            
+                ts = av_rescale_q(timestamp.Ticks,
+                    new Rational(1, (int)TimeSpan.TicksPerSecond), handle->time_base);
             }
-            
-            ts = av_rescale_q(timestamp.Ticks,
-                new Rational(1, (int)TimeSpan.TicksPerSecond), stream.Value.TimeBase);
-            
         } else {
             streamIndex = -1;
             ts = av_rescale(timestamp.Ticks, AV_TIME_BASE, TimeSpan.TicksPerSecond);

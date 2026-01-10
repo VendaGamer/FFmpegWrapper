@@ -20,11 +20,15 @@ public readonly struct MediaStream
 
     /// <summary> Pts of the first frame of the stream in presentation order, in stream time base. </summary>
     public long? StartTime {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.start_time;
     }
 
     /// <inheritdoc cref="AVStream.duration" />
-    public TimeSpan? Duration => FFHelper.GetTimeSpan(Handle.Ref.duration, TimeBase);
+    public TimeSpan? Duration {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => FFHelper.GetTimeSpan(Handle.Ref.duration, TimeBase);
+    }
 
     /// <inheritdoc cref="AVStream.avg_frame_rate" />
     public Rational AvgFrameRate => Handle.Ref.avg_frame_rate;

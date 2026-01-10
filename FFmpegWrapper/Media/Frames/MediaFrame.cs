@@ -20,19 +20,9 @@ public abstract class MediaFrame : FFObject<AVFrame>
     /// <inheritdoc cref="AVFrame.pts" />
     public long? PresentationTimestamp {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get {
-            unsafe
-            {
-                return FFHelper.GetPts(Handle.Raw->pts);
-            }
-        }
+        get => FFHelper.GetPts(Handle.Ref.pts);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set {
-            unsafe
-            {
-                FFHelper.SetPts(ref Handle.Raw->pts, value);
-            }
-        }
+        set => FFHelper.SetPts(ref Handle.Ref.pts, value);
     }
 
     /// <summary> Duration of the frame, in the same units as <see cref="PresentationTimestamp"/>. Null if unknown. </summary>
