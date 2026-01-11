@@ -82,7 +82,7 @@ public static class VideoFrameExtensions
                     colorType,
                     SKAlphaType.Premul);
                 
-                
+                SKShader a = SKShader.CreateImage(imageInfo, dataPtr, stride);
                 
                 return SKImage.FromPixels(imageInfo, dataPtr, stride);
             }

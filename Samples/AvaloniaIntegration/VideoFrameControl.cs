@@ -5,12 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Rendering.Composition;
-using Avalonia.Threading;
-
 using FFmpegWrapper.Media.Frames;
-using FFmpegWrapper.SkiaSharp.Extensions;
-
-using SkiaSharp;
 
 /// <summary>
 /// Avalonia control for displaying VideoFrames
@@ -40,16 +35,9 @@ public class VideoFrameControl : Control
     /// </summary>
     public void SetFrame(VideoFrame? frame)
     {
-        if (_customVisual != null && frame != null)
+        if (_customVisual is not null && frame is not null)
         {
-            var image = frame.ToSKImageNoCopy();
-
-            // Send both the image AND the frame to keep the frame alive
-            _customVisual.SendHandlerMessage(new VideoFrameVisualHandler.UpdateFrameMessage 
-            { 
-                Image = image,
-                Frame = frame
-            });
+            _customVisual.SendHandlerMessage(frame);
         }
     }
 

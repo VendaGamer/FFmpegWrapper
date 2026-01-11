@@ -34,9 +34,16 @@ public sealed class VideoPlayer : IDisposable
         _frameQueue = new Queue<VideoFrame>(6);
         _audioQueue = new Queue<AudioFrame>(9);
 
-        _demuxerThread = new Thread();
+        _demuxerThread = new Thread(DecodeLoop);
     }
 
+    
+    private void DecodeLoop()
+    {
+        
+    }
+    
+    
     
     /// <returns>true if seeked to the exact position or false if position had to be capped</returns>
     public bool SeekTo(TimeSpan position)
@@ -57,11 +64,6 @@ public sealed class VideoPlayer : IDisposable
     public void Stop()
     {
         
-    }
-    
-    private void DecodeLoop()
-    {
-       
     }
 
     public void Dispose()
