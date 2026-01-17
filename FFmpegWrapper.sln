@@ -33,8 +33,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleAOTTest", "Samples\Si
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaIntegration", "Samples\AvaloniaIntegration\AvaloniaIntegration.csproj", "{2B5A86C9-3754-4770-A293-CED8CDBF588A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegWrapper.SkiaSharp", "FFmpegWrapper.SkiaSharp\FFmpegWrapper.SkiaSharp.csproj", "{329D203F-A30E-4389-AAEA-E9492D3D88E5}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,10 +71,6 @@ Global
 		{2B5A86C9-3754-4770-A293-CED8CDBF588A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B5A86C9-3754-4770-A293-CED8CDBF588A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B5A86C9-3754-4770-A293-CED8CDBF588A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{329D203F-A30E-4389-AAEA-E9492D3D88E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{329D203F-A30E-4389-AAEA-E9492D3D88E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{329D203F-A30E-4389-AAEA-E9492D3D88E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{329D203F-A30E-4389-AAEA-E9492D3D88E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

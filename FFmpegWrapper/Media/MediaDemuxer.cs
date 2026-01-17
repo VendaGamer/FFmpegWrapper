@@ -174,18 +174,11 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     /// <inheritdoc cref="ffmpeg.av_read_frame(AVFormatContext*, AVPacket*)"/>
-    public bool Read(FFHandle<AVPacket> handle)
+    public LavResult Read(FFHandle<AVPacket> handle)
     {
         unsafe
         {
-            ThrowIfDisposed();
-            
-            int result = av_read_frame(_handle, handle);
-
-            if (result < 0 && result is not (int)AVError.AVERROR_EOF) {
-                result.ThrowError(msg: "Failed to read packet");
-            }
-            return result >= 0;
+            return(LavResult)av_read_frame(Handle, handle);
         }
     }
 

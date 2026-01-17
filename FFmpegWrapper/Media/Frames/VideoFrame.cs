@@ -406,7 +406,7 @@ public sealed class VideoFrame : MediaFrame
             demuxer.Seek(TimeSpan.Zero, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD);
         }
 
-        while (demuxer.Read(packet.Handle)) {
+        while (demuxer.Read(packet.Handle) >= 0) {
             if (packet.StreamIndex != stream.Index) continue;
 
             decoder.SendPacket(packet.Handle);
