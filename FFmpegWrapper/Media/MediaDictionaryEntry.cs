@@ -4,9 +4,9 @@ using Entry = KeyValuePair<string, string>;
 
 /// <summary> Wrapper for an existing <see cref="AVDictionaryEntry"/>. </summary>
 
-public readonly struct MediaDictionaryEntry : IFFHandleObserver<AVDictionaryEntry>
+public readonly struct MediaDictionaryEntry : IHandleObserver<AVDictionaryEntry>
 {
-    public FFHandle<AVDictionaryEntry> Handle {
+    public Handle<AVDictionaryEntry> Handle {
         get {
             unsafe {
                 return _handle;

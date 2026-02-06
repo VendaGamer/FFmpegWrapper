@@ -1,12 +1,12 @@
 ﻿namespace FFmpegWrapper.Tests;
 
-using Media.Formats;
+using Media;
 using Media.Frames;
 
 public class FrameTests: TestBase
 {
     [Fact]
-    public unsafe void Video_Props()
+    public void Video_Props()
     {
         var frame = new VideoFrame(1280, 720, AVPixelFormat.AV_PIX_FMT_RGBA);
 

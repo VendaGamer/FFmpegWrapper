@@ -53,12 +53,12 @@ public abstract class MediaEncoder : CodecBase
 
     #region Constructors
 
-    protected MediaEncoder(FFHandle<AVCodecContext> ctx) : base(ctx)
+    protected MediaEncoder(Handle<AVCodecContext> ctx) : base(ctx)
     {
 
     }
 
-    protected MediaEncoder(NullableFFHandle<AVCodec> codec = default) : base(codec)
+    protected MediaEncoder(NullableHandle<AVCodec> codec = default) : base(codec)
     {
         unsafe {
             if (codec.IsNull)
@@ -71,7 +71,7 @@ public abstract class MediaEncoder : CodecBase
     #endregion
     
 
-    public bool ReceivePacket(FFHandle<AVPacket> packetHandle)
+    public bool ReceivePacket(Handle<AVPacket> packetHandle)
     {
         unsafe
         {
@@ -84,7 +84,7 @@ public abstract class MediaEncoder : CodecBase
         }
     }
     
-    public bool SendFrame(NullableFFHandle<AVFrame> frame)
+    public bool SendFrame(NullableHandle<AVFrame> frame)
     {
         unsafe
         {

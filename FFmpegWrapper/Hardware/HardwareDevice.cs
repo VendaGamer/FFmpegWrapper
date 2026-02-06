@@ -1,15 +1,11 @@
 namespace FFmpegWrapper.Hardware;
 
-using Abstractions;
-
 using Codecs;
-
-using Extensions;
 
 /// <summary>
 /// Wrapper of Hardware Device
 /// </summary>
-public sealed class HardwareDevice : FFObject<AVBufferRef>
+public sealed class HardwareDevice : OwnedObject<AVBufferRef>
 {
     
     #region Static Members

@@ -43,7 +43,7 @@ public class VideoDecoder : MediaDecoder
         }
     }
 
-    public VideoDecoder(NullableFFHandle<AVCodec> ctx = default) : base(ctx)
+    public VideoDecoder(NullableHandle<AVCodec> ctx = default) : base(ctx)
     {
         
     }
@@ -53,7 +53,7 @@ public class VideoDecoder : MediaDecoder
         
     }
 
-    public VideoDecoder(FFHandle<AVCodecContext> handle) : base(handle)
+    public VideoDecoder(Handle<AVCodecContext> handle) : base(handle)
     {
         unsafe {
             _handle->get_format =
@@ -69,7 +69,7 @@ public class VideoDecoder : MediaDecoder
     public void SetupHardwareAccelerator(
         CodecHardwareConfig config,
         HardwareDevice device,
-        NullableFFHandle<AVBufferRef> hwFramePool = default)
+        NullableHandle<AVBufferRef> hwFramePool = default)
     {
         ThrowIfOpen();
         ThrowIfDisposed();
@@ -86,7 +86,7 @@ public class VideoDecoder : MediaDecoder
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected virtual AVPixelFormat GetFormat(
-        FFHandle<AVCodecContext> ctx,
+        Handle<AVCodecContext> ctx,
         ReadOnlySpan<AVPixelFormat> pixelFormats)
     {
         unsafe

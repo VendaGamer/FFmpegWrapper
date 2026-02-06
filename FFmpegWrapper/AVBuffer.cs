@@ -1,10 +1,9 @@
 namespace FFmpegWrapper;
-
 using Core;
 
-public readonly struct AVBuffer : IFFHandleObserver<AVBufferRef>
+public readonly struct AVBuffer : IHandleObserver<AVBufferRef>
 {
-    public FFHandle<AVBufferRef> Handle {
+    public Handle<AVBufferRef> Handle {
         get {
             unsafe
             {

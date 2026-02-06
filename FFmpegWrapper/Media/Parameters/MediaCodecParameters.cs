@@ -1,9 +1,6 @@
 ﻿namespace FFmpegWrapper.Media.Parameters;
 
-using Abstractions;
-using Media;
-
-public abstract class MediaCodecParameters : FFObject<AVCodecParameters>
+public abstract class MediaCodecParameters : OwnedObject<AVCodecParameters>
 {
     /// <inheritdoc cref="AVCodecParameters.codec_type" />
     public ref AVMediaType CodecType {
@@ -103,7 +100,7 @@ public abstract class MediaCodecParameters : FFObject<AVCodecParameters>
         }
     }
     
-    protected MediaCodecParameters(FFHandle<AVCodecParameters> handle) : base(handle)
+    protected MediaCodecParameters(Handle<AVCodecParameters> handle) : base(handle)
     {
         
     }

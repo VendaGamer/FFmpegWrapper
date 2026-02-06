@@ -1,10 +1,9 @@
 namespace FFmpegWrapper.Containers;
 
-using Abstractions;
 using Extensions;
 using Media;
 
-public abstract class MediaFormatContext : FFObject<AVFormatContext>
+public abstract class MediaFormatContext : OwnedObject<AVFormatContext>
 {
     public long FileSize {
         get {

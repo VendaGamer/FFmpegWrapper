@@ -28,7 +28,7 @@ public abstract class MediaDecoder : CodecBase
     }
     #region Constructors
 
-    protected MediaDecoder(FFHandle<AVCodecContext> ctx) : base(ctx)
+    protected MediaDecoder(Handle<AVCodecContext> ctx) : base(ctx)
     {
         unsafe {
             if (av_codec_is_decoder(ctx.Raw->codec) is 0)
@@ -36,7 +36,7 @@ public abstract class MediaDecoder : CodecBase
         }
     }
     
-    protected MediaDecoder(NullableFFHandle<AVCodec> codec = default) : base(codec)
+    protected MediaDecoder(NullableHandle<AVCodec> codec = default) : base(codec)
     {
         unsafe {
             if (codec.IsNull)
@@ -55,7 +55,7 @@ public abstract class MediaDecoder : CodecBase
     #endregion
 
     
-    public void SendPacket(NullableFFHandle<AVPacket> packet)
+    public void SendPacket(NullableHandle<AVPacket> packet)
     {
         unsafe
         {
@@ -75,7 +75,7 @@ public abstract class MediaDecoder : CodecBase
     }
 
     /// <inheritdoc cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
-    public LavResult TrySendPacket(NullableFFHandle<AVPacket> handle)
+    public LavResult TrySendPacket(NullableHandle<AVPacket> handle)
     {
         unsafe
         {
@@ -83,7 +83,7 @@ public abstract class MediaDecoder : CodecBase
         }
     }
     
-    public bool ReceiveFrame(FFHandle<AVFrame> handle)
+    public bool ReceiveFrame(Handle<AVFrame> handle)
     {
         unsafe
         {

@@ -3,7 +3,7 @@ namespace FFmpegWrapper.Codecs;
 using Configuration;
 using Extensions;
 
-public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
+public readonly struct MediaCodec : IHandleObserver<AVCodec>
 {
 
     #region Static Properties
@@ -47,7 +47,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     
     #region Properties
 
-    public FFHandle<AVCodec> Handle {
+    public Handle<AVCodec> Handle {
         get {
             unsafe {
                 return _handle;
@@ -135,7 +135,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     
     
     
-    public unsafe MediaCodec(FFHandle<AVCodec> handle)
+    public unsafe MediaCodec(Handle<AVCodec> handle)
     {
         _handle = handle;
     }
@@ -264,7 +264,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     {
         unsafe
         {
-            NullableFFHandle<AVCodec> handle = avcodec_find_encoder_by_name(name.RawHandle);
+            NullableHandle<AVCodec> handle = avcodec_find_encoder_by_name(name.RawHandle);
 
             if (handle.IsNull) {
                 codec = default;
@@ -281,7 +281,7 @@ public readonly struct MediaCodec : IFFHandleObserver<AVCodec>
     {
         unsafe
         {
-            NullableFFHandle<AVCodec> handle = avcodec_find_decoder_by_name(name.RawHandle);
+            NullableHandle<AVCodec> handle = avcodec_find_decoder_by_name(name.RawHandle);
             
             if (handle.IsNull) {
                 codec = default;

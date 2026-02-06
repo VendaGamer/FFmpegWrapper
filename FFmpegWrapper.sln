@@ -10,13 +10,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{3405D988-1D8F-40D1-A490-310A539EC88B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{714B7D70-4FEA-4C5F-905F-7A9C76A70481}"
-	ProjectSection(SolutionItems) = preProject
-		Directory.Packages.props = Directory.Packages.props
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegWrapper.Core", "FFmpegWrapper.Core\FFmpegWrapper.Core.csproj", "{98CADB90-D1EA-4861-9CCB-8E74D6E1CAC2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpegWrapper.Abstractions", "FFmpegWrapper.Abstractions\FFmpegWrapper.Abstractions.csproj", "{94D43BA0-E4F2-47BA-83E3-3F27FB08A5A6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bindings", "Bindings", "{FB6991D2-06DB-4A65-8FF0-42670F2072B3}"
 EndProject
@@ -33,6 +26,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleAOTTest", "Samples\Si
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaIntegration", "Samples\AvaloniaIntegration\AvaloniaIntegration.csproj", "{2B5A86C9-3754-4770-A293-CED8CDBF588A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deps", "Deps", "{A9B15DC5-00EF-4428-AF07-514D104DA7D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BindingWrapperUtils", "Deps\BindingWrapperUtils\BindingWrapperUtils\BindingWrapperUtils.csproj", "{4266859A-DE10-4376-96C2-F129655070CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,14 +44,6 @@ Global
 		{EA152E81-649B-4887-BB3E-16DF936036B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA152E81-649B-4887-BB3E-16DF936036B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA152E81-649B-4887-BB3E-16DF936036B4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{98CADB90-D1EA-4861-9CCB-8E74D6E1CAC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{98CADB90-D1EA-4861-9CCB-8E74D6E1CAC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{98CADB90-D1EA-4861-9CCB-8E74D6E1CAC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{98CADB90-D1EA-4861-9CCB-8E74D6E1CAC2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{94D43BA0-E4F2-47BA-83E3-3F27FB08A5A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{94D43BA0-E4F2-47BA-83E3-3F27FB08A5A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{94D43BA0-E4F2-47BA-83E3-3F27FB08A5A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{94D43BA0-E4F2-47BA-83E3-3F27FB08A5A6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34CF9B46-B97D-4E28-8C26-D8296B5D67E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -71,6 +60,10 @@ Global
 		{2B5A86C9-3754-4770-A293-CED8CDBF588A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B5A86C9-3754-4770-A293-CED8CDBF588A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B5A86C9-3754-4770-A293-CED8CDBF588A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4266859A-DE10-4376-96C2-F129655070CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4266859A-DE10-4376-96C2-F129655070CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4266859A-DE10-4376-96C2-F129655070CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4266859A-DE10-4376-96C2-F129655070CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -81,6 +74,7 @@ Global
 		{61B40844-1AC9-4DD8-8D0F-204E85E59A6B} = {3405D988-1D8F-40D1-A490-310A539EC88B}
 		{0835D50E-806A-4E0E-AB63-39BE82D78505} = {3405D988-1D8F-40D1-A490-310A539EC88B}
 		{2B5A86C9-3754-4770-A293-CED8CDBF588A} = {3405D988-1D8F-40D1-A490-310A539EC88B}
+		{4266859A-DE10-4376-96C2-F129655070CB} = {A9B15DC5-00EF-4428-AF07-514D104DA7D8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FBB6A4C7-BCD6-45BD-A659-7BADD859E7D4}

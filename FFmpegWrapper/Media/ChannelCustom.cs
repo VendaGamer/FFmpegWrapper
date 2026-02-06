@@ -1,11 +1,11 @@
 namespace FFmpegWrapper.Media;
 
-public readonly struct ChannelCustom(FFHandle<AVChannelCustom> handle) : IFFHandleObserver<AVChannelCustom>
+public readonly struct ChannelCustom(Handle<AVChannelCustom> handle) : IHandleObserver<AVChannelCustom>
 {
 
     #region Properties
 
-    public unsafe FFHandle<AVChannelCustom> Handle => new(_handle);
+    public unsafe Handle<AVChannelCustom> Handle => new(_handle);
 
     public ref AVChannel Channel => ref Handle.Ref.id;
 

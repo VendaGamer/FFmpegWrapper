@@ -2,9 +2,9 @@ namespace FFmpegWrapper.Containers;
 
 using Core;
 
-public readonly struct InputFormat : IFFHandleObserver<AVInputFormat>
+public readonly struct InputFormat : IHandleObserver<AVInputFormat>
 {
-    public FFHandle<AVInputFormat> Handle {
+    public Handle<AVInputFormat> Handle {
         get {
             unsafe
             {
@@ -22,7 +22,7 @@ public readonly struct InputFormat : IFFHandleObserver<AVInputFormat>
 
     private readonly unsafe AVInputFormat* _handle;
     
-    public InputFormat(FFHandle<AVInputFormat> handle)
+    public InputFormat(Handle<AVInputFormat> handle)
     {
         unsafe {
             _handle = handle;

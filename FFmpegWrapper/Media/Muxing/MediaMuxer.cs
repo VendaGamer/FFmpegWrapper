@@ -1,12 +1,10 @@
-﻿namespace FFmpegWrapper.Media;
+﻿namespace FFmpegWrapper.Media.Muxing;
 
-using Abstractions;
-using Codecs.Encoding;
-using CommunityToolkit.HighPerformance;
-using Extensions;
-using Streams;
+using FFmpegWrapper.Codecs.Encoding;
+using FFmpegWrapper.Extensions;
+using FFmpegWrapper.Media.Streams;
 
-public sealed class MediaMuxer : FFObject<AVFormatContext>
+public sealed class MediaMuxer : OwnedObject<AVFormatContext>
 {
 
     #region Properties
@@ -47,7 +45,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
     #region Fields
 
-    private readonly IFFHandleOwner<AVIOContext>? _ownedIOContext;
+    private readonly IHandleOwner<AVIOContext>? _ownedIOContext;
     
     private MediaPacket? _tempPacket;
 
@@ -74,23 +72,23 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
     }
 
-    public MediaMuxer(IFFHandleOwner<AVIOContext> ioContext, ReadOnlySpan<byte> formatExtension)
+    public MediaMuxer(IHandleOwner<AVIOContext> ioContext, ReadOnlySpan<byte> formatExtension)
         : this(ioContext, OutputFormat.FindByExtension(formatExtension).Handle)
     {
         _ownedIOContext = ioContext;
     }
 
     public unsafe MediaMuxer(
-        IFFHandleOwner<AVIOContext> ioContext,
-        FFHandle<AVOutputFormat> outputFormat) : this()
+        IHandleOwner<AVIOContext> ioContext,
+        Handle<AVOutputFormat> outputFormat) : this()
     {
         _handle->oformat = outputFormat;
         _handle->pb = ioContext.Handle;
     }
     
-    public MediaMuxer(FFHandle<AVFormatContext> handle) : base(handle) { }
+    public MediaMuxer(Handle<AVFormatContext> handle) : base(handle) { }
 
-    public MediaMuxer(FFHandle<AVIOContext> ioContextHandle)
+    public MediaMuxer(Handle<AVIOContext> ioContextHandle)
     {
         unsafe {
             _handle = avformat_alloc_context();
@@ -99,8 +97,8 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     }
 
     public MediaMuxer(
-        FFHandle<AVIOContext> ioContextHandle,
-        FFHandle<AVFormatContext> formatContext)
+        Handle<AVIOContext> ioContextHandle,
+        Handle<AVFormatContext> formatContext)
     {
         unsafe {
             _handle = formatContext;
@@ -230,7 +228,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <br/>
     /// On return, the packet will have been reset.
     /// </param>
-    public void Write(FFHandle<AVPacket> packet)
+    public void Write(Handle<AVPacket> packet)
     {
         unsafe
         {
@@ -241,7 +239,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     }
 
     /// <summary> Encodes the given frame and muxes the resulting packets to the output file. </summary>
-    public void EncodeAndWrite(MediaStream stream, MediaEncoder encoder, FFHandle<AVFrame> frame)
+    public void EncodeAndWrite(MediaStream stream, MediaEncoder encoder, Handle<AVFrame> frame)
     {
         unsafe
         {
@@ -270,7 +268,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         }
     }
 
-    public unsafe void WriteHeader(NullableFFHandle<AVDictionary> options = default)
+    public unsafe void WriteHeader(NullableHandle<AVDictionary> options = default)
     {
         AVDictionary* opt = options;
         avformat_write_header(Handle.Raw, &opt);

@@ -121,7 +121,7 @@ public class VideoEncoder : MediaEncoder
         }
     }
 
-    public VideoEncoder(FFHandle<AVCodecContext> ctx) : base(ctx)
+    public VideoEncoder(Handle<AVCodecContext> ctx) : base(ctx)
     {
         
     }
@@ -129,7 +129,7 @@ public class VideoEncoder : MediaEncoder
     public VideoEncoder(AVCodecID codecId, in PictureFormat format, Rational frameRate, int bitrate = 0)
         : this(MediaCodec.GetEncoder(codecId).Handle, format, frameRate, bitrate) { }
 
-    public unsafe VideoEncoder(NullableFFHandle<AVCodec> codec, in PictureFormat format, Rational frameRate, int bitrate = 0)
+    public unsafe VideoEncoder(NullableHandle<AVCodec> codec, in PictureFormat format, Rational frameRate, int bitrate = 0)
         : base(codec)
     {
         FrameFormat = format;
@@ -144,7 +144,7 @@ public class VideoEncoder : MediaEncoder
         in PictureFormat format,
         Rational frameRate,
         HardwareDevice device,
-        NullableFFHandle<AVBufferRef> framePool = default)
+        NullableHandle<AVBufferRef> framePool = default)
         : this(config.Codec.Handle, in format, frameRate)
     {
         SetHardwareContext(config, device, framePool);

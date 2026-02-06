@@ -1,12 +1,11 @@
 ﻿namespace FFmpegWrapper.Media;
 
-using Abstractions;
 using Codecs;
 using Codecs.Decoding;
 using Extensions;
 using Streams;
 
-public class MediaDemuxer : FFObject<AVFormatContext>
+public class MediaDemuxer : OwnedObject<AVFormatContext>
 {
     
     #region Properties
@@ -45,7 +44,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     #endregion
     
     
-    private readonly IFFHandleOwner<AVIOContext>? _ioContext;
+    private readonly IHandleOwner<AVIOContext>? _ioContext;
     
     /// <summary>
     /// Opens an existing resource URL for demuxing.
@@ -54,13 +53,13 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     public MediaDemuxer(ReadOnlySpan<byte> url) : this(CreateContext(url)) { }
 
     /// <inheritdoc />
-    public MediaDemuxer(IFFHandleOwner<AVIOContext> inputOutputContextOwner)
+    public MediaDemuxer(IHandleOwner<AVIOContext> inputOutputContextOwner)
         : this(CreateContext(pb: inputOutputContextOwner.Handle)) 
     {
         _ioContext = inputOutputContextOwner;
     }
 
-    public MediaDemuxer(FFHandle<AVIOContext> inputOutputContext)
+    public MediaDemuxer(Handle<AVIOContext> inputOutputContext)
         : this(CreateContext(pb: inputOutputContext)) { }
 
     /// <summary> Opens an existing resource URL for demuxing. </summary>
@@ -72,7 +71,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
     /// <param name="ctx"></param>
-    public MediaDemuxer(FFHandle<AVFormatContext> ctx)
+    public MediaDemuxer(Handle<AVFormatContext> ctx)
     {
         unsafe
         {
@@ -80,10 +79,10 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
     }
 
-    private static unsafe FFHandle<AVFormatContext> CreateContext(
+    private static unsafe Handle<AVFormatContext> CreateContext(
         ReadOnlySpan<Utf8KeyValue> options,
         ReadOnlySpan<byte> url = default,
-        FFHandle<AVIOContext> pb = default)
+        Handle<AVIOContext> pb = default)
     {
         if (options.IsEmpty)
             return CreateContext(url, pb);
@@ -91,10 +90,10 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         return CreateContext(url, pb, MediaDictionaryOwner.CreateFromEntries(options).Handle);
     }
     
-    private static unsafe FFHandle<AVFormatContext> CreateContext(
+    private static unsafe Handle<AVFormatContext> CreateContext(
         ReadOnlySpan<byte> url = default,
-        FFHandle<AVIOContext> pb = default,
-        NullableFFHandle<AVDictionary> options = default)
+        Handle<AVIOContext> pb = default,
+        NullableHandle<AVDictionary> options = default)
     {
         AVFormatContext* ctx = avformat_alloc_context();
         if (ctx == null) {
@@ -121,8 +120,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     {
         unsafe
         {
-            ThrowIfDisposed();
-            var index = av_find_best_stream(_handle, type, -1, -1, null, 0);
+            var index = av_find_best_stream(Handle, type, -1, -1, null, 0);
         
             if (index < 0) {
                 stream = default;
@@ -140,12 +138,10 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// True to call <see cref="CodecBase.Open" /> before returning the decoder.
     /// Should be set to false if extra setup (e.g. hardware acceleration) is needed before opening.
     /// </param>
-    public MediaDecoder CreateStreamDecoder(FFHandle<AVStream> stream, bool open = true)
+    public MediaDecoder CreateStreamDecoder(Handle<AVStream> stream, bool open = true)
     {
         unsafe
         {
-            ThrowIfDisposed();
-
             if (Streams[stream.Ref.index].Handle != stream) {
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
             }
@@ -174,7 +170,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     /// <inheritdoc cref="ffmpeg.av_read_frame(AVFormatContext*, AVPacket*)"/>
-    public LavResult Read(FFHandle<AVPacket> handle)
+    public LavResult Read(Handle<AVPacket> handle)
     {
         unsafe
         {
@@ -190,7 +186,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <exception cref="InvalidOperationException">If the underlying IO context doesn't support seeks.</exception>
     /// <exception cref="ArgumentException">If <paramref name="stream"/> is not owned by the demuxer.</exception>
     /// <returns>true if succeeded</returns>
-    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options = 0, NullableFFHandle<AVStream> stream = default)
+    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options = 0, NullableHandle<AVStream> stream = default)
     {
         ThrowIfDisposed();
 
@@ -226,7 +222,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     /// <inheritdoc cref="ffmpeg.av_guess_frame_rate(AVFormatContext*, AVStream*, AVFrame*)"/>
-    public Rational GuessFrameRate(FFHandle<AVStream> stream)
+    public Rational GuessFrameRate(Handle<AVStream> stream)
     {
         unsafe
         {

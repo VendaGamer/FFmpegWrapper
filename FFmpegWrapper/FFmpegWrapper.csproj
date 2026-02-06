@@ -27,15 +27,16 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.HighPerformance"/>
-        <PackageReference Include="Microsoft.NETCore.Platforms" />
-        <PackageReference Include="OwnerCore" />
-        <PackageReference Include="System.Collections.Immutable" />
-        <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
+        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
+        <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
+        <PackageReference Include="OwnerCore" Version="1.0.6" />
+        <PackageReference Include="System.Collections.Immutable" Version="10.0.2" />
+        <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
 
     </ItemGroup>
     
     <ItemGroup>
-      <ProjectReference Include="..\FFmpegWrapper.Abstractions\FFmpegWrapper.Abstractions.csproj" />
+      <ProjectReference Include="..\Bindings\FFmpegBindings.Abstractions\FFmpegBindings.Abstractions.csproj" />
+      <ProjectReference Include="..\Deps\BindingWrapperUtils\BindingWrapperUtils\BindingWrapperUtils.csproj" />
     </ItemGroup>
 </Project>

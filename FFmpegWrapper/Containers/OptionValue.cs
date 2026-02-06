@@ -1,8 +1,8 @@
 namespace FFmpegWrapper.Containers;
 
-public readonly struct OptionValue : IFFHandleObserver<AVOption_u>
+public readonly struct OptionValue : IHandleObserver<AVOption_u>
 {
-    public FFHandle<AVOption_u> Handle {
+    public Handle<AVOption_u> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
@@ -27,7 +27,7 @@ public readonly struct OptionValue : IFFHandleObserver<AVOption_u>
     internal readonly unsafe AVOption_u* _handle;
     public readonly AVOptionType ValueType;
 
-    public OptionValue(FFHandle<AVOption_u> handle, AVOptionType valueType)
+    public OptionValue(Handle<AVOption_u> handle, AVOptionType valueType)
     {
         unsafe {
             _handle = handle;

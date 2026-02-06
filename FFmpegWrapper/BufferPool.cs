@@ -3,7 +3,7 @@ namespace FFmpegWrapper;
 using System.Runtime.InteropServices;
 using Core;
 
-public abstract class BufferPool : FFObject<AVBufferPool>
+public abstract class BufferPool : OwnedObject<AVBufferPool>
 {
     protected BufferPool(nuint size)
     {
@@ -14,12 +14,12 @@ public abstract class BufferPool : FFObject<AVBufferPool>
         }
     }
 
-    protected BufferPool(FFHandle<AVBufferPool> handle) : base(handle)
+    protected BufferPool(Handle<AVBufferPool> handle) : base(handle)
     {
 
     }
     
-    protected abstract FFHandle<AVBufferRef> AllocateBuffer(nuint size);
+    protected abstract Handle<AVBufferRef> AllocateBuffer(nuint size);
 
 
     

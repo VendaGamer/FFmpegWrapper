@@ -1,6 +1,6 @@
 namespace FFmpegWrapper;
 
-public readonly struct PixelFormatDescriptor : IFFHandleObserver<AVPixFmtDescriptor>
+public readonly struct PixelFormatDescriptor : IHandleObserver<AVPixFmtDescriptor>
 {
 
 #region StaticProperties
@@ -43,7 +43,7 @@ public readonly struct PixelFormatDescriptor : IFFHandleObserver<AVPixFmtDescrip
     
 #region Properties
 
-    public unsafe FFHandle<AVPixFmtDescriptor> Handle => _handle;
+    public unsafe Handle<AVPixFmtDescriptor> Handle => _handle;
     
     /// <inheritdoc cref="AVPixFmtDescriptor.name" />
     public unsafe ReadOnlySpan<byte> Name => FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.name);
@@ -75,7 +75,7 @@ public readonly struct PixelFormatDescriptor : IFFHandleObserver<AVPixFmtDescrip
     
 #region Properties
     
-    public unsafe PixelFormatDescriptor(FFHandle<AVPixFmtDescriptor> handle) => _handle = handle;
+    public unsafe PixelFormatDescriptor(Handle<AVPixFmtDescriptor> handle) => _handle = handle;
     
     public unsafe PixelFormatDescriptor(AVPixelFormat format) => _handle = av_pix_fmt_desc_get(format);
     

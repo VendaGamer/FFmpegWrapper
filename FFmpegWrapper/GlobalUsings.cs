@@ -4,7 +4,7 @@ global using FFmpegWrapper.Containers;
 global using FFmpegWrapper.Media.Formats;
 global using FFmpegWrapper.Media.Frames;
 global using FFmpegWrapper.Media.Packets;
-global using FFmpegWrapper.Abstractions;
+global using BindingWrapperUtils;
 global using FFmpegWrapper.Core;
 global using FFmpegBindings.Abstractions;
 global using static FFmpegBindings.Abstractions.FFmpeg;

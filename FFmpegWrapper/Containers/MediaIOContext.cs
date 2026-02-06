@@ -2,11 +2,11 @@ namespace FFmpegWrapper.Containers;
 
 using System.Runtime.InteropServices;
 
-public readonly struct MediaIOContext : IFFHandleObserver<AVIOContext>
+public readonly struct MediaIOContext : IHandleObserver<AVIOContext>
 {
     #region Properties
 
-    public FFHandle<AVIOContext> Handle {
+    public Handle<AVIOContext> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
@@ -57,7 +57,7 @@ public readonly struct MediaIOContext : IFFHandleObserver<AVIOContext>
     internal readonly unsafe AVIOContext* _handle;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public MediaIOContext(FFHandle<AVIOContext> handle)
+    public MediaIOContext(Handle<AVIOContext> handle)
     {
         unsafe {
             _handle = handle;

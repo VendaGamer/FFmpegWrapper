@@ -2,13 +2,9 @@
 
 using System.Buffers;
 using System.Runtime.InteropServices;
-using Abstractions;
-
-using Extensions;
-
 using Hardware;
 
-public abstract class CodecBase : FFObject<AVCodecContext>
+public abstract class CodecBase : OwnedObject<AVCodecContext>
 {
     
     public bool IsOpen {
@@ -86,10 +82,10 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected unsafe CodecBase(NullableFFHandle<AVCodec> codec = default)
+    protected unsafe CodecBase(NullableHandle<AVCodec> codec = default)
         : this(avcodec_alloc_context3(codec)) { }
     
-    protected CodecBase(FFHandle<AVCodecContext> handle) : base(handle)
+    protected CodecBase(Handle<AVCodecContext> handle) : base(handle)
     {
         unsafe {
             ref var ctx = ref handle.Ref;
@@ -104,7 +100,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         }
     }
 
-    public FFHandle<AVCodec> Codec {
+    public Handle<AVCodec> Codec {
         get {
             unsafe
             {
@@ -204,7 +200,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     protected void SetHardwareContext(
         CodecHardwareConfig config,
         HardwareDevice device,
-        NullableFFHandle<AVBufferRef> framePool)
+        NullableHandle<AVBufferRef> framePool)
     {
         unsafe
         {

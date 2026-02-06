@@ -2,7 +2,7 @@
 
 using Extensions;
 
-public sealed class SwResampler : FFObject<SwrContext>
+public sealed class SwResampler : OwnedObject<SwrContext>
 {
     public AudioFormat InputFormat { get; private set; }
     public AudioFormat OutputFormat { get; private set; }
@@ -12,8 +12,7 @@ public sealed class SwResampler : FFObject<SwrContext>
         get {
             unsafe
             {
-                ThrowIfDisposed();
-                return (int)swr_get_delay(_handle, OutputFormat.SampleRate);
+                return (int)swr_get_delay(Handle, OutputFormat.SampleRate);
             }
         }
     }
@@ -87,14 +86,14 @@ public sealed class SwResampler : FFObject<SwrContext>
     /// <returns>true if closed, false indicates already closed</returns>
     public bool Close()
     {
-        ThrowIfDisposed();
-        unsafe
-        {
-            if (swr_is_initialized(_handle) == 0) {
+        unsafe {
+            var handle = Handle.Raw;
+            
+            if (swr_is_initialized(handle) == 0) {
                 return false;
             }
 
-            swr_close(_handle);
+            swr_close(handle);
             return true;
         }
     }
@@ -138,18 +137,18 @@ public sealed class SwResampler : FFObject<SwrContext>
     /// <param name="srcCount">Number of samples (per channel) in the src buffer.</param>
     /// <param name="dstCount">Capacity, in samples (per channel) of the dst buffer.</param>
     /// <returns>The number of samples written to the dst buffer.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe int Convert(byte** src, int srcCount, byte** dst, int dstCount)
     {
-        ThrowIfDisposed();
-        return swr_convert(_handle, dst, dstCount, src, srcCount).CheckError();
+        return swr_convert(Handle, dst, dstCount, src, srcCount).CheckError();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Convert(AudioFrame src, AudioFrame dst)
     {
         unsafe
         {
-            ThrowIfDisposed();
-            return swr_convert_frame(_handle, dst.Handle, src.Handle).CheckError();
+            return swr_convert_frame(Handle, dst.Handle, src.Handle).CheckError();
         }
     }
 
@@ -160,6 +159,7 @@ public sealed class SwResampler : FFObject<SwrContext>
     /// <br/>
     /// Setting <paramref name="frame"/> to null will transition the resampler state to begin flushing, which may cause ReceiveFrame() to return true with partially filled frames on the last time.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SendFrame(AudioFrame? frame)
     {
         unsafe

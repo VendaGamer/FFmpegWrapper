@@ -2,9 +2,9 @@ namespace FFmpegWrapper.Media.Frames;
 
 using System.Text;
 
-public readonly struct FrameSideDataList : IFFHandleObserver<AVFrame>
+public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
 {
-    public FFHandle<AVFrame> Handle {
+    public Handle<AVFrame> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
@@ -34,7 +34,7 @@ public readonly struct FrameSideDataList : IFFHandleObserver<AVFrame>
     internal readonly unsafe AVFrame* _handle;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public FrameSideDataList(FFHandle<AVFrame> handle)
+    public FrameSideDataList(Handle<AVFrame> handle)
     {
         unsafe
         {
@@ -127,7 +127,7 @@ public readonly struct FrameSideDataList : IFFHandleObserver<AVFrame>
 
 public readonly struct FrameSideData
 {
-    public FFHandle<AVFrameSideData> Handle {
+    public Handle<AVFrameSideData> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
@@ -162,7 +162,7 @@ public readonly struct FrameSideData
     internal readonly unsafe AVFrameSideData* _handle;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public FrameSideData(FFHandle<AVFrameSideData> handle)
+    public FrameSideData(Handle<AVFrameSideData> handle)
     {
         unsafe {
             _handle = handle;

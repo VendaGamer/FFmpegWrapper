@@ -5,9 +5,9 @@ namespace FFmpegWrapper.Containers;
 
 using Extensions;
 
-public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
+public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
 {
-    public FFHandle<AVOutputFormat> Handle {
+    public Handle<AVOutputFormat> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
@@ -20,7 +20,7 @@ public readonly struct OutputFormat : IFFHandleObserver<AVOutputFormat>
     internal readonly unsafe AVOutputFormat* _handle;
 
     // Private constructor to ensure only valid instances are created
-    public OutputFormat(FFHandle<AVOutputFormat> handle)
+    public OutputFormat(Handle<AVOutputFormat> handle)
     {
         unsafe
         {

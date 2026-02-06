@@ -1,3 +1,6 @@
 [submodule "Bindings"]
 	path = Bindings
 	url = https://github.com/VendaGamer/FFmpegBindings.git
+[submodule "Deps/BindingWrapperUtils"]
+	path = Deps/BindingWrapperUtils
+	url = https://github.com/VendaGamer/BindingWrapperUtils.git

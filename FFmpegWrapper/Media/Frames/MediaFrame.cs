@@ -1,10 +1,6 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
-using System.Runtime.InteropServices;
-
-using Abstractions;
-
-public abstract class MediaFrame : FFObject<AVFrame>
+public abstract class MediaFrame : OwnedObject<AVFrame>
 {
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
     public long? BestEffortTimestamp {
@@ -72,7 +68,7 @@ public abstract class MediaFrame : FFObject<AVFrame>
 
     #region Constructors
 
-    protected MediaFrame(FFHandle<AVFrame> handle) : base(handle) { }
+    protected MediaFrame(Handle<AVFrame> handle) : base(handle) { }
     protected unsafe MediaFrame() : base(av_frame_alloc()) { }
 
     #endregion

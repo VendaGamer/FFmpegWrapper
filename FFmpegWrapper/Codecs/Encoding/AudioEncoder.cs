@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Codecs.Encoding;
 
+using Media;
+
 public class AudioEncoder : MediaEncoder
 {
     public AVSampleFormat SampleFormat {
@@ -60,12 +62,12 @@ public class AudioEncoder : MediaEncoder
     /// </remarks>
     public int FrameSize => Handle.Ref.frame_size;
     
-    public AudioEncoder(FFHandle<AVCodecContext> ctx) : base(ctx) { }
+    public AudioEncoder(Handle<AVCodecContext> ctx) : base(ctx) { }
 
     public AudioEncoder(AVCodecID codecId, in AudioFormat format, int bitrate = 0)
         : this(MediaCodec.GetEncoder(codecId).Handle, format, bitrate) { }
 
-    public AudioEncoder(NullableFFHandle<AVCodec> codec, in AudioFormat format, int bitrate = 0)
+    public AudioEncoder(NullableHandle<AVCodec> codec, in AudioFormat format, int bitrate = 0)
         : base(codec)
     {
         Format = format;

@@ -1,8 +1,8 @@
 namespace FFmpegWrapper;
 
-public readonly struct MediaOptionArray : IFFHandleObserver<AVOptionArrayDef>
+public readonly struct MediaOptionArray : IHandleObserver<AVOptionArrayDef>
 {
-    public FFHandle<AVOptionArrayDef> Handle {
+    public Handle<AVOptionArrayDef> Handle {
         get {
             unsafe {
                 return _handle;
@@ -27,7 +27,7 @@ public readonly struct MediaOptionArray : IFFHandleObserver<AVOptionArrayDef>
 
     internal readonly unsafe AVOptionArrayDef* _handle;
 
-    public MediaOptionArray(FFHandle<AVOptionArrayDef> handle)
+    public MediaOptionArray(Handle<AVOptionArrayDef> handle)
     {
         unsafe {
             _handle = handle;

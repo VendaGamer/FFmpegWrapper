@@ -1,18 +1,9 @@
 ﻿namespace FFmpegWrapper.Media.Packets;
 
-using System.Runtime.InteropServices;
-
-using Abstractions;
-
-using CommunityToolkit.HighPerformance;
-
 using Core;
-
-using Microsoft.Win32.SafeHandles;
-
 using Streams;
 
-public class MediaPacket : FFObject<AVPacket>
+public class MediaPacket : OwnedObject<AVPacket>
 {
     
     #region Properties
@@ -107,7 +98,7 @@ public class MediaPacket : FFObject<AVPacket>
     
     #region Constructors
 
-    public MediaPacket(FFHandle<AVPacket> handle) : base(handle) { }
+    public MediaPacket(Handle<AVPacket> handle) : base(handle) { }
     
     public unsafe MediaPacket() : base(av_packet_alloc()) { }
     

@@ -1,5 +1,7 @@
 ﻿namespace AvaloniaIntegration;
 
+using System.Net;
+
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Platform;

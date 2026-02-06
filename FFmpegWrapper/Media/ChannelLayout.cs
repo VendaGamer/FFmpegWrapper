@@ -1,10 +1,8 @@
-namespace FFmpegWrapper.Media.Formats;
+namespace FFmpegWrapper.Media;
 
-using System.Runtime.ConstrainedExecution;
+using FFmpegWrapper.Extensions;
 
-using Extensions;
-
-public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<ChannelLayout>
+public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<ChannelLayout>
 {
     
     #region StaticProperties
@@ -76,7 +74,7 @@ public readonly struct ChannelLayout : IFFWrapped<AVChannelLayout>, IEquatable<C
         get => Native.nb_channels;
     }
         
-    AVChannelLayout IFFWrapped<AVChannelLayout>.Native
+    AVChannelLayout IWrapped<AVChannelLayout>.Native
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Native;

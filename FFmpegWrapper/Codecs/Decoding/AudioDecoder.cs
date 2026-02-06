@@ -2,6 +2,8 @@
 
 using System.Runtime.InteropServices;
 
+using Media;
+
 /// <summary>
 /// Decodes audio files
 /// </summary>
@@ -35,13 +37,13 @@ public class AudioDecoder : MediaDecoder
         
     }
 
-    public AudioDecoder(NullableFFHandle<AVCodec> codec = default)
+    public AudioDecoder(NullableHandle<AVCodec> codec = default)
         : base(codec)
     {
         
     }
     
-    public AudioDecoder(FFHandle<AVCodecContext> ctx)
+    public AudioDecoder(Handle<AVCodecContext> ctx)
         : base(ctx)
     {
         

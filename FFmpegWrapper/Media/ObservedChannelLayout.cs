@@ -1,11 +1,11 @@
 ﻿namespace FFmpegWrapper.Media;
 
-public readonly ref struct ObservedChannelLayout : IFFHandleObserver<AVChannelLayout>
+public readonly ref struct ObservedChannelLayout : IHandleObserver<AVChannelLayout>
 {
     
     #region Properties
     
-    FFHandle<AVChannelLayout> IFFHandleObserver<AVChannelLayout>.Handle
+    Handle<AVChannelLayout> IHandleObserver<AVChannelLayout>.Handle
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle;
@@ -19,12 +19,12 @@ public readonly ref struct ObservedChannelLayout : IFFHandleObserver<AVChannelLa
 
     #endregion
     
-    public readonly FFHandle<AVChannelLayout> Handle;
+    public readonly Handle<AVChannelLayout> Handle;
     
     #region Methods
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(FFHandle<AVChannelLayout> dest)
+    public void CopyTo(Handle<AVChannelLayout> dest)
     {
         unsafe
         {
@@ -33,7 +33,7 @@ public readonly ref struct ObservedChannelLayout : IFFHandleObserver<AVChannelLa
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyFrom(FFHandle<AVChannelLayout> source)
+    public void CopyFrom(Handle<AVChannelLayout> source)
     {
         unsafe
         {

@@ -1,7 +1,6 @@
 namespace FFmpegWrapper.Tests;
 
-using Media.Formats;
-
+using Media;
 using Xunit.Abstractions;
 
 public class FormatTests(ITestOutputHelper testOutputHelper) : TestBase

@@ -2,8 +2,6 @@ namespace FFmpegWrapper.Media;
 
 using System.Collections;
 using System.Diagnostics;
-using System.Text;
-using Abstractions;
 using Extensions;
 
 /// <summary>
@@ -11,7 +9,7 @@ using Extensions;
 /// </summary>
 
 [DebuggerDisplay("DecoderConfigs: {decoderConfigs.Count}, EncoderConfigs: {encoderConfigs.Count}")]
-public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<Utf8KeyValue>
+public sealed class MediaDictionaryOwner : OwnedObject<AVDictionary>, IEnumerable<Utf8KeyValue>
 {
     /// <summary>
     /// Creates a new owned MediaDictionary
@@ -28,7 +26,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     /// <summary>
     /// Wraps an existing AVDictionary pointer (takes ownership of the pointer)
     /// </summary>
-    public MediaDictionaryOwner(FFHandle<AVDictionary> target)
+    public MediaDictionaryOwner(Handle<AVDictionary> target)
     {
         unsafe
         {
@@ -157,7 +155,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe MediaDictionaryOwner CreateCopyOf(FFHandle<AVDictionary> source)
+    public static unsafe MediaDictionaryOwner CreateCopyOf(Handle<AVDictionary> source)
     {
         AVDictionary* handle = null;
         av_dict_copy(&handle ,source,0).CheckError();
@@ -185,7 +183,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     /// Copies entries from another dictionary
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyFrom(FFHandle<AVDictionary> other, AVDictFlags flags = 0)
+    public void CopyFrom(Handle<AVDictionary> other, AVDictFlags flags = 0)
     {
         unsafe
         {

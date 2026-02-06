@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Codecs;
 
-public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
+public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
 {
 
     #region Static Methods
@@ -60,7 +60,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
         }
     }
     
-    public static ReadOnlySpan<CodecHardwareConfig> GetAvailableConfigsFor(FFHandle<AVCodec> codec)
+    public static ReadOnlySpan<CodecHardwareConfig> GetAvailableConfigsFor(Handle<AVCodec> codec)
     {
         codec.ThrowIfNull();
         
@@ -99,7 +99,7 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
     
     
     
-    public FFHandle<AVCodecHWConfig> Handle {
+    public Handle<AVCodecHWConfig> Handle {
         get {
             unsafe
             {
@@ -138,10 +138,10 @@ public readonly struct CodecHardwareConfig : IFFHandleObserver<AVCodecHWConfig>
     public readonly MediaCodec Codec;
 
 
-    public CodecHardwareConfig(FFHandle<AVCodec> handle, FFHandle<AVCodecHWConfig> config)
+    public CodecHardwareConfig(Handle<AVCodec> handle, Handle<AVCodecHWConfig> config)
         : this(new MediaCodec(handle), config) { }
     
-    public CodecHardwareConfig(MediaCodec codec, FFHandle<AVCodecHWConfig> config)
+    public CodecHardwareConfig(MediaCodec codec, Handle<AVCodecHWConfig> config)
     {
         Codec = codec;
         unsafe {

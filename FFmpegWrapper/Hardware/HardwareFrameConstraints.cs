@@ -1,8 +1,7 @@
 namespace FFmpegWrapper.Hardware;
 
-using Abstractions;
 
-public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
+public class HardwareFrameConstraints : OwnedObject<AVHWFramesConstraints>
 {
     public readonly ImmutableArray<AVPixelFormat> ValidHardwareFormats;
     public readonly ImmutableArray<AVPixelFormat> ValidSoftwareFormats;

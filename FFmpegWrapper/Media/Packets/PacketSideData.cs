@@ -3,7 +3,7 @@ namespace FFmpegWrapper.Media.Packets;
 public readonly struct PacketSideData
 {
 
-    public FFHandle<AVPacketSideData> Handle {
+    public Handle<AVPacketSideData> Handle {
         get {
             unsafe
             {
@@ -40,7 +40,7 @@ public readonly struct PacketSideData
         }
     }
 
-    public PacketSideData(FFHandle<AVPacketSideData> handle)
+    public PacketSideData(Handle<AVPacketSideData> handle)
     {
         unsafe
         {

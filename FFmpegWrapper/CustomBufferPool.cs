@@ -41,6 +41,6 @@ public abstract class CustomBufferPool<TUserData>
         }
     }
     
-    public delegate FFHandle<AVBufferRef> AllocateBufferWithUserData(FFHandle<TUserData> data, nuint size);
-    public delegate void FreeUserData(FFHandle<TUserData> userData);
+    public delegate Handle<AVBufferRef> AllocateBufferWithUserData(Handle<TUserData> data, nuint size);
+    public delegate void FreeUserData(Handle<TUserData> userData);
 }

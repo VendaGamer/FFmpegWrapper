@@ -1,10 +1,7 @@
 ﻿namespace FFmpegWrapper.Containers;
 
-using System.Runtime.InteropServices;
 
-using Abstractions;
-
-public abstract class IOContext : FFObject<AVIOContext>
+public abstract class IOContext : OwnedObject<AVIOContext>
 {
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

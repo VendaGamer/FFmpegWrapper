@@ -4,7 +4,7 @@ using Core;
 
 public readonly struct MediaStream
 {
-    public FFHandle<AVStream> Handle {
+    public Handle<AVStream> Handle {
         get {
             unsafe
             {
@@ -64,7 +64,7 @@ public readonly struct MediaStream
     
     internal unsafe readonly AVStream* _handle;
 
-    public MediaStream(FFHandle<AVStream> stream)
+    public MediaStream(Handle<AVStream> stream)
     {
         unsafe
         {

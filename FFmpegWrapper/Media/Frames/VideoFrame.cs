@@ -121,7 +121,7 @@ public sealed class VideoFrame : MediaFrame
 
     }
 
-    public VideoFrame(FFHandle<AVFrame> handle) : base(handle)
+    public VideoFrame(Handle<AVFrame> handle) : base(handle)
     {
 
     }

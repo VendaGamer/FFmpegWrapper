@@ -1,9 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-using FFmpegBindings.Abstractions;
-using FFmpegBindings.Linked;
+﻿using FFmpegBindings.Linked;
 using FFmpegWrapper.Codecs;
 using FFmpegWrapper.Core;
 using FFmpegWrapper.Media;

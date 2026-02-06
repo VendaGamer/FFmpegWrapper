@@ -1,8 +1,6 @@
 ﻿namespace FFmpegWrapper.Media;
 
-using Abstractions;
-
-public class AudioQueue : FFObject<AVAudioFifo>
+public class AudioQueue : OwnedObject<AVAudioFifo>
 {
     /// <summary>
     /// Gets the audio sample format type used by this FIFO buffer.
@@ -12,7 +10,7 @@ public class AudioQueue : FFObject<AVAudioFifo>
     public readonly AVSampleFormat Format;
 
     /// <summary>
-    /// Gets the number of audio channels configured for <see cref=""/>.
+    /// Gets the number of audio channels configured for <see cref="AudioQueue"/>.
     /// This value determines the channel layout (e.g., 1 for mono, 2 for stereo, 6 for 5.1 surround).
     /// </summary>
     /// <value>The number of audio channels, typically ranging from 1 to 8 or more.</value>

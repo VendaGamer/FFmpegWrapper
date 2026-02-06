@@ -6,13 +6,13 @@ using Extensions;
 
 using Media;
 
-public sealed class SwScaler(FFHandle<SwsContext> handle) : FFObject<SwsContext>(handle)
+public sealed class SwScaler(Handle<SwsContext> handle) : OwnedObject<SwsContext>(handle)
 {
     public SwScaler(PictureFormat inFmt, PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
         : this(Allocate(inFmt, outFmt, flags)) { }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe FFHandle<SwsContext> Allocate(PictureFormat inFmt, PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
+    private static unsafe Handle<SwsContext> Allocate(PictureFormat inFmt, PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
         => sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
             outFmt.Width, outFmt.Height, outFmt.PixelFormat,
             (int)flags, null, null, null);
@@ -39,7 +39,7 @@ public sealed class SwScaler(FFHandle<SwsContext> handle) : FFObject<SwsContext>
     {
         unsafe
         {
-            ThrowIfDisposed();
+            var handle = Handle.Raw;
             
             int* table, invTable;
             int srcRange, dstRange, brightness, contrast, saturation;
@@ -60,10 +60,10 @@ public sealed class SwScaler(FFHandle<SwsContext> handle) : FFObject<SwsContext>
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public unsafe void Convert(FFHandle<AVFrame> src, FFHandle<AVFrame> dst) 
+    public unsafe void Convert(Handle<AVFrame> src, Handle<AVFrame> dst) 
         => sws_scale_frame(Handle, dst, src).CheckError();
     
-    public VideoFrame Convert(FFHandle<AVFrame> src)
+    public VideoFrame Convert(Handle<AVFrame> src)
     {
         unsafe {
             var output = new VideoFrame();

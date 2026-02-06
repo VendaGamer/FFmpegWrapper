@@ -5,7 +5,7 @@ using CommunityToolkit.HighPerformance;
 
 public readonly ref struct PacketSideDataList
 {
-    public FFHandleSource<AVPacketSideData> Handle {
+    public HandleSource<AVPacketSideData> Handle {
         get {
             unsafe
             {
@@ -39,7 +39,7 @@ public readonly ref struct PacketSideDataList
     private readonly unsafe AVPacketSideData** _handle;
     private readonly unsafe int* _count;
 
-    public PacketSideDataList(FFHandleSource<AVPacketSideData> entries, FFHandle<int> count)
+    public PacketSideDataList(HandleSource<AVPacketSideData> entries, Handle<int> count)
     {
         unsafe
         {

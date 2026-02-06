@@ -5,9 +5,9 @@ using Core;
 using Extensions;
 
 /// <summary> Represents an option accepted by a ffmpeg object. </summary>
-public readonly struct ContextOption(FFHandle<AVOption> handle)
+public readonly struct ContextOption(Handle<AVOption> handle)
 {
-    public FFHandle<AVOption> Handle {
+    public Handle<AVOption> Handle {
         get {
             unsafe {
                 return _handle;

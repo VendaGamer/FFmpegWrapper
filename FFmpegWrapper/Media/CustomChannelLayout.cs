@@ -3,13 +3,13 @@ namespace FFmpegWrapper.Media;
 using System.Runtime.ConstrainedExecution;
 
 public sealed class CustomChannelLayout
-    : CriticalFinalizerObject, IFFHandleOwner<AVChannelLayout>
+    : CriticalFinalizerObject, IHandleOwner<AVChannelLayout>
 {
 
     #region StaticProperties
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Copy(FFHandle<AVChannelLayout> src, FFHandle<AVChannelLayout> dest)
+    public static void Copy(Handle<AVChannelLayout> src, Handle<AVChannelLayout> dest)
     {
         unsafe
         {
@@ -39,7 +39,7 @@ public sealed class CustomChannelLayout
         get => new(_native);
     }
 
-    public FFHandle<AVChannelLayout> Handle
+    public Handle<AVChannelLayout> Handle
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
@@ -50,7 +50,7 @@ public sealed class CustomChannelLayout
                     throw new Exception("Cannot borrow uninitialized custom channel layout.");
                 
                 fixed(void* ptr = &_native)
-                    return new FFHandle<AVChannelLayout>(ptr);
+                    return new Handle<AVChannelLayout>(ptr);
             }
         }
     }
@@ -78,7 +78,7 @@ public sealed class CustomChannelLayout
     #endregion
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(FFHandle<AVChannelLayout> dest)
+    public void CopyTo(Handle<AVChannelLayout> dest)
     {
         unsafe
         {
@@ -87,7 +87,7 @@ public sealed class CustomChannelLayout
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyFrom(FFHandle<AVChannelLayout> source)
+    public void CopyFrom(Handle<AVChannelLayout> source)
     {
         unsafe
         {

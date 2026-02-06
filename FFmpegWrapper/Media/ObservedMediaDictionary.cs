@@ -5,15 +5,15 @@ using Extensions;
 /// <summary>
 /// Useful wrapper for 
 /// </summary>
-public readonly ref struct ObservedMediaDictionary : IFFHandleSourceObserver<AVDictionary>
+public readonly ref struct ObservedMediaDictionary : IHandleSourceObserver<AVDictionary>
 {
     public unsafe int Count => av_dict_count(HandleSource);
-    public unsafe FFHandleSource<AVDictionary> HandleSource => _handleSource;
+    public unsafe HandleSource<AVDictionary> HandleSource => _handleSource;
 
 
     internal readonly unsafe AVDictionary** _handleSource;
     
-    public ObservedMediaDictionary(FFHandleSource<AVDictionary> handleSource)
+    public ObservedMediaDictionary(HandleSource<AVDictionary> handleSource)
     {
         unsafe {
             _handleSource = handleSource;
