@@ -43,37 +43,69 @@ public readonly struct PixelFormatDescriptor : IHandleObserver<AVPixFmtDescripto
     
 #region Properties
 
-    public unsafe Handle<AVPixFmtDescriptor> Handle => _handle;
-    
+    public unsafe Handle<AVPixFmtDescriptor> Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _handle;
+    }
+
     /// <inheritdoc cref="AVPixFmtDescriptor.name" />
-    public unsafe ReadOnlySpan<byte> Name => FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.name);
+    public unsafe ReadOnlySpan<byte> Name {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.name);
+    }
     
     /// <inheritdoc cref="AVPixFmtDescriptor.alias" />
-    public unsafe ReadOnlySpan<byte> Alias => FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.alias);
-    
+    public unsafe ReadOnlySpan<byte> Alias {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.alias);
+    }
+
     /// <inheritdoc cref="AVPixFmtDescriptor.log2_chroma_w" />
-    public byte LogChromaWidth => Handle.Ref.log2_chroma_w;
-    
+    public byte LogChromaWidth {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            return Handle.Ref.log2_chroma_w;
+        }
+    }
+
     /// <inheritdoc cref="AVPixFmtDescriptor.log2_chroma_h" />
-    public byte LogChromaHeight => Handle.Ref.log2_chroma_h;
+    public byte LogChromaHeight {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            return Handle.Ref.log2_chroma_h;
+        }
+    }
 
     /// <inheritdoc cref="AVPixFmtDescriptor.comp" />
-    public unsafe ReadOnlySpan<AVComponentDescriptor> Log => new (&Handle.Raw->comp._0, 4);
+    public unsafe ReadOnlySpan<AVComponentDescriptor> Log {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new(&Handle.Raw->comp._0, 4);
+    }
     
     /// <inheritdoc cref="AVPixFmtDescriptor.nb_components" />
-    public byte ComponentsCount => Handle.Ref.nb_components;
-    
+    public byte ComponentsCount {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.nb_components;
+    }
+
     /// <inheritdoc cref="AVPixFmtDescriptor.flags" />
-    public AV_PIX_FMT_FLAGS Flags => (AV_PIX_FMT_FLAGS)Handle.Ref.flags;
+    public AV_PIX_FMT_FLAGS Flags {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => (AV_PIX_FMT_FLAGS)Handle.Ref.flags;
+    }
 
     /// <summary> Pixel format being described. </summary>
-    public unsafe AVPixelFormat PixelFormat => av_pix_fmt_desc_get_id(Handle);
-    
-#endregion
+
+    public unsafe AVPixelFormat PixelFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => av_pix_fmt_desc_get_id(Handle);
+    }
+
+    #endregion
 
     internal readonly unsafe AVPixFmtDescriptor* _handle;
     
-#region Properties
+#region Constructors
     
     public unsafe PixelFormatDescriptor(Handle<AVPixFmtDescriptor> handle) => _handle = handle;
     

@@ -1,8 +1,6 @@
 ﻿namespace FFmpegWrapper.Core;
 
 using System.Runtime.InteropServices;
-using System.Text;
-using CommunityToolkit.HighPerformance.Buffers;
 
 public static class FFHelper
 {
@@ -75,17 +73,11 @@ public static class FFHelper
         
         return new ReadOnlySpan<T>(handle, len);
     }
-
-    public static string SpanToStringUtf8(ReadOnlySpan<byte> span)
-    {
-        return StringPool.Shared.GetOrAdd(span, Encoding.UTF8);
-    }
-    
     
 #if NET6_0_OR_GREATER
     public static unsafe string PtrToStringUtf8(byte* ptr)
     {
-        return SpanToStringUtf8(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr));
+        return MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr).ToStringUft8();
     }
 #else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -95,7 +87,7 @@ public static class FFHelper
         while (ptr[length] is not 0)
             length++;
         
-        return SpanToStringUtf8(new ReadOnlySpan<byte>(ptr, length));
+        return new ReadOnlySpan<byte>(ptr, length).ToStringUft8();
     }
 #endif
 
@@ -129,5 +121,33 @@ public static class FFHelper
         }
         
         pts = value.Value;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<T> Allocate<T>(nuint size)
+        where T : unmanaged
+    {
+        unsafe {
+            var buffer = av_malloc(size);
+            
+            if(buffer is null)
+                throw new Exception("Could not allocate memory for buffer.");
+            
+            return new Span<T>(buffer, (int)size);
+        }
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<T> AllocateZero<T>(nuint size)
+        where T : unmanaged
+    {
+        unsafe {
+            var buffer = av_mallocz(size);
+            
+            if(buffer is null)
+                throw new Exception("Could not allocate memory for buffer.");
+            
+            return new Span<T>(buffer, (int)size);
+        }
     }
 }

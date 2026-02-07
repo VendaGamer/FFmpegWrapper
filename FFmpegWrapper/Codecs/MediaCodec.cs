@@ -99,7 +99,7 @@ public readonly struct MediaCodec : IHandleObserver<AVCodec>
             unsafe
             {
                 if (_handle->wrapper_name is null) {
-                    return FFHelper.SpanToStringUtf8("builtin"u8);
+                    return "builtin";
                 }
                 return FFHelper.PtrToStringUtf8(_handle->wrapper_name);
             }
@@ -132,8 +132,6 @@ public readonly struct MediaCodec : IHandleObserver<AVCodec>
     internal readonly unsafe AVCodec* _handle;
 
     #endregion
-    
-    
     
     public unsafe MediaCodec(Handle<AVCodec> handle)
     {

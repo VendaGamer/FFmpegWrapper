@@ -185,6 +185,6 @@ public readonly struct ContextOption(Handle<AVOption> handle)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString()
     {
-        return $"{FFHelper.SpanToStringUtf8(Name)}: {Type.ToString().ToLower().Substring("AV_OPT_TYPE_".Length)}";
+        return $"{Name.ToStringUft8()}: {Type.ToString().ToLower().Substring("AV_OPT_TYPE_".Length)}";
     }
 }

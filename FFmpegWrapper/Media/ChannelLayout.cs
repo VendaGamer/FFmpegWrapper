@@ -190,7 +190,7 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
         {
             var buf = stackalloc byte[128];
             var size = av_channel_layout_describe(Handle, buf, 128).CheckError();
-            return FFHelper.SpanToStringUtf8(new ReadOnlySpan<byte>(buf, size - 1));
+            return new ReadOnlySpan<byte>(buf, size - 1).ToStringUft8();
         }
     }
 
