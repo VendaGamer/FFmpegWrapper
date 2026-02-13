@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 
 using static FFmpegBindings.Abstractions.FFmpeg;
 using static MiniAudioBindings.Abstractions.MiniAudio;
@@ -23,7 +24,6 @@ public unsafe class FFmpegMiniaudioPlayer
 
     public void PlayFile(ReadOnlySpan<byte> filePath)
     {
-        // Initialize FFmpeg
         AVFormatContext* formatContext = null;
         AVCodecContext* codecContext = null;
         AVFrame* frame = null;
@@ -32,17 +32,14 @@ public unsafe class FFmpegMiniaudioPlayer
 
         try
         {
-            // Open input file
             formatContext = avformat_alloc_context();
             int result = avformat_open_input(&formatContext, filePath.RawHandle, null, null);
             if (result < 0)
                 throw new Exception($"Could not open file: {filePath.ToStringUft8()}");
-
-            // Retrieve stream information
+            
             if (avformat_find_stream_info(formatContext, null) < 0)
                 throw new Exception("Could not find stream information");
-
-            // Find the first audio stream
+            
             int audioStreamIndex = -1;
             for (int i = 0; i < formatContext->nb_streams; i++)
             {
@@ -58,27 +55,21 @@ public unsafe class FFmpegMiniaudioPlayer
 
             AVStream* audioStream = formatContext->streams[audioStreamIndex];
             AVCodecParameters* codecParams = audioStream->codecpar;
-
-            // Find decoder
+            
             AVCodec* codec = avcodec_find_decoder(codecParams->codec_id);
             if (codec == null)
                 throw new Exception("Unsupported codec");
-
-            // Allocate codec context
+            
             codecContext = avcodec_alloc_context3(codec);
             avcodec_parameters_to_context(codecContext, codecParams);
-
-            // Open codec
+            
             if (avcodec_open2(codecContext, codec, null) < 0)
                 throw new Exception("Could not open codec");
-
-            // Print audio info
+            
             Console.WriteLine($"Audio Format: {codecContext->sample_fmt}");
             Console.WriteLine($"Sample Rate: {codecContext->sample_rate}");
             Console.WriteLine($"Channels: {codecContext->ch_layout.nb_channels}");
-
-            // Setup resampler to convert to format miniaudio expects
-            // Convert to stereo, 48kHz, f32 format
+            
             int targetSampleRate = 48000;
             int targetChannels = 2;
             AVSampleFormat targetFormat = AVSampleFormat.AV_SAMPLE_FMT_FLT;
@@ -107,26 +98,22 @@ public unsafe class FFmpegMiniaudioPlayer
                     throw new Exception("Could not initialize resampler"); 
             }
             
-            // Allocate frame and packet
             frame = av_frame_alloc();
             packet = av_packet_alloc();
-
-            // Decode all audio into a buffer
+            
             var decodedData = new List<byte>();
 
             while (av_read_frame(formatContext, packet) >= 0)
             {
                 if (packet->stream_index == audioStreamIndex)
                 {
-                    // Send packet to decoder
                     result = avcodec_send_packet(codecContext, packet);
                     if (result < 0)
                     {
                         Console.WriteLine("Error sending packet for decoding");
                         continue;
                     }
-
-                    // Receive decoded frames
+                    
                     while (result >= 0)
                     {
                         result = avcodec_receive_frame(codecContext, frame);
@@ -136,8 +123,7 @@ public unsafe class FFmpegMiniaudioPlayer
                         
                         if (result < 0)
                             throw new Exception("Error during decoding");
-
-                        // Resample the frame
+                        
                         int outSamples = (int)av_rescale_rnd(
                             swr_get_delay(swrContext, codecContext->sample_rate) + frame->nb_samples,
                             targetSampleRate,
@@ -191,22 +177,18 @@ public unsafe class FFmpegMiniaudioPlayer
 
                 av_packet_unref(packet);
             }
-
-            // Flush decoder
+            
             avcodec_send_packet(codecContext, null);
             while (avcodec_receive_frame(codecContext, frame) >= 0)
             {
-                // Process remaining frames (same resampling code as above)
+                
             }
-
-            // Store decoded audio
+            
             audioBuffer = decodedData.ToArray();
             bufferSize = audioBuffer.Length;
             readPosition = 0;
 
             Console.WriteLine($"Decoded {bufferSize} bytes of audio data");
-
-            // Setup miniaudio for playback
             PlayWithMiniaudio(targetSampleRate, targetChannels);
         }
         finally
@@ -241,11 +223,12 @@ public unsafe class FFmpegMiniaudioPlayer
         config.dataCallback = &DataCallback;
         config.pUserData = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(this));
         
-        fixed (ma_device* ptr = &device) {
+        fixed (ma_device* ptr = &device)
+        {
             if (ma_device_init(null, &config, ptr) is not ma_result.MA_SUCCESS)
                 throw new Exception("Failed to initialize miniaudio device");
             
-            if (ma_device_start(ptr) != ma_result.MA_SUCCESS)
+            if (ma_device_start(ptr) is not ma_result.MA_SUCCESS)
             {
                 ma_device_uninit(ptr);
                 throw new Exception("Failed to start miniaudio device");
@@ -266,13 +249,16 @@ public unsafe class FFmpegMiniaudioPlayer
 
         lock (player._lockObject)
         {
-            int bytesPerFrame = sizeof(float) * 2; // stereo f32
-            int bytesToRead = (int)(frameCount * bytesPerFrame);
+            fixed (ma_decoder* ptr = &player.decoder) {
+                
+            }
+            
+            int bytesToRead = (int)(frameCount * sizeof(float) * 2);
             int bytesAvailable = player.bufferSize - player.readPosition;
             int bytesToCopy = Math.Min(bytesToRead, bytesAvailable);
 
-            if (bytesToCopy > 0)
-            {
+            if (bytesToCopy > 0) {
+                
                 Marshal.Copy(
                     player.audioBuffer,
                     player.readPosition,
@@ -280,17 +266,6 @@ public unsafe class FFmpegMiniaudioPlayer
                     bytesToCopy
                 );
                 player.readPosition += bytesToCopy;
-            }
-            
-            if (bytesToCopy < bytesToRead)
-            {
-                byte[] silence = new byte[bytesToRead - bytesToCopy];
-                Marshal.Copy(
-                    silence,
-                    0,
-                    (IntPtr)pOutput + bytesToCopy,
-                    bytesToRead - bytesToCopy
-                );
             }
         }
     }
@@ -302,13 +277,8 @@ class Program
     {
         FFmpegLinked.Init();
         MiniAudioLinked.Init();
-        if (args.Length == 0)
-        {
-            Console.WriteLine("Usage: program <audio_file>");
-            return;
-        }
-
+        
         var player = new FFmpegMiniaudioPlayer();
-        player.PlayFile(Encoding.UTF8.GetBytes(args[0]));
+        player.PlayFile(args.Length is not 0 ? Encoding.UTF8.GetBytes(args[0]) : "test.wav"u8);
     }
 }
