@@ -16,8 +16,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../FFmpegWrapper.SkiaSharp/FFmpegWrapper.SkiaSharp.csproj" />
         <ProjectReference Include="../../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" />
+        <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
     </ItemGroup>
     
 </Project>

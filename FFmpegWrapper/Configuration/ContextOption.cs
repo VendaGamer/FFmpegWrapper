@@ -60,7 +60,7 @@ public readonly struct ContextOption(Handle<AVOption> handle)
         get {
             unsafe {
                 var handle = Handle.Raw;
-                return new OptionValue(&handle->u, handle->type);
+                return new OptionValue(&handle->default_val, handle->type);
             }
         }
     }

@@ -1,23 +1,19 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-using CommunityToolkit.HighPerformance;
-
-using Extensions;
-
 using Media;
 
 public sealed class SwScaler(Handle<SwsContext> handle) : OwnedObject<SwsContext>(handle)
 {
-    public SwScaler(PictureFormat inFmt, PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
+    public SwScaler(PictureFormat inFmt, PictureFormat outFmt, SwsFlags flags = SwsFlags.SWS_BICUBIC)
         : this(Allocate(inFmt, outFmt, flags)) { }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe Handle<SwsContext> Allocate(PictureFormat inFmt, PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
+    private static unsafe Handle<SwsContext> Allocate(PictureFormat inFmt, PictureFormat outFmt, SwsFlags flags = SwsFlags.SWS_BICUBIC)
         => sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
             outFmt.Width, outFmt.Height, outFmt.PixelFormat,
             (int)flags, null, null, null);
 
-    public bool Reinit(in PictureFormat inFmt, in PictureFormat outFmt, SWSFlags flags = SWSFlags.SWS_BICUBIC)
+    public bool Reinit(in PictureFormat inFmt, in PictureFormat outFmt, SwsFlags flags = SwsFlags.SWS_BICUBIC)
     {
         if (inFmt.Equals(outFmt)) {
             return false;

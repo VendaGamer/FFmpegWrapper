@@ -1,8 +1,8 @@
 namespace FFmpegWrapper.Containers;
 
-public readonly struct OptionValue : IHandleObserver<AVOption_u>
+public readonly struct OptionValue : IHandleObserver<AVOption_default_val>
 {
-    public Handle<AVOption_u> Handle {
+    public Handle<AVOption_default_val> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
@@ -20,14 +20,23 @@ public readonly struct OptionValue : IHandleObserver<AVOption_u>
         }
     }
 
-    public long Long => Handle.Ref.i64;
-    public double Double => Handle.Ref.dbl;
+    public long Long {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.i64;
+    }
+
+    public double Double {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.dbl;
+    }
+
     public Rational Rational => Handle.Ref.q;
     
-    internal readonly unsafe AVOption_u* _handle;
+    internal readonly unsafe AVOption_default_val* _handle;
     public readonly AVOptionType ValueType;
 
-    public OptionValue(Handle<AVOption_u> handle, AVOptionType valueType)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public OptionValue(Handle<AVOption_default_val> handle, AVOptionType valueType)
     {
         unsafe {
             _handle = handle;

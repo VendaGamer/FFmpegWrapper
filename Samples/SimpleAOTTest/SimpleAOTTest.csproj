@@ -5,4 +5,14 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Deps\MiniAudioWrapper\MiniAudioBindings\MiniAudioBindings.Linked\MiniAudioBindings.Linked.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="test.wav">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>

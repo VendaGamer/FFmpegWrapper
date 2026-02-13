@@ -34,7 +34,7 @@ public static class FFmpegUtils
         
             return;
 
-            static void NativeCb(void* avcl, int level, byte* fmt, void* vl)
+            static void NativeCb(void* avcl, int level, byte* fmt, byte* vl)
             {
                 if (level > (int)s_MinLevel) return;
             
@@ -62,7 +62,7 @@ public static class FFmpegUtils
                 }
             }
 
-            static void ProcessLogMessage(void* avcl, int level, byte* fmt, void* vl, byte[] buffer)
+            static void ProcessLogMessage(void* avcl, int level, byte* fmt, byte* vl, byte[] buffer)
             {
                 int length;
             
@@ -84,8 +84,7 @@ public static class FFmpegUtils
                 }
             }
         
-            static void ProcessLogMessageStack(void* avcl, int level, byte* fmt,
-                void* vl, byte* buffer, int bufferLength)
+            static void ProcessLogMessageStack(void* avcl, int level, byte* fmt, byte* vl, byte* buffer, int bufferLength)
             {
                 int localPrintPrefix = s_tPrintPrefix;
                 int length = av_log_format_line2(avcl, level, fmt, vl, buffer, bufferLength, &localPrintPrefix);

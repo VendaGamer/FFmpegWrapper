@@ -4,3 +4,6 @@
 [submodule "Deps/BindingWrapperUtils"]
 	path = Deps/BindingWrapperUtils
 	url = https://github.com/VendaGamer/BindingWrapperUtils.git
+[submodule "Deps/MiniAudioWrapper"]
+	path = Deps/MiniAudioWrapper
+	url = https://github.com/VendaGamer/MiniAudioWrapper.git

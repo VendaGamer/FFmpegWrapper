@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/Bindings/">
+    <Project Path="Bindings/FFmpegBindings.Abstractions/FFmpegBindings.Abstractions.csproj" />
+    <Project Path="Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" />
+  </Folder>
+  <Folder Name="/Deps/">
+    <Project Path="Deps/BindingWrapperUtils/BindingWrapperUtils/BindingWrapperUtils.csproj" />
+  </Folder>
+  <Folder Name="/Deps/MiniAudio/">
+    <Project Path="Deps/MiniAudioWrapper/Deps/BindingWrapperUtils/BindingWrapperUtils/BindingWrapperUtils.csproj" />
+    <Project Path="Deps/MiniAudioWrapper/MiniAudioBindings/MiniAudioBindings.Abstractions/MiniAudioBindings.Abstractions.csproj" />
+    <Project Path="Deps/MiniAudioWrapper/MiniAudioBindings/MiniAudioBindings.Linked/MiniAudioBindings.Linked.csproj" />
+    <Project Path="Deps/MiniAudioWrapper/MiniAudioWrapper/MiniAudioWrapper.csproj" />
+  </Folder>
+  <Folder Name="/Samples/">
+    <Project Path="Samples/AvaloniaIntegration/AvaloniaIntegration.csproj" />
+    <Project Path="Samples/SimpleAOTTest/SimpleAOTTest.csproj" />
+  </Folder>
+  <Folder Name="/Samples/Props/">
+    <File Path="Samples/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Solution Items/" />
+  <Project Path="FFmpegWrapper.Tests/FFmpegWrapper.Tests.csproj" />
+  <Project Path="FFmpegWrapper/FFmpegWrapper.csproj" />
+</Solution>

@@ -1,13 +1,10 @@
 ﻿namespace AvaloniaIntegration;
 
-using System.Net;
-
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.Composition;
 using Avalonia.Skia;
-
 using FFmpegWrapper.Media.Frames;
 using SkiaSharp;
 
