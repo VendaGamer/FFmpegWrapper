@@ -5,7 +5,7 @@ using Codecs;
 /// <summary>
 /// Wrapper of Hardware Device
 /// </summary>
-public sealed class HardwareDevice : OwnedObject<AVBufferRef>
+public sealed class HardwareDevice : FFBufferObject<AVHWDeviceContext>
 {
     
     #region Static Members
@@ -84,13 +84,8 @@ public sealed class HardwareDevice : OwnedObject<AVBufferRef>
         out HardwareDevice device,
         out CodecHardwareConfig codecConfig)
     {
-        // Get all available hardware configurations for the specified codec just once.
-        var availableConfigs = 
-            CodecHardwareConfig.GetAvailableConfigsFor(
-                MediaCodec.GetDecoder(codecId).Handle
-                );
+        var availableConfigs = CodecHardwareConfig.GetAvailableConfigsFor(MediaCodec.GetDecoder(codecId).Handle);
         
-        // Iterate through our priority list, from highest to lowest priority.
         foreach (var preferredDeviceType in HardwareDevicePriority)
         {
             foreach (var config in availableConfigs) {
@@ -102,10 +97,8 @@ public sealed class HardwareDevice : OwnedObject<AVBufferRef>
                 {
                     continue;
                 }
-            
-                // Check if the device can handle the target format.
-                if (hardwareDevice.FrameConstraints == null ||
-                    hardwareDevice.FrameConstraints.IsValidFormat(targetFormat))
+                
+                if (hardwareDevice.FrameConstraints is null || hardwareDevice.FrameConstraints.IsValidSoftwareFormat(targetFormat))
                 {
                     codecConfig = config;
                     device = hardwareDevice;
@@ -114,12 +107,8 @@ public sealed class HardwareDevice : OwnedObject<AVBufferRef>
 
                 break;
             }
-
-            
-            
         }
-
-        // No suitable device was found after checking all priorities.
+        
         device = null!;
         codecConfig = default;
         return false;
@@ -127,30 +116,17 @@ public sealed class HardwareDevice : OwnedObject<AVBufferRef>
 
     #endregion
 
-    
-    public unsafe AVHWDeviceContext* CtxHandle {
-        get {
-            return (AVHWDeviceContext*)Handle.Ref.data;
-        }
-    }
-
     public AVHWDeviceType Type {
-        get {
-            unsafe
-            {
-                return CtxHandle->type;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.type;
     }
 
-    internal unsafe HardwareDevice(AVBufferRef* deviceCtx)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe HardwareDevice(MediaBuffer<AVHWDeviceContext> deviceCtx)
     {
-        _handle = deviceCtx;
-        
-        var desc = av_hwdevice_get_hwframe_constraints(_handle, null);
-        if (desc is not null) {
-            FrameConstraints = new HardwareFrameConstraints(desc);
-        }
+        _handle = deviceCtx.Handle;
+
+        HardwareFrameConstraints.TryCreate(new MediaBuffer<AVHWDeviceContext>(_handle),out FrameConstraints);
     }
 
     /// <summary> Open a device of the specified type and create a context for it. </summary>
@@ -164,7 +140,8 @@ public sealed class HardwareDevice : OwnedObject<AVBufferRef>
                 device = null!;
                 return false;
             }
-            device = new HardwareDevice(ctx);
+            
+            device = new HardwareDevice(new MediaBuffer<AVHWDeviceContext>(ctx));
             return true;
         }
     }
@@ -177,7 +154,7 @@ public sealed class HardwareDevice : OwnedObject<AVBufferRef>
     {
         unsafe
         {
-            var poolRef = av_hwframe_ctx_alloc(Handle);
+            var poolRef = av_hwframe_ctx_alloc(Buffer.Handle);
             if (poolRef == null) {
                 throw new OutOfMemoryException("Failed to allocate hardware frame pool");
             }
@@ -211,6 +188,8 @@ public sealed class HardwareDevice : OwnedObject<AVBufferRef>
             AVHWDeviceType.AV_HWDEVICE_TYPE_VULKAN => AVPixelFormat.AV_PIX_FMT_VULKAN,
             AVHWDeviceType.AV_HWDEVICE_TYPE_VIDEOTOOLBOX => AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX,
             AVHWDeviceType.AV_HWDEVICE_TYPE_MEDIACODEC => AVPixelFormat.AV_PIX_FMT_MEDIACODEC,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_AMF => AVPixelFormat.AV_PIX_FMT_AMF_SURFACE,
+            AVHWDeviceType.AV_HWDEVICE_TYPE_OHCODEC => AVPixelFormat.AV_PIX_FMT_OHCODEC,
             _ => AVPixelFormat.AV_PIX_FMT_YUV420P
         };
     }

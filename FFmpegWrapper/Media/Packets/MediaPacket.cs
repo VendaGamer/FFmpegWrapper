@@ -3,7 +3,7 @@
 using Core;
 using Streams;
 
-public class MediaPacket : OwnedObject<AVPacket>
+public class MediaPacket : FFObject<AVPacket>
 {
     
     #region Properties

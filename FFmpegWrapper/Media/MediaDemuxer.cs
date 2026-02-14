@@ -5,7 +5,7 @@ using Codecs.Decoding;
 using Extensions;
 using Streams;
 
-public class MediaDemuxer : OwnedObject<AVFormatContext>
+public class MediaDemuxer : FFObject<AVFormatContext>
 {
     
     #region Properties

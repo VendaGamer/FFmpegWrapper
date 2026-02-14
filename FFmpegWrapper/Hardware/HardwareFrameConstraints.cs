@@ -1,60 +1,92 @@
 namespace FFmpegWrapper.Hardware;
 
+using System.Diagnostics.CodeAnalysis;
 
-public class HardwareFrameConstraints : OwnedObject<AVHWFramesConstraints>
+public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
 {
-    public readonly ImmutableArray<AVPixelFormat> ValidHardwareFormats;
-    public readonly ImmutableArray<AVPixelFormat> ValidSoftwareFormats;
-
-    public int MinWidth {
+    public ReadOnlySpan<AVPixelFormat> ValidHardwareFormats {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                ThrowIfDisposed();
-                return _handle->min_width;
+                return FFHelper.GetSpanFromSentinelTerminatedPtr(
+                    Handle.Ref.valid_hw_formats,
+                    AVPixelFormat.AV_PIX_FMT_NONE);
             }
         }
+    }
+
+    public ReadOnlySpan<AVPixelFormat> ValidSoftwareFormats {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return FFHelper.GetSpanFromSentinelTerminatedPtr(
+                    Handle.Ref.valid_sw_formats,
+                    AVPixelFormat.AV_PIX_FMT_NONE);
+            }
+        }
+    }
+
+    public int MinWidth {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.min_width;
     }
 
     public int MinHeight {
-        get {
-            unsafe {
-                ThrowIfDisposed();
-                return _handle->min_height;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.min_height;
     }
 
     public int MaxWidth {
-        get {
-            unsafe {
-                ThrowIfDisposed();
-                return _handle->max_width;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.max_width;
     }
 
     public int MaxHeight {
-        get {
-            unsafe {
-                ThrowIfDisposed();
-                return _handle->max_height;
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.max_height;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe HardwareFrameConstraints(MediaBuffer<AVHWDeviceContext> deviceCtx, void* hwConfig = null)
+    {
+        _handle = av_hwdevice_get_hwframe_constraints(deviceCtx.Handle, hwConfig);
+        
+        if(_handle is null)
+            throw new InvalidOperationException("Constraits are not avaliable");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public HardwareFrameConstraints(Handle<AVHWFramesConstraints> handle)
+    {
+        unsafe {
+            _handle = handle;
         }
     }
 
-    public unsafe HardwareFrameConstraints(AVHWFramesConstraints* desc)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe bool TryCreate(
+        MediaBuffer<AVHWDeviceContext> deviceCtx,
+        #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+        [NotNullWhen(true)]
+        #endif
+        out HardwareFrameConstraints? constraints,
+        void* hwConfig = null)
     {
-        _handle = desc;
-        
-        ValidHardwareFormats = ImmutableArray.Create(
-            FFHelper.GetSpanFromSentinelTerminatedPtr(desc->valid_hw_formats, AVPixelFormat.AV_PIX_FMT_NONE));
-        ValidSoftwareFormats = ImmutableArray.Create(
-            FFHelper.GetSpanFromSentinelTerminatedPtr(desc->valid_sw_formats, AVPixelFormat.AV_PIX_FMT_NONE));
+        constraints = null;
+        var handle = av_hwdevice_get_hwframe_constraints(deviceCtx.Handle, hwConfig);
+
+        if (handle is null)
+            return false;
+
+        constraints = new HardwareFrameConstraints(handle);
+        return true;
     }
+    
     /// <summary>
     /// Check whenever dimesion are withing range of device constraints
     /// </summary>
     /// <returns>true if is valid</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsValidDimensions(int width, int height)
     {
         return width >= MinWidth && width <= MaxWidth &&
@@ -62,22 +94,45 @@ public class HardwareFrameConstraints : OwnedObject<AVHWFramesConstraints>
     }
     
     /// <summary>
-    /// Check whenever given format is supported
+    /// Check whenever given hardware picture format is supported
     /// </summary>
     /// <returns>true if is valid</returns>
-    public bool IsValidFormat(in PictureFormat format)
+    public bool IsValidHardwareFormat(PictureFormat format)
     {
-        return IsValidDimensions(format.Width, format.Height) && 
-               ValidSoftwareFormats.IndexOf(format.PixelFormat) >= 0;
+        if(!IsValidDimensions(format.Width, format.Height))
+            return false;
+
+        foreach (var pictureFormat in ValidHardwareFormats) {
+            if(pictureFormat == format.PixelFormat)
+                return true;
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// Check whenever given software picture format is supported
+    /// </summary>
+    /// <returns>true if is valid</returns>
+    public bool IsValidSoftwareFormat(PictureFormat format)
+    {
+        if(!IsValidDimensions(format.Width, format.Height))
+            return false;
+
+        foreach (var pictureFormat in ValidHardwareFormats) {
+            if(pictureFormat == format.PixelFormat)
+                return true;
+        }
+        
+        return false;
     }
 
     /// <inheritdoc />
-    protected override void Free()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected override unsafe void Free()
     {
-        unsafe {
-            fixed (AVHWFramesConstraints** desc = &_handle) {
-                av_hwframe_constraints_free(desc);
-            }
+        fixed (AVHWFramesConstraints** desc = &_handle) {
+            av_hwframe_constraints_free(desc);
         }
     }
 }

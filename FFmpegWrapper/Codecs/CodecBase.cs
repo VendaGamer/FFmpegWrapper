@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using Hardware;
 
-public abstract class CodecBase : OwnedObject<AVCodecContext>
+public abstract class CodecBase : FFObject<AVCodecContext>
 {
     
     public bool IsOpen {
@@ -208,10 +208,10 @@ public abstract class CodecBase : OwnedObject<AVCodecContext>
                 throw new ArgumentException("Mismatching hardware codec config.");
             }
         
-            _handle->hw_device_ctx = av_buffer_ref(device.Handle);
-            _handle->hw_frames_ctx = framePool == null ? null : av_buffer_ref(framePool.Handle);
+            _handle->hw_device_ctx = av_buffer_ref(device.Buffer.Handle);
+            _handle->hw_frames_ctx = framePool.IsNull ? null : av_buffer_ref(framePool.Handle);
 
-            if (framePool == null && (config.Methods & ~CodecHardwareMethods.FramesContext) == 0) {
+            if (framePool == null && (config.Methods & ~AV_CODEC_HW_CONFIG_METHOD.AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX) is 0) {
                 throw new ArgumentException("Specified hardware codec config requires a frame pool to be provided.");
             }
         }
@@ -240,7 +240,8 @@ public abstract class CodecBase : OwnedObject<AVCodecContext>
             => avcodec_default_execute2(ctx, function, arg, ret, count);
 
     /// <inheritdoc />
-    protected override void Free()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected sealed override void Free()
     {
         unsafe
         {

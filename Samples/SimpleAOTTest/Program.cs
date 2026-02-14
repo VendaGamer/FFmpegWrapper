@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 using static FFmpegBindings.Abstractions.FFmpeg;
 using static MiniAudioBindings.Abstractions.MiniAudio;
@@ -249,10 +248,6 @@ public unsafe class FFmpegMiniaudioPlayer
 
         lock (player._lockObject)
         {
-            fixed (ma_decoder* ptr = &player.decoder) {
-                
-            }
-            
             int bytesToRead = (int)(frameCount * sizeof(float) * 2);
             int bytesAvailable = player.bufferSize - player.readPosition;
             int bytesToCopy = Math.Min(bytesToRead, bytesAvailable);

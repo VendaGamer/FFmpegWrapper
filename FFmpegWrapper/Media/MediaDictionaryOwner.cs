@@ -9,7 +9,7 @@ using Extensions;
 /// </summary>
 
 [DebuggerDisplay("DecoderConfigs: {decoderConfigs.Count}, EncoderConfigs: {encoderConfigs.Count}")]
-public sealed class MediaDictionaryOwner : OwnedObject<AVDictionary>, IEnumerable<Utf8KeyValue>
+public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<Utf8KeyValue>
 {
     /// <summary>
     /// Creates a new owned MediaDictionary

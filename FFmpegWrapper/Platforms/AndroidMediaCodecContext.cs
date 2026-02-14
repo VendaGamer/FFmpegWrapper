@@ -1,6 +1,6 @@
 namespace FFmpegWrapper.Platforms;
 
-public class AndroidMediaCodecContext : OwnedObject<AVMediaCodecContext>
+public class AndroidMediaCodecContext : FFObject<AVMediaCodecContext>
 {
     
     public unsafe AndroidMediaCodecContext() : base(av_mediacodec_alloc_context())

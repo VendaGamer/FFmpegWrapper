@@ -1,44 +1,85 @@
 namespace FFmpegWrapper.Hardware;
 
 
-public unsafe class HardwareFramePool : OwnedObject<AVBufferRef>
+public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
 {
-    public AVHWFramesContext* RawHandle {
+    public int Width {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.width;
+    }
+
+    public int Height {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.height;
+    }
+
+    /// <inheritdoc cref="AVHWFramesContext.format" />
+    public AVPixelFormat HWFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.format;
+    }
+
+    /// <inheritdoc cref="AVHWFramesContext.sw_format" />
+    public AVPixelFormat SWFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.sw_format;
+    }
+
+    public override Handle<AVHWFramesContext> Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Buffer.Data;
+    }
+
+    public MediaBuffer<AVHWFramesContext> Buffer {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            ThrowIfDisposed();
-            return (AVHWFramesContext*)_handle->data;
+            unsafe {
+                return new MediaBuffer<AVHWFramesContext>(_handle);
+            }
         }
     }
 
-    public int Width => RawHandle->width;
-    public int Height => RawHandle->height;
+    internal readonly unsafe AVBufferRef* _handle;
 
-    /// <inheritdoc cref="AVHWFramesContext.format" />
-    public AVPixelFormat HwFormat => RawHandle->format;
+    private bool _isInit;
 
-    /// <inheritdoc cref="AVHWFramesContext.sw_format" />
-    public AVPixelFormat SwFormat => RawHandle->sw_format;
-
-    public HardwareFramePool(AVBufferRef* deviceCtx)
+    public HardwareFramePool(Handle<AVBufferRef> deviceCtx, HWPictureFormat format) : this(deviceCtx)
     {
-        _handle = deviceCtx;
+        unsafe {
+            av_hwframe_ctx_init(deviceCtx);
+            _isInit = true;
+        }
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public HardwareFramePool(Handle<AVBufferRef> deviceCtx)
+    {
+        unsafe {
+            _handle = av_hwframe_ctx_alloc(deviceCtx);
+
+            if (_handle is null)
+                throw new Exception("Failed to allocate hardware frame pool");
+        }
     }
 
     /// <summary> Allocate a new frame attached to the current hardware frame pool. </summary>
     public VideoFrame AllocFrame()
     {
-        var frame = av_frame_alloc();
-        int err = av_hwframe_get_buffer(_handle, frame, 0);
-        if (err < 0) {
-            av_frame_free(&frame);
-            err.ThrowError(msg: "Failed to allocate hardware frame");
+        unsafe {
+            var frame = av_frame_alloc();
+            int err = av_hwframe_get_buffer(_handle, frame, 0);
+            if (err < 0) {
+                av_frame_free(&frame);
+                err.ThrowError(msg: "Failed to allocate hardware frame");
+            }
+            return new VideoFrame(frame);
         }
-        return new VideoFrame(frame);
     }
 
-    protected override void Free()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected override unsafe void Free()
     {
-        if (_handle != null) {
+        if (_handle is not null) {
             fixed (AVBufferRef** ppCtx = &_handle) {
                 av_buffer_unref(ppCtx);
             }

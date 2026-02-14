@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Media;
 
-public class AudioQueue : OwnedObject<AVAudioFifo>
+public class AudioQueue : FFObject<AVAudioFifo>
 {
     /// <summary>
     /// Gets the audio sample format type used by this FIFO buffer.

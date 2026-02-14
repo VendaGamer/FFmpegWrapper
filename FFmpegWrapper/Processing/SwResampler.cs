@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Processing;
 
-public sealed class SwResampler : OwnedObject<SwrContext>
+public sealed class SwResampler : FFObject<SwrContext>
 {
     public AudioFormat InputFormat { get; private set; }
     public AudioFormat OutputFormat { get; private set; }

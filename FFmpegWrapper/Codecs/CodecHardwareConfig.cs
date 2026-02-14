@@ -4,8 +4,16 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
 {
 
     #region Static Methods
-    public static ImmutableArray<CodecHardwareConfig> AvailableDecoderConfigs => Utils.GetAvailableDecoderConfigs();
-    public static ImmutableArray<CodecHardwareConfig> AvailableEncoderConfigs => Utils.GetAvailableDecoderConfigs();
+    public static ImmutableArray<CodecHardwareConfig> AvailableDecoderConfigs {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Utils.GetAvailableDecoderConfigs();
+    }
+
+    public static ImmutableArray<CodecHardwareConfig> AvailableEncoderConfigs {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Utils.GetAvailableDecoderConfigs();
+    }
+
     private static class Utils
     {
         private static ImmutableArray<CodecHardwareConfig> s_availableDecoderConfigs;
@@ -100,6 +108,7 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
     
     
     public Handle<AVCodecHWConfig> Handle {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -108,6 +117,7 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
         }
     }
     public AVHWDeviceType DeviceType {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -117,6 +127,7 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
     }
 
     public AVPixelFormat PixelFormat {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -125,11 +136,12 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
         }
     }
 
-    public CodecHardwareMethods Methods {
+    public AV_CODEC_HW_CONFIG_METHOD Methods {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return (CodecHardwareMethods)_handle->methods;
+                return (AV_CODEC_HW_CONFIG_METHOD)_handle->methods;
             }
         }
     }
@@ -137,10 +149,11 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
     private readonly unsafe AVCodecHWConfig* _handle;
     public readonly MediaCodec Codec;
 
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CodecHardwareConfig(Handle<AVCodec> handle, Handle<AVCodecHWConfig> config)
         : this(new MediaCodec(handle), config) { }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CodecHardwareConfig(MediaCodec codec, Handle<AVCodecHWConfig> config)
     {
         Codec = codec;

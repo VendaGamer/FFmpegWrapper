@@ -4,7 +4,7 @@ using FFmpegWrapper.Codecs.Encoding;
 using FFmpegWrapper.Extensions;
 using FFmpegWrapper.Media.Streams;
 
-public sealed class MediaMuxer : OwnedObject<AVFormatContext>
+public sealed class MediaMuxer : FFObject<AVFormatContext>
 {
 
     #region Properties

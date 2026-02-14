@@ -1,14 +1,10 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
-
 using Codecs;
 using Codecs.Decoding;
 using Codecs.Encoding;
-
 using Extensions;
-
 using Processing;
 
 public sealed class VideoFrame : MediaFrame

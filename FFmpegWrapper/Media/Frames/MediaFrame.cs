@@ -1,6 +1,6 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
-public abstract class MediaFrame : OwnedObject<AVFrame>
+public abstract class MediaFrame : FFObject<AVFrame>
 {
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
     public long? BestEffortTimestamp {

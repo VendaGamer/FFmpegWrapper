@@ -2,7 +2,7 @@
 
 using Media;
 
-public sealed class SwScaler(Handle<SwsContext> handle) : OwnedObject<SwsContext>(handle)
+public sealed class SwScaler(Handle<SwsContext> handle) : FFObject<SwsContext>(handle)
 {
     public SwScaler(PictureFormat inFmt, PictureFormat outFmt, SwsFlags flags = SwsFlags.SWS_BICUBIC)
         : this(Allocate(inFmt, outFmt, flags)) { }
