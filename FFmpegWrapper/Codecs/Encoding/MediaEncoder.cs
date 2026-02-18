@@ -7,7 +7,9 @@ public abstract class MediaEncoder : CodecBase
 
     /// <inheritdoc cref="AVCodecContext.bit_rate" />
     public long BitRate {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.bit_rate;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             Handle.Ref.bit_rate = value;
@@ -16,7 +18,9 @@ public abstract class MediaEncoder : CodecBase
 
     /// <inheritdoc cref="AVCodecContext.global_quality" />
     public int GlobalQuality {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.global_quality;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             Handle.Ref.global_quality = value;
@@ -25,7 +29,9 @@ public abstract class MediaEncoder : CodecBase
 
     /// <inheritdoc cref="AVCodecContext.compression_level" />
     public int CompressionLevel {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Handle.Ref.compression_level;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set {
             ThrowIfOpen();
             Handle.Ref.compression_level = value;
@@ -33,6 +39,7 @@ public abstract class MediaEncoder : CodecBase
     }
 
     /// <summary> Sets a codec specific option. If it doesn't exist, throws <see cref="InvalidOperationException"/>. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetOption(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
     {
         unsafe
@@ -43,6 +50,7 @@ public abstract class MediaEncoder : CodecBase
 
     /// <summary> Sets the value for a generic codec option. Note that these values may be ignored or unbalanced for some codecs. </summary>
     /// <remarks> https://ffmpeg.org/ffmpeg-codecs.html#Codec-Options </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGlobalOption(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
     {
         unsafe
@@ -53,11 +61,13 @@ public abstract class MediaEncoder : CodecBase
 
     #region Constructors
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected MediaEncoder(Handle<AVCodecContext> ctx) : base(ctx)
     {
 
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected MediaEncoder(NullableHandle<AVCodec> codec = default) : base(codec)
     {
         unsafe {
@@ -70,7 +80,7 @@ public abstract class MediaEncoder : CodecBase
 
     #endregion
     
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ReceivePacket(Handle<AVPacket> packetHandle)
     {
         unsafe
@@ -84,6 +94,7 @@ public abstract class MediaEncoder : CodecBase
         }
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool SendFrame(NullableHandle<AVFrame> frame)
     {
         unsafe
@@ -99,11 +110,13 @@ public abstract class MediaEncoder : CodecBase
     }
 
     /// <summary> Returns a presentation timestamp (PTS) in terms of <see cref="CodecBase.TimeBase"/> for the given timespan. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public long GetFramePts(TimeSpan time)
     {
         return GetFramePts(time.Ticks, new Rational(1, (int)TimeSpan.TicksPerSecond));
     }
     /// <summary> Rescales the given timestamp to be in terms of <see cref="CodecBase.TimeBase"/>. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public long GetFramePts(long pts, Rational timeBase)
     {
         return av_rescale_q(pts, timeBase, TimeBase);

@@ -2,7 +2,6 @@
 
 using System.Buffers;
 using Extensions;
-using Hardware;
 
 public abstract class MediaDecoder : CodecBase
 {
@@ -26,6 +25,7 @@ public abstract class MediaDecoder : CodecBase
             }
         }
     }
+    
     #region Constructors
 
     protected MediaDecoder(Handle<AVCodecContext> ctx) : base(ctx)
@@ -53,7 +53,6 @@ public abstract class MediaDecoder : CodecBase
     }
 
     #endregion
-
     
     public void SendPacket(NullableHandle<AVPacket> packet)
     {
@@ -74,7 +73,8 @@ public abstract class MediaDecoder : CodecBase
         }
     }
 
-    /// <inheritdoc cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
+    /// <inheritdoc cref="avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LavResult TrySendPacket(NullableHandle<AVPacket> handle)
     {
         unsafe

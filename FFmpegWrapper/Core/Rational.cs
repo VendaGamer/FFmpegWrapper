@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Core;
 
+using System.Runtime.InteropServices;
+
 /// <summary> Represents a rational number (pair of numerator and denominator). </summary>
 /// <remarks>
 /// While rational numbers can be expressed as floating-point numbers, the
@@ -8,6 +10,7 @@ namespace FFmpegWrapper.Core;
 /// timestamps. This struct serves as a generic interface for manipulating 
 /// rational numbers as pairs of numerators and denominators.
 /// </remarks>
+[StructLayout(LayoutKind.Sequential)]
 public readonly struct Rational(int num, int den)
     : IEquatable<Rational>, IComparable<Rational>, IEqualityComparer<Rational>
 {

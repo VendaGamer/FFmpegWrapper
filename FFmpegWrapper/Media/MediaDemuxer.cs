@@ -32,17 +32,16 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     }
 
     public ObservedMediaDictionary Metadata {
-        [MethodImpl]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return new(&Handle.Raw->metadata);
+                return new ObservedMediaDictionary(&Handle.Raw->metadata);
             }
         }
     }
 
     #endregion
-    
     
     private readonly IHandleOwner<AVIOContext>? _ioContext;
     
@@ -92,7 +91,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     
     private static unsafe Handle<AVFormatContext> CreateContext(
         ReadOnlySpan<byte> url = default,
-        Handle<AVIOContext> pb = default,
+        NullableHandle<AVIOContext> pb = default,
         NullableHandle<AVDictionary> options = default)
     {
         AVFormatContext* ctx = avformat_alloc_context();

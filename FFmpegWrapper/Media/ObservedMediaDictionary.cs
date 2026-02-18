@@ -8,7 +8,15 @@ using Extensions;
 public readonly ref struct ObservedMediaDictionary : IHandleSourceObserver<AVDictionary>
 {
     public unsafe int Count => av_dict_count(HandleSource);
-    public unsafe HandleSource<AVDictionary> HandleSource => _handleSource;
+    public HandleSource<AVDictionary> HandleSource {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe
+            {
+                return _handleSource;
+            }
+        }
+    }
 
 
     internal readonly unsafe AVDictionary** _handleSource;

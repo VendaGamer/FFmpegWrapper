@@ -1,6 +1,8 @@
 namespace FFmpegWrapper.Tests;
 
+using Codecs.Decoding;
 
+using Core;
 
 using FFmpegBindings.Abstractions;
 
@@ -8,6 +10,7 @@ using Media.Formats;
 
 public class CodecTests : TestBase
 {
+    
     [Fact]
     public void AVCodec_Props()
     {

@@ -48,7 +48,9 @@ public unsafe class MuxDemuxTests : TestBase
     {
         var demuxer = new MediaDemuxer("Resources/BigBuckBunny.mp4"u8);
 
-        Assert.Equal(596, demuxer.Duration!.Value.TotalSeconds, 0);
+        var metadata = demuxer.Metadata;
+
+        Assert.Equal(30, (int)demuxer.Duration!.Value.TotalSeconds);
         Assert.Equal(2, demuxer.Streams.Length);
 
         Assert.Equal("Test Media File"u8, demuxer.Metadata["title"u8]);

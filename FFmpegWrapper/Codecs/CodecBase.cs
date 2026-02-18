@@ -8,6 +8,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
 {
     
     public bool IsOpen {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -17,15 +18,23 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     }
 
     /// <inheritdoc cref="AVCodecContext.time_base"/>
-    public Rational TimeBase {
-        get => Handle.Ref.time_base;
-        set => Handle.Ref.time_base = value;
+    public ref Rational TimeBase {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return ref Unsafe.AsRef<Rational>(&Handle.Raw->time_base);
+            }
+        }
     }
 
     /// <inheritdoc cref="AVCodecContext.framerate"/>
-    public Rational FrameRate {
-        get => Handle.Ref.framerate;
-        set => Handle.Ref.framerate = value;
+    public ref Rational FrameRate {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return ref Unsafe.AsRef<Rational>(&Handle.Raw->framerate);
+            }
+        }
     }
 
     /// <summary>
@@ -36,7 +45,9 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     /// - encoding: Set by libavcodec.<br/>
     /// - decoding: Set by wrapper/user.
     /// </summary>
+    
     public ReadOnlySpan<byte> ExtraData {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -53,6 +64,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     
     /// <summary> Indicates if the codec requires flushing with NULL input at the end in order to give the complete and correct output. </summary>
     public bool IsDelayed {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -61,18 +73,15 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             }
         }
     }
-
+    
     public AVMediaType CodecType {
-        get {
-            unsafe
-            {
-                return _handle->codec_type;
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Handle.Ref.codec_type;
     }
 
     /// <inheritdoc cref="AVCodecContext.coded_side_data"/>
     public PacketSideDataList CodedSideData {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
                 var raw = Handle.Raw;
@@ -85,6 +94,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     protected unsafe CodecBase(NullableHandle<AVCodec> codec = default)
         : this(avcodec_alloc_context3(codec)) { }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected CodecBase(Handle<AVCodecContext> handle) : base(handle)
     {
         unsafe {
@@ -101,6 +111,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     }
 
     public Handle<AVCodec> Codec {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -166,6 +177,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearExtraData()
     {
         unsafe

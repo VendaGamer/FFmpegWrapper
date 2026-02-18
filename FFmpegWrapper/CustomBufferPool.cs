@@ -4,16 +4,17 @@ using System.Runtime.InteropServices;
 
 using Core;
 
-public abstract class CustomBufferPool<TUserData>
+public class CustomBufferPool<TUserData>
     where TUserData : unmanaged
 {
     public readonly TUserData UserData;
     private av_buffer_pool_init2_alloc _alloc;
     private av_buffer_pool_init2_pool_free _free;
     
-    public CustomBufferPool(nuint size, TUserData userData,
+    public CustomBufferPool(nuint size, TUserData userData, 
         AllocateBufferWithUserData? allocFunc = null, FreeUserData? freeUserData = null)
     {
+        ReadOnlySpan<byte> a;
         UserData = userData;
         
         unsafe
@@ -43,4 +44,10 @@ public abstract class CustomBufferPool<TUserData>
     
     public delegate Handle<AVBufferRef> AllocateBufferWithUserData(Handle<TUserData> data, nuint size);
     public delegate void FreeUserData(Handle<TUserData> userData);
+}
+
+
+public ref struct Ok<T> where T : unmanaged
+{
+    public unsafe ref T* _handle;
 }

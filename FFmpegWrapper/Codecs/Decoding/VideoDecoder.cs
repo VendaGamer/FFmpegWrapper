@@ -1,7 +1,6 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
 using System.Runtime.InteropServices;
-using Extensions;
 using Hardware;
 using Media;
 
@@ -43,16 +42,19 @@ public class VideoDecoder : MediaDecoder
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public VideoDecoder(NullableHandle<AVCodec> ctx = default) : base(ctx)
     {
         
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public VideoDecoder(AVCodecID id) : base(id)
     {
         
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public VideoDecoder(Handle<AVCodecContext> handle) : base(handle)
     {
         unsafe {
@@ -66,6 +68,7 @@ public class VideoDecoder : MediaDecoder
     /// Before the decoder is open, setups hardware acceleration via the specified device. 
     /// If the device does not support the input format, a software decoder will be used instead.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetupHardwareAccelerator(
         CodecHardwareConfig config,
         HardwareDevice device,
