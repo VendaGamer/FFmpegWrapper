@@ -7,7 +7,7 @@ using Core;
 public readonly struct MediaDuration
 {
     public long? Duration => _duration is 0 ? null : _duration;
-    public TimeSpan DurationTimeSpan => Rational.GetTimeSpan(_duration, TimeBase);
+    public TimeSpan? DurationTimeSpan => Rational.GetTimeSpan(_duration, TimeBase);
 
 
     private readonly long _duration;

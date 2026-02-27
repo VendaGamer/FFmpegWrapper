@@ -27,7 +27,7 @@ public readonly struct MediaStream
     /// <inheritdoc cref="AVStream.duration" />
     public TimeSpan? Duration {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => FFHelper.GetTimeSpan(Handle.Ref.duration, TimeBase);
+        get => Rational.GetTimeSpan(Handle.Ref.duration, TimeBase);
     }
 
     /// <inheritdoc cref="AVStream.avg_frame_rate" />
@@ -60,7 +60,7 @@ public readonly struct MediaStream
     }
     
     /// <summary> Returns the corresponding <see cref="TimeSpan"/> for the given timestamp based on <see cref="TimeBase"/> units. </summary>
-    public TimeSpan GetTimestamp(long pts) => Rational.GetTimeSpan(pts, TimeBase);
+    public TimeSpan? GetTimestamp(long pts) => Rational.GetTimeSpan(pts, TimeBase);
     
     internal unsafe readonly AVStream* _handle;
 

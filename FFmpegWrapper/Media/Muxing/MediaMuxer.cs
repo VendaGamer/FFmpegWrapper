@@ -67,7 +67,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
                     .CheckError("Could not allocate muxer");
             }
             
-            avio_open(&_handle->pb, filename.RawHandle, (int)AVIO_FLAGS.AVIO_FLAG_WRITE).CheckError("Could not open output file");
+            avio_open(&_handle->pb, filename.RawHandle, (int)AVIoFlags.AVIO_FLAG_WRITE).CheckError("Could not open output file");
         }
 
     }
@@ -132,7 +132,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             avcodec_parameters_from_context(stream->codecpar, encHandle);
             
             if ((_handle->oformat->flags & (int)AVFormatCapabilityFlags.AVFMT_GLOBALHEADER) != 0) {
-                encHandle->flags |= (int)AV_CODEC_FLAGS.AV_CODEC_FLAG_GLOBAL_HEADER;
+                encHandle->flags |= (int)AVCodecFlags.AV_CODEC_FLAG_GLOBAL_HEADER;
             }
 
             var st = new MediaStream(stream);

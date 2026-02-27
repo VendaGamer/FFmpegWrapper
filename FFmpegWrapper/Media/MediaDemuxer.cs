@@ -10,7 +10,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     
     #region Properties
     
-    public TimeSpan? Duration => FFHelper.GetTimeSpan(Handle.Ref.duration, new Rational(1, AV_TIME_BASE));
+    public TimeSpan? Duration => Rational.GetTimeSpan(Handle.Ref.duration, new Rational(1, AV_TIME_BASE));
 
     /// <summary> An array of all streams in the file. </summary>
     public ReadOnlySpan<MediaStream> Streams {
@@ -185,7 +185,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     /// <exception cref="InvalidOperationException">If the underlying IO context doesn't support seeks.</exception>
     /// <exception cref="ArgumentException">If <paramref name="stream"/> is not owned by the demuxer.</exception>
     /// <returns>true if succeeded</returns>
-    public bool Seek(TimeSpan timestamp, AVSEEK_FLAGS options = 0, NullableHandle<AVStream> stream = default)
+    public bool Seek(TimeSpan timestamp, AVSeekFlags options = 0, NullableHandle<AVStream> stream = default)
     {
         ThrowIfDisposed();
 

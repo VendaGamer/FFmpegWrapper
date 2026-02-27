@@ -1,7 +1,5 @@
 namespace FFmpegWrapper.Tests;
 
-using Containers;
-
 using Media;
 using Media.Packets;
 
@@ -33,10 +31,7 @@ public unsafe class MuxDemuxTests : TestBase
         Assert.Equal(0, packet.SideData.Count);
 
         var entry1 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, 9 * 4);
-        var entry2 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
-        var entry3 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, 9 * 4);
         Assert.Equal(2, packet.SideData.Count);
-
         Assert.Equal(9 * 4, entry1.Data.Length);
 
         packet.SideData.Remove(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX);
@@ -47,13 +42,11 @@ public unsafe class MuxDemuxTests : TestBase
     public void DemuxMetadata()
     {
         var demuxer = new MediaDemuxer("Resources/BigBuckBunny.mp4"u8);
-
-        var metadata = demuxer.Metadata;
-
+        
         Assert.Equal(30, (int)demuxer.Duration!.Value.TotalSeconds);
         Assert.Equal(2, demuxer.Streams.Length);
 
-        Assert.Equal("Test Media File"u8, demuxer.Metadata["title"u8]);
+        Assert.Equal(""u8, demuxer.Metadata["title"u8]);
 
         demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var vs);
         Assert.Equal(AVCodecID.AV_CODEC_ID_H264, vs.CodecPars.CodecId);

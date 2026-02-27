@@ -36,8 +36,12 @@ public readonly struct Rational(int num, int den)
     /// <summary> Rescales a timestamp based around an arbitrary time scale to a <see cref="TimeSpan"/>. </summary>
     /// <param name="scale">The scale that represents one second of time.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TimeSpan GetTimeSpan(long timestamp, Rational scale)
+    public static TimeSpan? GetTimeSpan(long timestamp, Rational scale)
     {
+        if (timestamp == AV_NOPTS_VALUE) {
+            return null;
+        }
+        
         long ticks = Rescale(timestamp, scale, new Rational(1, (int)TimeSpan.TicksPerSecond));
         return TimeSpan.FromTicks(ticks);
     }

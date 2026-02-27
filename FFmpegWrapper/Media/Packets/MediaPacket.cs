@@ -61,7 +61,7 @@ public class MediaPacket : FFObject<AVPacket>
         set => Handle.Ref.stream_index = value;
     }
     
-    public ref AV_PKT_FLAGS Flags => ref Unsafe.As<int, AV_PKT_FLAGS>(ref Handle.Ref.flags);
+    public ref AVPktFlags Flags => ref Unsafe.As<int, AVPktFlags>(ref Handle.Ref.flags);
 
     /// <inheritdoc cref="AVPacket.pos"/>
     public ref long BytePosition => ref Handle.Ref.pos;

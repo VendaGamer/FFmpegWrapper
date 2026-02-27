@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Media.Packets;
 
+using System.Runtime.InteropServices;
+
 public readonly struct PacketSideData
 {
 
@@ -16,7 +18,7 @@ public readonly struct PacketSideData
         get {
             unsafe {
                 var handle = Handle;
-                return new Span<byte>(handle.Ref.data, checked((int)handle.Ref.size));
+                return new Span<byte>(handle.Ref.data, (int)handle.Ref.size);
             }
         }
     }

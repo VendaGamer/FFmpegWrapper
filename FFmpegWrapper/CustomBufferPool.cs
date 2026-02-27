@@ -45,9 +45,3 @@ public class CustomBufferPool<TUserData>
     public delegate Handle<AVBufferRef> AllocateBufferWithUserData(Handle<TUserData> data, nuint size);
     public delegate void FreeUserData(Handle<TUserData> userData);
 }
-
-
-public ref struct Ok<T> where T : unmanaged
-{
-    public unsafe ref T* _handle;
-}

@@ -2,6 +2,8 @@ namespace FFmpegWrapper.Media;
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 using Extensions;
 
 /// <summary>
@@ -10,6 +12,9 @@ using Extensions;
 
 [DebuggerDisplay("DecoderConfigs: {decoderConfigs.Count}, EncoderConfigs: {encoderConfigs.Count}")]
 public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<Utf8KeyValue>
+    #if NET8_0_OR_GREATER
+    ,IUtf8SpanParsable<MediaDictionaryOwner>
+    #endif
 {
     /// <summary>
     /// Creates a new owned MediaDictionary
@@ -123,6 +128,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     /// <summary>
     /// Clears all entries from the dictionary
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
         unsafe
@@ -134,32 +140,45 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
         }
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe MediaDictionaryOwner CreateFromUtf8String(
-        ReadOnlySpan<byte> factoryString, ReadOnlySpan<byte> keyValueSeparator,
-        ReadOnlySpan<byte> pairSeparator, AVDictFlags flags = 0)
-    {
+
+    public static unsafe bool TryParseFromUtf8String(
+        ReadOnlySpan<byte> factoryString, 
+        ReadOnlySpan<byte> keyValueSeparator,
+        ReadOnlySpan<byte> pairSeparator, 
+        [NotNullWhen(true)] out MediaDictionaryOwner? parsed,
+        AVDictFlags flags = 0,
+        bool allowNotFullyParsed = false
+    ) {
         AVDictionary* handle = null;
         var res = av_dict_parse_string(&handle, factoryString.RawHandle,
             keyValueSeparator.RawHandle, pairSeparator.RawHandle,
             (int)flags);
 
         if (res < 0) {
-            if(handle is not null)
-                av_dict_free(&handle);
+            if (handle is null) {
+                parsed = null;
+                return false;
+            }
+
+            if (allowNotFullyParsed) {
+                goto Succeded;
+            }
             
-            throw new ArgumentException($"Failed to parse dictionary: {res}");
+            av_dict_free(&handle);
+            parsed = null;
+            return false;
         }
         
-        return new MediaDictionaryOwner(handle);
+        Succeded:
+        parsed = new MediaDictionaryOwner(handle);
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe MediaDictionaryOwner CreateCopyOf(Handle<AVDictionary> source)
     {
         AVDictionary* handle = null;
-        av_dict_copy(&handle ,source,0).CheckError();
-        
+        av_dict_copy(&handle ,source,0).CheckError("Unable to ");
         return new MediaDictionaryOwner(handle);
     }
 
@@ -194,10 +213,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override string ToString()
-    {
-        return ToString((byte)':', (byte)'|');
-    }
+    public override string ToString() => ToString((byte)':', (byte)'|');
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public string ToString(byte utf8KeyValueSeparatorChar, byte utf8PairsSeparator)
@@ -278,4 +294,19 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
         }
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static MediaDictionaryOwner Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+    {
+        if (!TryParse(utf8Text, provider, out var parsed)) {
+            throw new ArgumentException("Could not parse from", nameof(utf8Text));
+        }
+
+        return parsed;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(false)] out MediaDictionaryOwner result)
+    {
+        return TryParseFromUtf8String(utf8Text, ":"u8, "|"u8, out result);
+    }
 }

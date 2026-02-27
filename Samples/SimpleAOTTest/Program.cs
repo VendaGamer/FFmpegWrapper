@@ -5,6 +5,8 @@ using static MiniAudioBindings.Abstractions.MiniAudio;
 
 using System.Runtime.InteropServices;
 using System.Text;
+
+using BindingWrapperUtils;
 using BindingWrapperUtils.Extensions;
 using FFmpegBindings.Abstractions;
 using FFmpegBindings.Linked;
@@ -268,12 +270,12 @@ public unsafe class FFmpegMiniaudioPlayer
 
 class Program
 {
-    static void Main(string[] args)
+    static unsafe void Main(string[] args)
     {
-        FFmpegLinked.Init();
-        MiniAudioLinked.Init();
+        byte* source = null;
+
+        var nullable = new NullableHandleSource<byte>(ref source);
+        var nullable2 = new NullableHandleSource<byte>(&source);
         
-        var player = new FFmpegMiniaudioPlayer();
-        player.PlayFile(args.Length is not 0 ? Encoding.UTF8.GetBytes(args[0]) : "test.wav"u8);
     }
 }

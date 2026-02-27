@@ -183,7 +183,7 @@ public sealed class VideoFrame : MediaFrame
             }
             
             var desc = av_pix_fmt_desc_get((AVPixelFormat)handle.format);
-            if (desc == null || (desc->flags & (int)AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_HWACCEL) is not 0) {
+            if (desc == null || (desc->flags & (int)AVPixFmtFlags.AV_PIX_FMT_FLAG_HWACCEL) is not 0) {
                 throw new InvalidOperationException();
             }
             
@@ -191,7 +191,7 @@ public sealed class VideoFrame : MediaFrame
             for (int i = 0; i < 4; i++) {
                 if (desc->comp[i].plane != plane) continue;
                 
-                if (i is 1 or 2 && (desc->flags & (int)AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_RGB) is 0) {
+                if (i is 1 or 2 && (desc->flags & (int)AVPixFmtFlags.AV_PIX_FMT_FLAG_RGB) is 0) {
                     size.width = CeilShr(size.width, desc->log2_chroma_w);
                     size.height = CeilShr(size.height, desc->log2_chroma_h);
                 }
@@ -353,7 +353,7 @@ public sealed class VideoFrame : MediaFrame
         unsafe {
             var desc = av_pix_fmt_desc_get(format.PixelFormat);
             
-            int hasAlpha = (int)(desc->flags & (ulong)AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_ALPHA);
+            int hasAlpha = (int)(desc->flags & (ulong)AVPixFmtFlags.AV_PIX_FMT_FLAG_ALPHA);
             
             format = new PictureFormat(format.Width, format.Height, 
                 avcodec_find_best_pix_fmt_of_list(codec.SupportedPixelFormats.RawHandle,
@@ -399,7 +399,7 @@ public sealed class VideoFrame : MediaFrame
 
         if (position is not null && !demuxer.Seek(position.Value)) {
             //Position is past the stream duration, go back to the start or we won't get anything.
-            demuxer.Seek(TimeSpan.Zero, AVSEEK_FLAGS.AVSEEK_FLAG_BACKWARD);
+            demuxer.Seek(TimeSpan.Zero, AVSeekFlags.AVSEEK_FLAG_BACKWARD);
         }
 
         while (demuxer.Read(packet.Handle) >= 0) {

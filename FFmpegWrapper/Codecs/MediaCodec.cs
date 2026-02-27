@@ -192,7 +192,7 @@ public readonly struct MediaCodec : IHandleObserver<AVCodec>
     public unsafe AVPixelFormat GetBestPixelFormat(AVPixelFormat sourcePixelFormat)
     {
         var desc = new PixelFormatDescriptor(sourcePixelFormat);
-        int hasAlpha = (int)(desc.Flags & AV_PIX_FMT_FLAGS.AV_PIX_FMT_FLAG_ALPHA);
+        int hasAlpha = (int)(desc.Flags & AVPixFmtFlags.AV_PIX_FMT_FLAG_ALPHA);
         int loss = 0;
 
         return avcodec_find_best_pix_fmt_of_list(SupportedPixelFormats.RawHandle, sourcePixelFormat, hasAlpha, &loss);

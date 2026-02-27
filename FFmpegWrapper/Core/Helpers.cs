@@ -1,5 +1,6 @@
 ﻿namespace FFmpegWrapper.Core;
 
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 public static class FFHelper
@@ -74,12 +75,72 @@ public static class FFHelper
         return new ReadOnlySpan<T>(handle, len);
     }
     
+#if !NETCOREAPP3_0_OR_GREATER
+    private static ReadOnlySpan<int> DeBruijnTable => [
+        0,  1,  2, 53,  3,  7, 54, 27,
+        4, 38, 41,  8, 34, 55, 48, 28,
+        62,  5, 39, 46, 44, 42, 22,  9,
+        35, 56, 49, 36, 29, 63, 21, 23,
+        14, 31, 13, 30, 16, 20, 19, 26,
+        10, 37, 40, 47, 43, 21, 24, 15,
+        17, 32, 18, 25, 11, 12, 33, 45,
+        50, 51, 52,  6, 60, 61, 59, 58
+    ];
+#endif
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int TrailingZeroCount(ulong v)
+    {
+#if NETCOREAPP3_0_OR_GREATER
+        return BitOperations.TrailingZeroCount(v);
+#else
+        if (v is 0)
+            return 64;
+        
+        return DeBruijnTable[(int)(((ulong)((long)v & -(long)v) * 0x022FDD63CC95386DUL) >> 58)];
+#endif
+    }
+
+    public static unsafe int Strlen(byte* str)
+    {
+        ulong* wordPtr = (ulong*)((nuint)str & ~7UL);
+        
+        int offset = (int)((nuint)str & 7);
+        ulong word = *wordPtr;
+        
+        ulong mask = ulong.MaxValue << (offset * 8);
+        word |= ~mask;
+
+        if (HasZeroByte(word))
+            return IndexOfFirstZeroByte((word & mask) is 0 ? word : (word)) - offset;
+        
+        do { word = *++wordPtr; }
+        while (!HasZeroByte(word));
+
+        return (int)((byte*)wordPtr - str) + IndexOfFirstZeroByte(word);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool HasZeroByte(ulong v)
+            => ((v - 0x0101010101010101UL) & (~v & 0x8080808080808080UL)) is not 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int IndexOfFirstZeroByte(ulong v)
+        {
+            ulong mask = (v - 0x0101010101010101UL) & ~v & 0x8080808080808080UL;
+        
+            return TrailingZeroCount(mask) >> 3;
+        }
+    }
+    
+    
 #if NET6_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe string PtrToStringUtf8(byte* ptr)
     {
         return MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr).ToStringUft8();
     }
 #else
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe string PtrToStringUtf8(byte* ptr)
     {
@@ -90,15 +151,6 @@ public static class FFHelper
         return new ReadOnlySpan<byte>(ptr, length).ToStringUft8();
     }
 #endif
-
-    public static TimeSpan? GetTimeSpan(long pts, Rational timeBase)
-    {
-        if (pts == AV_NOPTS_VALUE) {
-            return null;
-        }
-        
-        return Rational.GetTimeSpan(pts, timeBase);
-    }
 
 
 #if !NETSTANDARD2_1_OR_GREATER

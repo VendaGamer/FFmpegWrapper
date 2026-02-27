@@ -85,6 +85,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe {
                 var raw = Handle.Raw;
+                
                 return new PacketSideDataList(&_handle->coded_side_data, &raw->nb_coded_side_data);
             }
         }
@@ -92,7 +93,15 @@ public abstract class CodecBase : FFObject<AVCodecContext>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected unsafe CodecBase(NullableHandle<AVCodec> codec = default)
-        : this(avcodec_alloc_context3(codec)) { }
+        : this(avcodec_alloc_context3(codec))
+    {
+        Testk(ref _handle);
+    }
+    
+    private unsafe void Testk(ref AVCodecContext* handle)
+    {
+        var idk = new ReadOnlySpan<AVCodecContext>(handle, 0);
+    }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected CodecBase(Handle<AVCodecContext> handle) : base(handle)

@@ -1,0 +1,5 @@
+{
+  "msbuild-sdks": {
+    "Microsoft.NET.Sdk.IL": "10.0.3"
+  }
+}

@@ -89,9 +89,9 @@ public readonly struct PixelFormatDescriptor : IHandleObserver<AVPixFmtDescripto
     }
 
     /// <inheritdoc cref="AVPixFmtDescriptor.flags" />
-    public AV_PIX_FMT_FLAGS Flags {
+    public AVPixFmtFlags Flags {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => (AV_PIX_FMT_FLAGS)Handle.Ref.flags;
+        get => (AVPixFmtFlags)Handle.Ref.flags;
     }
 
     /// <summary> Pixel format being described. </summary>
