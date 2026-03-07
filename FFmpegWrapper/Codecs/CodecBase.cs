@@ -119,12 +119,12 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         }
     }
 
-    public Handle<AVCodec> Codec {
+    public MediaCodec Codec {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return Handle.Ref.codec;
+                return new MediaCodec(Handle.Ref.codec);
             }
         }
     }
