@@ -12,14 +12,23 @@ class Program
     private static AudioDecoder decoder;
     private static AudioContext context;
 
-    private static readonly ma_backend[] Backends = [ma_backend.ma_backend_pulseaudio];
+    private static ma_backend[] Backends;
     
     static unsafe void Main(string[] args)
     {
         MiniAudioLinked.Init();
+
+        if (OperatingSystem.IsWindows()) {
+            Backends = [ma_backend.ma_backend_wasapi];
+        }else if (OperatingSystem.IsLinux()) {
+            Backends = [ma_backend.ma_backend_pulseaudio];
+        } else {
+            throw new PlatformNotSupportedException();
+        }
+        
         
         context = new AudioContext(new AudioContextConfig(), Backends);
-        decoder = new AudioDecoder("test.mp3"u8, new AudioDecoderConfig());
+        decoder = new AudioDecoder("test.mp3", new AudioDecoderConfig());
 
         ref var dec = ref decoder.Handle.Ref;
 
@@ -33,8 +42,12 @@ class Program
         
         var device = new AudioDevice(devCfg, context.Handle);
         device.Start();
-
+        
         Console.ReadLine();
+        
+        device.Dispose();
+        context.Dispose();
+        decoder.Dispose();
     }
     
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
