@@ -8,10 +8,14 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Deps\MiniAudioWrapper\MiniAudioBindings\MiniAudioBindings.Linked\MiniAudioBindings.Linked.csproj" />
+      <ProjectReference Include="..\..\Deps\MiniAudioWrapper\MiniAudioWrapper\MiniAudioWrapper.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <None Update="test.wav">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="test.mp3">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
