@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Hardware;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Codecs;
 
 /// <summary>
@@ -126,7 +128,7 @@ public sealed class HardwareDevice : FFBufferObject<AVHWDeviceContext>
     {
         _handle = deviceCtx.Handle;
 
-        HardwareFrameConstraints.TryCreate(new MediaBuffer<AVHWDeviceContext>(_handle),out FrameConstraints);
+        HardwareFrameConstraints.TryCreate(new MediaBuffer<AVHWDeviceContext>(deviceCtx.Handle),out FrameConstraints);
     }
 
     /// <summary> Open a device of the specified type and create a context for it. </summary>
@@ -141,7 +143,12 @@ public sealed class HardwareDevice : FFBufferObject<AVHWDeviceContext>
                 return false;
             }
             
-            device = new HardwareDevice(new MediaBuffer<AVHWDeviceContext>(ctx));
+            device = new HardwareDevice(
+                new MediaBuffer<AVHWDeviceContext>(
+                    new Handle<AVBufferRef>(ctx, new SkipValidation())
+                )
+            );
+            
             return true;
         }
     }
@@ -150,26 +157,39 @@ public sealed class HardwareDevice : FFBufferObject<AVHWDeviceContext>
 
     /// <param name="swFormat"> The pixel format identifying the actual data layout of the hardware frames. </param>
     /// <param name="initialSize"> Initial size of the frame pool. If a device type does not support dynamically resizing the pool, then this is also the maximum pool size. </param>
-    public HardwareFramePool? CreateFramePool(PictureFormat swFormat, int initialSize)
+    public bool TryCreateFramePool(
+        PictureFormat swFormat,
+        int initialSize,
+        [NotNullWhen(true)]
+        HardwareFramePool? pool)
     {
         unsafe
         {
             var poolRef = av_hwframe_ctx_alloc(Buffer.Handle);
-            if (poolRef == null) {
-                throw new OutOfMemoryException("Failed to allocate hardware frame pool");
+            if (poolRef is null) {
+                return false;
             }
-            var pool = (AVHWFramesContext*)poolRef->data;
-            pool->format = GetDefaultSurfaceFormat();
-            pool->sw_format = swFormat.PixelFormat;
-            pool->width = swFormat.Width;
-            pool->height = swFormat.Height;
-            pool->initial_pool_size = initialSize;
+
+            pool = new HardwareFramePool(
+                new MediaBuffer<AVHWDeviceContext>(
+                    new Handle<AVBufferRef>(poolRef, new SkipValidation())
+                )
+            );
+            
+            ref var handle = ref pool.Handle.Ref;
+            
+            handle.format = GetDefaultSurfaceFormat();
+            handle.sw_format = swFormat.PixelFormat;
+            handle.width = swFormat.Width;
+            handle.height = swFormat.Height;
+            handle.initial_pool_size = initialSize;
 
             if (av_hwframe_ctx_init(poolRef) < 0) {
-                av_buffer_unref(&poolRef);
-                return null;
+                pool.Dispose();
+                return false;
             }
-            return new HardwareFramePool(poolRef);
+
+            return true;
         }
     }
 

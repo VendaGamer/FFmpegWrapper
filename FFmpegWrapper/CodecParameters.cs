@@ -1,8 +1,8 @@
 namespace FFmpegWrapper;
 
-public readonly struct CodecParameters : IHandleObserver<AVCodecParameters>
+public readonly ref struct CodecParameters : IHandleObserver<AVCodecParameters>
 {
-    public unsafe Handle<AVCodecParameters> Handle => _handle;
+    public unsafe Handle<AVCodecParameters> Handle => (Handle<AVCodecParameters>)_handle;
 
     public PictureFormat PictureFormat {
         get {

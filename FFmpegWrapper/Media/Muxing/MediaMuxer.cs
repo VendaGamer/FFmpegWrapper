@@ -15,7 +15,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             unsafe
             {
                 ref var handle = ref Handle.Ref;
-            
                 return new ReadOnlySpan<MediaStream>(handle.streams, (int)handle.nb_streams);
             }
         }
@@ -30,7 +29,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         get {
             unsafe
             {
-                return new OutputFormat(Handle.Ref.oformat);
+                return new OutputFormat((Handle<AVOutputFormat>)Handle.Ref.oformat);
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,11 +51,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     #endregion
     
     #region Constructors
-
-    public unsafe MediaMuxer() : this(avformat_alloc_context())
-    {
-        
-    }
+    
     
     public MediaMuxer(ReadOnlySpan<byte> filename)
     {
@@ -80,7 +75,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
     public unsafe MediaMuxer(
         IHandleOwner<AVIOContext> ioContext,
-        Handle<AVOutputFormat> outputFormat) : this()
+        Handle<AVOutputFormat> outputFormat)
     {
         _handle->oformat = outputFormat;
         _handle->pb = ioContext.Handle;
@@ -124,7 +119,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             
             AVStream* stream = avformat_new_stream(_handle, encHandle->codec);
             if (stream is null)
-                throw new OutOfMemoryException("Could not allocate stream");
+                throw new Exception("Could not allocate stream");
                 
             stream->id = (int)_handle->nb_streams - 1;
             stream->time_base = encoder.TimeBase;
@@ -135,8 +130,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
                 encHandle->flags |= (int)AVCodecFlags.AV_CODEC_FLAG_GLOBAL_HEADER;
             }
 
-            var st = new MediaStream(stream);
-            
+            var st = new MediaStream(new Handle<AVStream>(stream, new SkipValidation()));
             return st;
         }
     }
@@ -166,7 +160,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             stream->id = (int)_handle->nb_streams - 1;
             stream->time_base = srcStream.TimeBase;
 
-            var st = new MediaStream(stream);
+            var st = new MediaStream(new Handle<AVStream>(stream, new SkipValidation()));
             return st;
         }
     }
@@ -177,34 +171,9 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <param name="options"></param>
     /// <param name="ignoreUnknownOptions"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public void Open(ReadOnlySpan<Utf8KeyValue> options = default, bool ignoreUnknownOptions = false)
+    public void Open(ReadOnlySpan<Utf8KeyValue> options = default)
     {
-        unsafe
-        {
-            ThrowIfDisposed();
-            if (IsOpen) {
-                throw new InvalidOperationException("Muxer is already open.");
-            }
-            
-            AVDictionary* opts = null;
         
-            foreach (var entry in options) {
-                av_dict_set(&opts, entry.Key.RawHandle, entry.Value.RawHandle, 0).CheckError();
-            }
-
-            avformat_write_header(_handle, &opts).CheckError("Could not write header to output file");
-
-            try {
-                if (!ignoreUnknownOptions && av_dict_count(opts) > 0) {
-                    string invalidKeys = string.Join("', '", new MediaDictionaryOwner(opts));
-                    throw new InvalidOperationException($"Unknown or invalid muxer options (keys: '{invalidKeys}')");
-                }
-            }
-            finally {
-                av_dict_free(&opts);
-            }
-            IsOpen = true;
-        }
     }
     
 

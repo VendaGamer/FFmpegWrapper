@@ -9,7 +9,7 @@ public readonly struct MediaDictionaryEntry : IHandleObserver<AVDictionaryEntry>
     public Handle<AVDictionaryEntry> Handle {
         get {
             unsafe {
-                return _handle;
+                return new Handle<AVDictionaryEntry>(_handle, new SkipValidation());
             }
         }
     }

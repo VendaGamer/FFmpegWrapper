@@ -2,13 +2,15 @@
 
 using Core;
 
+using Parameters;
+
 public readonly struct MediaStream
 {
     public Handle<AVStream> Handle {
         get {
             unsafe
             {
-                return _handle;
+                return (Handle<AVStream>)_handle;
             }
         }
     }
@@ -54,7 +56,7 @@ public readonly struct MediaStream
         get {
             unsafe
             {
-                return new CodecParameters(Handle.Ref.codecpar);
+                return new CodecParameters((Handle<AVCodecParameters>)Handle.Ref.codecpar);
             }
         }
     }

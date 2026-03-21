@@ -25,40 +25,43 @@ public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
         get => Handle.Ref.sw_format;
     }
 
+    public ReadOnlySpan<AVPixelFormat> TransferToFormats {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => GetFormats(AVHWFrameTransferDirection.AV_HWFRAME_TRANSFER_DIRECTION_TO);
+    }
+    
+    public ReadOnlySpan<AVPixelFormat> TransferFromFormats {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => GetFormats(AVHWFrameTransferDirection.AV_HWFRAME_TRANSFER_DIRECTION_FROM);
+    }
+
     public override Handle<AVHWFramesContext> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Buffer.Data;
     }
 
-    public MediaBuffer<AVHWFramesContext> Buffer {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get {
-            unsafe {
-                return new MediaBuffer<AVHWFramesContext>(_handle);
-            }
-        }
-    }
-
-    internal readonly unsafe AVBufferRef* _handle;
-
+    public readonly MediaBuffer<AVHWFramesContext> Buffer;
     private bool _isInit;
 
-    public HardwareFramePool(Handle<AVBufferRef> deviceCtx, HWPictureFormat format) : this(deviceCtx)
+    public HardwareFramePool(MediaBuffer<AVHWDeviceContext> deviceCtx, HWPictureFormat format) : this(deviceCtx)
     {
         unsafe {
-            av_hwframe_ctx_init(deviceCtx);
+            av_hwframe_ctx_init(Buffer.Handle);
             _isInit = true;
         }
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public HardwareFramePool(Handle<AVBufferRef> deviceCtx)
+    public HardwareFramePool(MediaBuffer<AVHWDeviceContext> deviceCtx)
     {
         unsafe {
-            _handle = av_hwframe_ctx_alloc(deviceCtx);
-
-            if (_handle is null)
-                throw new Exception("Failed to allocate hardware frame pool");
+            var allocated = av_hwframe_ctx_alloc(deviceCtx.Handle);
+            if (allocated is null)
+                throw new Exception($"Could not allocate {nameof(AVHWFramesContext)}");
+            
+            Buffer = new MediaBuffer<AVHWFramesContext>(
+                new Handle<AVBufferRef>(allocated, new SkipValidation())
+            );
         }
     }
 
@@ -67,22 +70,40 @@ public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
     {
         unsafe {
             var frame = av_frame_alloc();
-            int err = av_hwframe_get_buffer(_handle, frame, 0);
-            if (err < 0) {
-                av_frame_free(&frame);
-                err.ThrowError(msg: "Failed to allocate hardware frame");
-            }
-            return new VideoFrame(frame);
+            if (frame is null)
+                goto COULD_NOT_ALLOC;
+            
+            var res = av_hwframe_get_buffer(Buffer.Handle, frame, 0);
+            if (res < 0)
+                goto COULD_NOT_ALLOC;
+
+            return new VideoFrame();
+            
+            COULD_NOT_ALLOC:
+            av_frame_free(&frame);
+            throw new Exception("Failed to allocate hardware frame");
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected override unsafe void Free()
     {
-        if (_handle is not null) {
-            fixed (AVBufferRef** ppCtx = &_handle) {
-                av_buffer_unref(ppCtx);
-            }
+        fixed (AVBufferRef** ppCtx = &Buffer._handle) {
+            av_buffer_unref(ppCtx);
         }
     }
+
+    private ReadOnlySpan<AVPixelFormat> GetFormats(AVHWFrameTransferDirection direction)
+    {
+        unsafe {
+            AVPixelFormat* formats = null;
+            var res = av_hwframe_transfer_get_formats(Buffer._handle, direction, &formats, 0);
+
+            if (res < 0)
+                return ReadOnlySpan<AVPixelFormat>.Empty;
+
+            return FFHelper.GetSpanFromSentinelTerminatedPtr(formats, AVPixelFormat.AV_PIX_FMT_NONE);
+        }
+    }
+    
 }

@@ -8,7 +8,6 @@ using MiniAudioWrapper.Configuration;
 
 class Program
 {
-
     private static AudioDecoder decoder;
     private static AudioContext context;
 
@@ -28,7 +27,7 @@ class Program
         
         
         context = new AudioContext(new AudioContextConfig(), Backends);
-        decoder = new AudioDecoder("test.mp3", new AudioDecoderConfig());
+        decoder = new AudioDecoder("test.mp3"u8, new AudioDecoderConfig());
 
         ref var dec = ref decoder.Handle.Ref;
 

@@ -14,7 +14,10 @@ public abstract class FFObject<TRaw> : FFObjectBase<TRaw>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return _handle;
+                if (_handle is null)
+                    throw new ObjectDisposedException(nameof(FFObject<TRaw>));
+
+                return new Handle<TRaw>(_handle, new SkipValidation());
             }
         }
     }
@@ -24,6 +27,17 @@ public abstract class FFObject<TRaw> : FFObjectBase<TRaw>
     {
         
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected FFObject(NullableHandle<TRaw> handle)
+    {
+        if (handle.IsNull)
+            throw new Exception($"Could not allocate underlying {nameof(TRaw)} structure");
+
+        unsafe {
+            _handle = new Handle<TRaw>(handle, new SkipValidation());
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected FFObject(Handle<TRaw> handle)
@@ -32,19 +46,5 @@ public abstract class FFObject<TRaw> : FFObjectBase<TRaw>
         {
             _handle = handle;
         }
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe implicit operator HandleSource<TRaw>(FFObject<TRaw> ownedObject)
-    {
-        fixed(TRaw** ptr = &ownedObject._handle)
-            return ptr;
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe implicit operator TRaw**(FFObject<TRaw> ownedObject)
-    {
-        HandleSource<TRaw> source = ownedObject;
-        return source;
     }
 }

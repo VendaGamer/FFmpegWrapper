@@ -12,7 +12,12 @@ public class FFBufferObject<TRaw> : FFObjectBase<TRaw>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return new MediaBuffer<TRaw>(_handle);
+                if (_handle is null)
+                    throw new ObjectDisposedException(nameof(TRaw));
+                
+                return new MediaBuffer<TRaw>(
+                    new Handle<AVBufferRef>(_handle, new SkipValidation()
+                ));
             }
         }
     }

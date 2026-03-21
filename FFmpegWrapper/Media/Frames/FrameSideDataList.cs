@@ -8,7 +8,7 @@ public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return _handle;
+                return new Handle<AVFrame>(_handle, new SkipValidation());
             }
         }
     }
@@ -26,7 +26,7 @@ public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
             }
 
             unsafe {
-                return new FrameSideData(Handle.Raw->side_data[index]);
+                return new FrameSideData((Handle<AVFrameSideData>)Handle.Raw->side_data[index]);
             }
         }
     }
@@ -48,10 +48,10 @@ public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
     {
         unsafe
         {
-            AVFrameSideData* entry = av_frame_get_side_data(Handle, type);
+            NullableHandle<AVFrameSideData> entry = av_frame_get_side_data(Handle, type);
             
-            if (entry is not null) {
-                sideData = new FrameSideData(entry);
+            if (!entry.IsNull) {
+                sideData = new FrameSideData(entry.Handle);
                 return true;
             }
             
@@ -66,12 +66,13 @@ public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
     {
         unsafe
         {
-            var entry = av_frame_new_side_data(Handle, type, size);
+            NullableHandle<AVFrameSideData> entry = av_frame_new_side_data(Handle, type, size);
             
-            if (entry == null) {
-                throw new Exception("Failed to create new side data");
+            if (!entry.IsNull) {
+                return new FrameSideData(entry.Handle);
             }
-            return new FrameSideData(entry);
+            
+            throw new Exception("Failed to create new side data");
         }
     }
     
@@ -131,7 +132,7 @@ public readonly struct FrameSideData
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return _handle;
+                return new Handle<AVFrameSideData>(_handle, new SkipValidation());
             }
         }
     }

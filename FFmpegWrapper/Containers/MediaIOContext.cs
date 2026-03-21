@@ -10,7 +10,7 @@ public readonly struct MediaIOContext : IHandleObserver<AVIOContext>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return _handle;
+                return (Handle<AVIOContext>)_handle;
             }
         }
     }

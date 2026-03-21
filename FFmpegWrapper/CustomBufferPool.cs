@@ -32,12 +32,12 @@ public class CustomBufferPool<TUserData>
 
             AVBufferRef* NativeAlloc(void* opaque, nuint size)
             {
-                return allocFunc((TUserData*)opaque, size).Raw;
+                return allocFunc((Handle<TUserData>)opaque, size).Raw;
             }
 
             void NativeFree(void* opaque)
             {
-                freeUserData((TUserData*)opaque);
+                freeUserData((Handle<TUserData>)opaque);
             }
         }
     }

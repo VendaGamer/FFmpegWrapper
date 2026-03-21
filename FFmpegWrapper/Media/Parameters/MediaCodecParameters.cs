@@ -31,9 +31,6 @@ public abstract class MediaCodecParameters : FFObject<AVCodecParameters>
                 return new ReadOnlySpan<byte>(handle.extradata, handle.extradata_size);
             }
         }
-        set {
-            
-        }
     }
 
     /// <inheritdoc cref="AVCodecParameters.bit_rate" />
@@ -95,7 +92,8 @@ public abstract class MediaCodecParameters : FFObject<AVCodecParameters>
                 
                 return new PacketSideDataList(
                     &raw->coded_side_data,
-                    &raw->nb_coded_side_data);
+                    new Handle<int>(&raw->nb_coded_side_data)
+                );
             }
         }
     }

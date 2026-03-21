@@ -88,7 +88,9 @@ public class MediaPacket : FFObject<AVPacket>
             {
                 var handle = Handle.Raw;
                 
-                return new PacketSideDataList(&handle->side_data, &_handle->side_data_elems);
+                return new PacketSideDataList(
+                    &handle->side_data, new Handle<int>(&_handle->side_data_elems)
+                );
             }
         }
     }

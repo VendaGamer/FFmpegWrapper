@@ -6,7 +6,7 @@ public readonly struct OptionValue : IHandleObserver<AVOption_default_val>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return _handle;
+                return (Handle<AVOption_default_val>)_handle;
             }
         }
     }

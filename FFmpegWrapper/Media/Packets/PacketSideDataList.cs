@@ -24,14 +24,20 @@ public readonly ref struct PacketSideDataList
     }
 
     public PacketSideData this[int index] {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                if ((uint)index > (uint)_count) {
-                    throw new ArgumentOutOfRangeException();
+                if ((uint)index >= (uint)_count) {
+                    throw new IndexOutOfRangeException();
                 }
 
-                return new PacketSideData(_handle[index]);
+                return new PacketSideData(
+                    new Handle<AVPacketSideData>(
+                        _handle[index],
+                        new SkipValidation()
+                    )
+                );
             }
         }
     }
@@ -59,7 +65,13 @@ public readonly ref struct PacketSideDataList
                 return false;
             }
 
-            sideData = new PacketSideData(entry);
+            sideData = new PacketSideData(
+                new Handle<AVPacketSideData>(
+                    entry,
+                    new SkipValidation()
+                )
+            );
+            
             return true;
         }
     }
@@ -70,10 +82,15 @@ public readonly ref struct PacketSideDataList
         unsafe
         {
             var entry = av_packet_side_data_new(_handle, _count, type, size, 0);
-            if (entry == null) {
-                throw new OutOfMemoryException();
-            }
-            return new PacketSideData(entry);
+            if (entry is null)
+                throw new Exception("Unable to allocate side data");
+            
+            return new PacketSideData(
+                new Handle<AVPacketSideData>(
+                    entry,
+                    new SkipValidation()
+                )
+            );
         }
     }
 

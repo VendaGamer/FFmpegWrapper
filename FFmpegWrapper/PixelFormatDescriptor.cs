@@ -29,7 +29,9 @@ public readonly struct PixelFormatDescriptor : IHandleObserver<AVPixFmtDescripto
                 AVPixFmtDescriptor* desc = null;
                 
                 while ((desc = av_pix_fmt_desc_next(desc)) is not null) {
-                    builder.Add(new PixelFormatDescriptor(desc));
+                    builder.Add(new PixelFormatDescriptor(
+                        new Handle<AVPixFmtDescriptor>(desc, new SkipValidation())
+                    ));
                 }
             }
                 
@@ -45,7 +47,7 @@ public readonly struct PixelFormatDescriptor : IHandleObserver<AVPixFmtDescripto
 
     public unsafe Handle<AVPixFmtDescriptor> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _handle;
+        get => (Handle<AVPixFmtDescriptor>)_handle;
     }
 
     /// <inheritdoc cref="AVPixFmtDescriptor.name" />

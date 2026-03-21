@@ -1,5 +1,6 @@
 ﻿namespace FFmpegWrapper.Media.Frames;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Codecs;
 using Codecs.Decoding;
@@ -123,7 +124,7 @@ public sealed class VideoFrame : MediaFrame
     }
 
     /// Allocates an empty <see cref="AVFrame"/>
-    public unsafe VideoFrame() : this(av_frame_alloc())
+    public VideoFrame()
     {
         
     }
@@ -206,26 +207,30 @@ public sealed class VideoFrame : MediaFrame
     }
 
     /// <summary> Attempts to create a hardware frame memory mapping. Returns null if the backing device does not support frame mappings. </summary>
-    public bool TryMap(AV_HWFRAME_MAP flags, out VideoFrame? mappedFrame)
+    public bool TryMap(
+        AV_HWFRAME_MAP flags,
+        [NotNullWhen(true)]
+        out VideoFrame? mappedFrame)
     {
-        unsafe
-        {
-            ThrowIfDisposed();
+        unsafe {
+            ref var handle = ref Handle.Ref;
+            
             if (!IsHardwareFrame) {
                 throw new InvalidOperationException("Cannot create mapping of non-hardware frame.");
             }
 
-            var mapping = av_frame_alloc();
+            mappedFrame = new VideoFrame();
+            var mapping = mappedFrame.Handle.Raw;
+            
             int result = av_hwframe_map(mapping, _handle, (int)flags);
 
             if (result is 0) {
-                mapping->width = _handle->width;
-                mapping->height = _handle->height;
-                mappedFrame = new VideoFrame(mapping);
+                mapping->width = handle.width;
+                mapping->height = handle.height;
                 return true;
             }
             
-            av_frame_free(&mapping);
+            mappedFrame.Dispose();
             mappedFrame = null;
             return false;
         }
@@ -318,12 +323,14 @@ public sealed class VideoFrame : MediaFrame
         // NET STANDARD BYPASS
         unsafe {
             Span<byte> fileNameUtf8 = stackalloc byte[Encoding.UTF8.GetMaxByteCount(fileName.Length) + 1];
-            var written = Encoding.UTF8.GetBytes(span.RawHandle, fileName.Length,
-                fileNameUtf8.RawHandle,fileNameUtf8.Length);
 
-            var outFor = OutputFormat.FindByExtension(fileNameUtf8.Slice(0, written + 1)); 
-            
-            Save(fileName, format, outFor);
+            fixed (char* chars = span) {
+                var written = Encoding.UTF8.GetBytes(chars, fileName.Length,
+                    fileNameUtf8.RawHandle,fileNameUtf8.Length);
+
+                var outFor = OutputFormat.FindByExtension(fileNameUtf8.Slice(0, written + 1)); 
+                Save(fileName, format, outFor);
+            }
         }
     }
     
@@ -386,7 +393,7 @@ public sealed class VideoFrame : MediaFrame
     /// <remarks> This method may be susceptible to DoS attacks. Do not use with untrusted inputs. </remarks>
     public static VideoFrame Load(ReadOnlySpan<byte> filename, TimeSpan? position = null)
     {
-        using var demuxer = new MediaDemuxer(filename);
+        using var demuxer = new MediaDemuxer(filename, default);
         
         if (!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var stream)) {
             throw new FormatException();

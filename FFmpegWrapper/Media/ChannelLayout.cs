@@ -1,5 +1,7 @@
 namespace FFmpegWrapper.Media;
 
+using System.Text;
+
 using FFmpegWrapper.Extensions;
 
 public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<ChannelLayout>
@@ -52,15 +54,6 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
 
     #region Properties
 
-    internal unsafe AVChannelLayout* Handle {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get {
-            fixed (AVChannelLayout* layout = &Native) {
-                return layout;
-            }
-        }
-    }
-
     public AVChannelOrder Order
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,7 +81,8 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
     {
         unsafe
         {
-            return av_channel_layout_channel_from_index(Handle, index);
+            var ptr = (AVChannelLayout*)Unsafe.AsPointer(ref Unsafe.AsRef(in Native));
+            return av_channel_layout_channel_from_index(ptr, index);
         }
     }
 
@@ -98,7 +92,8 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
         get {
             unsafe
             {
-                return av_channel_layout_channel_from_index(Handle, index);
+                var ptr = (AVChannelLayout*)Unsafe.AsPointer(ref Unsafe.AsRef(in Native));
+                return av_channel_layout_channel_from_index(ptr, index);
             }
         }
     }
@@ -148,7 +143,7 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
         unsafe
         {
             ChannelLayout layout = default;
-            av_channel_layout_default(layout.Handle, numChannels);
+            av_channel_layout_default(&layout.Native, numChannels);
             return layout;
         }
     }
@@ -161,9 +156,9 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
         unsafe
         {
             ChannelLayout layout = default;
-            if (av_channel_layout_from_mask(layout.Handle, mask) < 0) {
-                throw new ArgumentException();
-            }
+            if (av_channel_layout_from_mask(&layout.Native, mask) < 0)
+                throw new ArgumentException(nameof(mask));
+            
             return layout;
         }
     }
@@ -174,9 +169,9 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
         unsafe
         {
             ChannelLayout layout = default;
-            if (av_channel_layout_from_string(layout.Handle, str.RawHandle) < 0) {
+            if (av_channel_layout_from_string(&layout.Native, str.RawHandle) < 0)
                 throw new ArgumentException(nameof(str));
-            }
+            
             return layout;
         }
     }
@@ -189,8 +184,10 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
         unsafe
         {
             var buf = stackalloc byte[128];
-            var size = av_channel_layout_describe(Handle, buf, 128).CheckError();
-            return new ReadOnlySpan<byte>(buf, size - 1).ToStringUft8();
+            var ptr = (AVChannelLayout*)Unsafe.AsPointer(ref Unsafe.AsRef(in Native));
+            var size = av_channel_layout_describe(ptr, buf, 128).CheckError();
+
+            return Encoding.UTF8.GetString(buf, size - 1);
         }
     }
 
@@ -199,10 +196,8 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
     {
         unsafe
         {
-            fixed (AVChannelLayout* a = &Native) {
-                var c = av_channel_layout_compare(a, &other.Native);
-                return c == 0;
-            }
+            var ptr = (AVChannelLayout*)Unsafe.AsPointer(ref Unsafe.AsRef(in Native));
+            return av_channel_layout_compare(ptr, &other.Native) is 0;
         }
     }
 
@@ -211,5 +206,26 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
     public override bool Equals(object? obj) => obj is ChannelLayout other && Equals(other);
 
     /// <inheritdoc />
-    public override int GetHashCode() => NumChannels;
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Native.order);
+        hash.Add(Native.nb_channels);
+
+        if (Native.order == AVChannelOrder.AV_CHANNEL_ORDER_NATIVE)
+        {
+            hash.Add(Native.u.mask);
+        }
+        else
+        {
+            for (int i = 0; i < Native.nb_channels; i++)
+            {
+                unsafe {
+                    hash.Add(Native.u.map[i].id);
+                }
+            }
+        }
+
+        return hash.ToHashCode();
+    }
 }

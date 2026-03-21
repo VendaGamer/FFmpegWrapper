@@ -2,16 +2,21 @@
 
 using Media;
 
-public sealed class SwScaler(Handle<SwsContext> handle) : FFObject<SwsContext>(handle)
+public sealed class SwScaler : FFObject<SwsContext>
 {
     public SwScaler(PictureFormat inFmt, PictureFormat outFmt, SwsFlags flags = SwsFlags.SWS_BICUBIC)
-        : this(Allocate(inFmt, outFmt, flags)) { }
+    {
+        unsafe {
+            var allocated = (NullableHandle<SwsContext>)sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
+                outFmt.Width, outFmt.Height, outFmt.PixelFormat,
+                (int)flags, null, null, null);
+            
+            if (allocated.IsNull)
+                throw new Exception("Could not allocate SwsContext");
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe Handle<SwsContext> Allocate(PictureFormat inFmt, PictureFormat outFmt, SwsFlags flags = SwsFlags.SWS_BICUBIC)
-        => sws_getContext(inFmt.Width, inFmt.Height, inFmt.PixelFormat,
-            outFmt.Width, outFmt.Height, outFmt.PixelFormat,
-            (int)flags, null, null, null);
+            _handle = allocated.Handle;
+        }
+    }
 
     public bool Reinit(in PictureFormat inFmt, in PictureFormat outFmt, SwsFlags flags = SwsFlags.SWS_BICUBIC)
     {
@@ -71,9 +76,7 @@ public sealed class SwScaler(Handle<SwsContext> handle) : FFObject<SwsContext>(h
 
     protected override unsafe void Free()
     {
-        if (_handle != null) {
-            sws_freeContext(_handle);
-            _handle = null;
-        }
+        fixed(SwsContext** prt = &_handle)
+            sws_free_context(prt);
     }
 }

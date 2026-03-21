@@ -3,9 +3,14 @@ namespace FFmpegWrapper.Platforms;
 public class AndroidMediaCodecContext : FFObject<AVMediaCodecContext>
 {
     
-    public unsafe AndroidMediaCodecContext() : base(av_mediacodec_alloc_context())
+    public unsafe AndroidMediaCodecContext()
     {
-        MediaCodecBuffer a;
+        NullableHandle<AVMediaCodecContext> allocated = av_mediacodec_alloc_context();
+
+        if (allocated.IsNull)
+            throw new Exception($"Could not allocate {nameof(AVMediaCodecContext)}");
+
+        _handle = allocated.Handle;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

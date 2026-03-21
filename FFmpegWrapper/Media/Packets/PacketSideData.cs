@@ -9,7 +9,7 @@ public readonly struct PacketSideData
         get {
             unsafe
             {
-                return _handle;
+                return (Handle<AVPacketSideData>)_handle;
             }
         }
     }

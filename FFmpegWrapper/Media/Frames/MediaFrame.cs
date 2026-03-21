@@ -69,6 +69,7 @@ public abstract class MediaFrame : FFObject<AVFrame>
     #region Constructors
 
     protected MediaFrame(Handle<AVFrame> handle) : base(handle) { }
+
     protected unsafe MediaFrame() : base(av_frame_alloc()) { }
 
     #endregion

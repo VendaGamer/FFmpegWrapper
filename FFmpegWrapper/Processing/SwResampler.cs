@@ -1,5 +1,7 @@
 ﻿namespace FFmpegWrapper.Processing;
 
+using Extensions;
+
 public sealed class SwResampler : FFObject<SwrContext>
 {
     public AudioFormat InputFormat { get; private set; }

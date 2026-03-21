@@ -1,6 +1,9 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
 using System.Runtime.InteropServices;
+
+using Extensions;
+
 using Hardware;
 using Media;
 
@@ -83,18 +86,17 @@ public class VideoDecoder : MediaDecoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private unsafe AVPixelFormat GetFormatCore(
         AVCodecContext* ctx,
-        AVPixelFormat* formats) => GetFormat(ctx,
+        AVPixelFormat* formats) => GetFormat(
         FFHelper.GetSpanFromSentinelTerminatedPtr(formats,
             AVPixelFormat.AV_PIX_FMT_NONE));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected virtual AVPixelFormat GetFormat(
-        Handle<AVCodecContext> ctx,
         ReadOnlySpan<AVPixelFormat> pixelFormats)
     {
         unsafe
         {
-            return avcodec_default_get_format(ctx, pixelFormats.RawHandle);
+            return avcodec_default_get_format(Handle, pixelFormats.RawHandle);
         }
     }
 }

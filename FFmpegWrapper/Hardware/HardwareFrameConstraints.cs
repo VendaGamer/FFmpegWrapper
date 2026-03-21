@@ -2,7 +2,7 @@ namespace FFmpegWrapper.Hardware;
 
 using System.Diagnostics.CodeAnalysis;
 
-public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
+public sealed class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
 {
     public ReadOnlySpan<AVPixelFormat> ValidHardwareFormats {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -66,9 +66,7 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool TryCreate(
         MediaBuffer<AVHWDeviceContext> deviceCtx,
-        #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
         [NotNullWhen(true)]
-        #endif
         out HardwareFrameConstraints? constraints,
         void* hwConfig = null)
     {
@@ -78,7 +76,9 @@ public class HardwareFrameConstraints : FFObject<AVHWFramesConstraints>
         if (handle is null)
             return false;
 
-        constraints = new HardwareFrameConstraints(handle);
+        constraints = new HardwareFrameConstraints(
+            new Handle<AVHWFramesConstraints>()
+        );
         return true;
     }
     

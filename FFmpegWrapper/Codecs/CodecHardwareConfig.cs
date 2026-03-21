@@ -35,7 +35,7 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
             if (s_availableEncoderConfigs.IsDefault) {
                 GetAvailableConfigs();
             }
-
+            
             return s_availableEncoderConfigs;
         }
         
@@ -53,9 +53,13 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
                     while((res = avcodec_get_hw_config(codec._handle, index)) is not null)
                     {
                         if (codec.IsDecoder) {
-                            decBuilder.Add(new CodecHardwareConfig(codec, res));
+                            decBuilder.Add(new CodecHardwareConfig(
+                                codec, FFHelper.UnsafeHandle(res)
+                            ));
                         } else {
-                            encBuilder.Add(new CodecHardwareConfig(codec, res));
+                            encBuilder.Add(new CodecHardwareConfig(
+                                codec, FFHelper.UnsafeHandle(res)
+                            ));
                         }
 
                         index++;
@@ -70,8 +74,6 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
     
     public static ReadOnlySpan<CodecHardwareConfig> GetAvailableConfigsFor(Handle<AVCodec> codec)
     {
-        codec.ThrowIfNull();
-        
         unsafe {
             ImmutableArray<CodecHardwareConfig> configs = 
                 av_codec_is_decoder(codec) is 0 ?
@@ -112,7 +114,7 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
         get {
             unsafe
             {
-                return _handle;
+                return (Handle<AVCodecHWConfig>)_handle;
             }
         }
     }

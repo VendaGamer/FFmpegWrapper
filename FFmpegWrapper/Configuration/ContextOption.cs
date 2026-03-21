@@ -10,7 +10,7 @@ public readonly struct ContextOption(Handle<AVOption> handle)
     public Handle<AVOption> Handle {
         get {
             unsafe {
-                return _handle;
+                return (Handle<AVOption>)_handle;
             }
         }
     }
@@ -60,7 +60,11 @@ public readonly struct ContextOption(Handle<AVOption> handle)
         get {
             unsafe {
                 var handle = Handle.Raw;
-                return new OptionValue(&handle->default_val, handle->type);
+                return new OptionValue(
+                    new Handle<AVOption_default_val>(
+                    &handle->default_val,
+                    new SkipValidation()
+                ), handle->type);
             }
         }
     }
@@ -80,9 +84,9 @@ public readonly struct ContextOption(Handle<AVOption> handle)
 
             //The AVOption documentation says that AVClass options must be declared in
             //a static null terminated array, so this should be mostly fine.
-            for (AVOption* opt = _handle + 1; opt->name != null; opt++) {
+            for (AVOption* opt = _handle + 1; opt->name is not null; opt++) {
                 if (opt->type == AVOptionType.AV_OPT_TYPE_CONST && opt->unit == _handle->unit) {
-                    list.Add(new ContextOption(opt));
+                    list.Add(new ContextOption(new Handle<AVOption>(opt, new SkipValidation())));
                 }
             }
             return list;
@@ -141,12 +145,12 @@ public readonly struct ContextOption(Handle<AVOption> handle)
     {
         var opts = new List<ContextOption>();
         AVOption* iter = null;
-        while ((iter = av_opt_next(obj, iter)) != null) {
+        while ((iter = av_opt_next(obj, iter)) is not null) {
             
             if (iter->type is AVOptionType.AV_OPT_TYPE_CONST || (skipDefaults && av_opt_is_set_to_default(obj, iter) is not 0)) 
                 continue;
 
-            opts.Add(new ContextOption(iter));
+            opts.Add(new ContextOption(new Handle<AVOption>(iter, new SkipValidation())));
         }
 
         if (!removeAliases) {

@@ -3,7 +3,6 @@ namespace FFmpegWrapper.Media;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-
 using Extensions;
 
 /// <summary>
@@ -40,12 +39,13 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ObservedMediaDictionary ToObserved() => new(this);
+    public ObservedMediaDictionary ToObserved() => new();
 
     /// <summary>
     /// Gets the number of entries in the dictionary
     /// </summary>
     public int Count {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
@@ -66,6 +66,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     /// <summary>
     /// Checks if a key exists
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ContainsKey(ReadOnlySpan<byte> key)
     {
         unsafe
@@ -77,6 +78,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     /// <summary>
     /// Gets the value associated with the given key, or null if there is no match.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<byte> GetValue(ReadOnlySpan<byte> key, AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE)
     {
         unsafe
@@ -102,6 +104,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     /// <summary>
     /// Tries to get a value, returning false if the key doesn't exist
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryGetValue(ReadOnlySpan<byte> key, out ReadOnlySpan<byte> value, AVDictFlags flags = 0)
     {
         value = GetValue(key, flags);
@@ -170,7 +173,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
         }
         
         Succeded:
-        parsed = new MediaDictionaryOwner(handle);
+        parsed = new MediaDictionaryOwner(new Handle<AVDictionary>(handle, new SkipValidation()));
         return true;
     }
 
@@ -179,23 +182,45 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     {
         AVDictionary* handle = null;
         av_dict_copy(&handle ,source,0).CheckError("Unable to ");
-        return new MediaDictionaryOwner(handle);
+        return new MediaDictionaryOwner((Handle<AVDictionary>)handle);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static MediaDictionaryOwner CreateFromEntries(params ReadOnlySpan<Utf8KeyValue> entries)
-        => CreateFromEntries(entries, 0);
+    public static bool TryCreateFromEntries(
+        [NotNullWhen(true)]
+        out MediaDictionaryOwner? owner,
+        params ReadOnlySpan<Utf8KeyValue> entries
+    ) => TryCreateFromEntries(entries, out owner,0);
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe MediaDictionaryOwner CreateFromEntries(ReadOnlySpan<Utf8KeyValue> entries, AVDictFlags flags)
+    private static unsafe bool TryCreateFromEntries(
+        ReadOnlySpan<Utf8KeyValue> entries,
+        [NotNullWhen(true)]
+        out MediaDictionaryOwner? owner,
+        AVDictFlags flags)
     {
+        if (entries.IsEmpty)
+            goto Fail;
+        
         AVDictionary* handle = null;
         
         foreach (var entry in entries) {
-            av_dict_set(&handle, entry.Key.RawHandle, entry.Value.RawHandle, 0).CheckError();
+            av_dict_set(&handle, entry.Key.RawHandle, entry.Value.RawHandle, 0);
         }
+
+        if (handle is null)
+            goto Fail;
         
-        return new MediaDictionaryOwner(handle);
+        owner = new MediaDictionaryOwner(
+            new Handle<AVDictionary>(
+                handle,
+                new SkipValidation()
+            )
+        );
+        return true;
+        
+        Fail:
+        owner = null;
+        return false;
     }
 
     /// <summary>

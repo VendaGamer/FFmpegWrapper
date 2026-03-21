@@ -31,11 +31,12 @@ public abstract class MediaFormatContext : FFObject<AVFormatContext>
         }
     }
 
-    public MediaDictionaryOwner metadata {
+    public ObservedMediaDictionary metadata {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return new MediaDictionaryOwner(Handle.Ref.metadata);
+                return new ObservedMediaDictionary(&Handle.Raw->metadata);
             }
         }
     }

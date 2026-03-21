@@ -2,18 +2,20 @@ namespace FFmpegWrapper.Media;
 
 using System.Runtime.ConstrainedExecution;
 
-public sealed class CustomChannelLayout
-    : CriticalFinalizerObject, IHandleOwner<AVChannelLayout>
+public sealed class CustomChannelLayout : CriticalFinalizerObject, IDisposable
 {
-
+    private const string UnableToCopy = "Unable to copy custom channel layout.";
+    
     #region StaticProperties
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Copy(Handle<AVChannelLayout> src, Handle<AVChannelLayout> dest)
+    public static void Copy(in AVChannelLayout src, ref AVChannelLayout dest)
     {
         unsafe
         {
-            av_channel_layout_copy(src, dest);
+            fixed(AVChannelLayout* pSrc = &src)
+            fixed(AVChannelLayout* pDes = &dest)
+                av_channel_layout_copy(pSrc, pDes);
         }
     }
     
@@ -21,14 +23,16 @@ public sealed class CustomChannelLayout
     
     #region Properties
     
-    public ChannelCustom Custom
+    public Span<AVChannelCustom> Map
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
-            unsafe
-            {
-                return new ChannelCustom(_native.u.map);
+            unsafe {
+                if (Native.u.map is null)
+                    return Span<AVChannelCustom>.Empty;
+
+                return new Span<AVChannelCustom>(Native.u.map, Native.nb_channels);
             }
         }
     }
@@ -36,28 +40,12 @@ public sealed class CustomChannelLayout
     public ChannelLayout Layout
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new(_native);
-    }
-
-    public Handle<AVChannelLayout> Handle
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            unsafe
-            {
-                if(_native.u.map is null)
-                    throw new Exception("Cannot borrow uninitialized custom channel layout.");
-                
-                fixed(void* ptr = &_native)
-                    return new Handle<AVChannelLayout>(ptr);
-            }
-        }
+        get => new(Native);
     }
 
     #endregion
     
-    private readonly AVChannelLayout _native;
+    public readonly AVChannelLayout Native;
     
     #region Constructors
     
@@ -70,7 +58,7 @@ public sealed class CustomChannelLayout
     {
         unsafe
         {
-            fixed(AVChannelLayout* ptr = &_native)
+            fixed(AVChannelLayout* ptr = &Native)
                 av_channel_layout_custom_init(ptr, numChannels);
         }
     }
@@ -82,7 +70,9 @@ public sealed class CustomChannelLayout
     {
         unsafe
         {
-            av_channel_layout_copy(dest, Handle).CheckError("Unable to copy custom channel layout.");
+            fixed(AVChannelLayout* ptr = &Native)
+                av_channel_layout_copy(dest, ptr)
+                    .CheckError(UnableToCopy);
         }
     }
 
@@ -91,7 +81,9 @@ public sealed class CustomChannelLayout
     {
         unsafe
         {
-            av_channel_layout_copy(Handle, source).CheckError("Unable to copy custom channel layout.");
+            fixed(AVChannelLayout* ptr = &Native)
+                av_channel_layout_copy(ptr,source)
+                    .CheckError(UnableToCopy);
         }
     }
 
@@ -103,7 +95,7 @@ public sealed class CustomChannelLayout
     {
         unsafe
         {
-            fixed(AVChannelLayout* ptr = &_native)
+            fixed(AVChannelLayout* ptr = &Native)
                 av_channel_layout_uninit(ptr);
         }
     }

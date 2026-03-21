@@ -5,7 +5,7 @@ public readonly struct MediaOptionArray : IHandleObserver<AVOptionArrayDef>
     public Handle<AVOptionArrayDef> Handle {
         get {
             unsafe {
-                return _handle;
+                return (Handle<AVOptionArrayDef>)_handle;
             }
         }
     }

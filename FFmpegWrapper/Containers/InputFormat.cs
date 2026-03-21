@@ -8,17 +8,45 @@ public readonly struct InputFormat : IHandleObserver<AVInputFormat>
         get {
             unsafe
             {
-                return _handle;
+                return (Handle<AVInputFormat>)_handle;
             }
         }
     }
 
     public AVFormatFlags Flags => (AVFormatFlags)Handle.Ref.flags;
 
-    public readonly string Extensions;
-    public readonly string Name;
-    public readonly string LongName;
-    public readonly string MimeType;
+    public ReadOnlySpan<byte> Extensions {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.extensions);
+            }
+        }
+    }
+
+    public ReadOnlySpan<byte> Name {
+        get {
+            unsafe {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.name);
+            }
+        }
+    }
+
+    public ReadOnlySpan<byte> LongName {
+        get {
+            unsafe {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.long_name);
+            }
+        }
+    }
+
+    public ReadOnlySpan<byte> MimeType {
+        get {
+            unsafe {
+                return FFHelper.Utf8SpanFromPtrNullTerm(Handle.Ref.mime_type);
+            }
+        }
+    }
 
     private readonly unsafe AVInputFormat* _handle;
     
@@ -26,10 +54,6 @@ public readonly struct InputFormat : IHandleObserver<AVInputFormat>
     {
         unsafe {
             _handle = handle;
-            Extensions = FFHelper.PtrToStringUtf8(_handle->extensions);
-            Name = FFHelper.PtrToStringUtf8(_handle->name);
-            LongName = FFHelper.PtrToStringUtf8(_handle->long_name);
-            MimeType = FFHelper.PtrToStringUtf8(_handle->mime_type);
         }
     }
 }

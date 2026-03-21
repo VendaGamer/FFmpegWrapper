@@ -86,21 +86,29 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             unsafe {
                 var raw = Handle.Raw;
                 
-                return new PacketSideDataList(&_handle->coded_side_data, &raw->nb_coded_side_data);
+                return new PacketSideDataList(
+                    &_handle->coded_side_data,
+                    FFHelper.UnsafeHandle(&raw->nb_coded_side_data)
+                );
             }
         }
     }
+    
+    protected CodecBase(NullableHandle<AVCodec> codec = default) 
+        : this(SafeAlloc(codec)) { }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected unsafe CodecBase(NullableHandle<AVCodec> codec = default)
-        : this(avcodec_alloc_context3(codec))
+    private static Handle<AVCodecContext> SafeAlloc(NullableHandle<AVCodec> codec)
     {
-        Testk(ref _handle);
-    }
-    
-    private unsafe void Testk(ref AVCodecContext* handle)
-    {
-        var idk = new ReadOnlySpan<AVCodecContext>(handle, 0);
+        unsafe
+        {
+            var handle = avcodec_alloc_context3(codec);
+
+            if (handle is null)
+                throw new Exception($"Could not allocate {nameof(AVCodecContext)}");
+
+            return FFHelper.UnsafeHandle(handle);
+        }
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -124,7 +132,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
-                return new MediaCodec(Handle.Ref.codec);
+                return new MediaCodec(FFHelper.UnsafeHandle(Handle.Ref.codec));
             }
         }
     }

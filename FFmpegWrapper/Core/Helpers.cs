@@ -174,32 +174,43 @@ public static class FFHelper
         
         pts = value.Value;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe Handle<T> UnsafeHandle<T>(T* handle)
+        where T : unmanaged
+    {
+        return new Handle<T>(handle, new SkipValidation());
+    }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> Allocate<T>(nuint size)
-        where T : unmanaged
+    public static unsafe Handle UnsafeHandle(void* handle)
+    {
+        return new Handle(handle, new SkipValidation());
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Handle Allocate(nuint size)
     {
         unsafe {
             var buffer = av_malloc(size);
             
             if(buffer is null)
-                throw new Exception("Could not allocate memory for buffer.");
-            
-            return new Span<T>(buffer, (int)size);
+                throw new OutOfMemoryException("Could not allocate memory for buffer.");
+
+            return new Handle(buffer, new SkipValidation());
         }
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AllocateZero<T>(nuint size)
-        where T : unmanaged
+    public static Handle AllocateZeroed(nuint size)
     {
         unsafe {
             var buffer = av_mallocz(size);
             
             if(buffer is null)
-                throw new Exception("Could not allocate memory for buffer.");
-            
-            return new Span<T>(buffer, (int)size);
+                throw new OutOfMemoryException("Could not allocate memory for buffer.");
+
+            return new Handle(buffer, new SkipValidation());
         }
     }
 }

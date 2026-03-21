@@ -44,29 +44,59 @@ public class MediaDemuxer : FFObject<AVFormatContext>
     #endregion
     
     private readonly IHandleOwner<AVIOContext>? _ioContext;
-    
+
     /// <summary>
     /// Opens an existing resource URL for demuxing.
     /// </summary>
     /// <param name="url">Media source URL</param>
-    public MediaDemuxer(ReadOnlySpan<byte> url) : this(CreateContext(url)) { }
-
-    /// <inheritdoc />
+    public MediaDemuxer(
+        ReadOnlySpan<byte> url,
+        NullableHandle<AVInputFormat> inputFormat = default,
+        NullableHandleSource<AVDictionary> options = default)
+    {
+        unsafe {
+            AVFormatContext* handle = null;
+            fixed (byte* pUrl = url) {
+                avformat_open_input(&handle, pUrl, inputFormat, options);
+            }
+        }
+    }
+    
     public MediaDemuxer(IHandleOwner<AVIOContext> inputOutputContextOwner)
-        : this(CreateContext(pb: inputOutputContextOwner.Handle)) 
+        : this(inputOutputContextOwner.Handle) 
     {
         _ioContext = inputOutputContextOwner;
     }
 
     public MediaDemuxer(Handle<AVIOContext> inputOutputContext)
-        : this(CreateContext(pb: inputOutputContext)) { }
+        : this()
+    {
+        unsafe
+        {
+            _handle->pb = inputOutputContext;
+        }
+    }
 
     /// <summary> Opens an existing resource URL for demuxing. </summary>
     /// <remarks> See https://ffmpeg.org/ffmpeg-formats.html, https://ffmpeg.org/ffmpeg-protocols.html </remarks>
     /// <param name="url">URL to be opened for demuxing</param>
     /// <param name="options"> A dictionary filled with AVFormatContext and demuxer-private options. </param>
     public MediaDemuxer(ReadOnlySpan<byte> url, ReadOnlySpan<Utf8KeyValue> options)
-        : this(CreateContext(options, url, null)) { }
+        : this()
+    {
+        
+    }
+
+    public MediaDemuxer()
+    {
+        unsafe {
+            _handle = avformat_alloc_context();
+            
+            if (_handle is null) {
+                throw new OutOfMemoryException("Could not allocate demuxer.");
+            }
+        }
+    }
 
     /// <summary> Wraps a pointer to an open <see cref="AVFormatContext"/>. </summary>
     /// <param name="ctx"></param>
@@ -76,36 +106,6 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         {
             _handle = ctx;
         }
-    }
-
-    private static unsafe Handle<AVFormatContext> CreateContext(
-        ReadOnlySpan<Utf8KeyValue> options,
-        ReadOnlySpan<byte> url = default,
-        Handle<AVIOContext> pb = default)
-    {
-        if (options.IsEmpty)
-            return CreateContext(url, pb);
-        
-        return CreateContext(url, pb, MediaDictionaryOwner.CreateFromEntries(options).Handle);
-    }
-    
-    private static unsafe Handle<AVFormatContext> CreateContext(
-        ReadOnlySpan<byte> url = default,
-        NullableHandle<AVIOContext> pb = default,
-        NullableHandle<AVDictionary> options = default)
-    {
-        AVFormatContext* ctx = avformat_alloc_context();
-        if (ctx == null) {
-            throw new OutOfMemoryException("Could not allocate demuxer.");
-        }
-        
-        ctx->pb = pb;
-        AVDictionary* dict = options;
-        
-        avformat_open_input(&ctx, url.RawHandle, null, &dict).CheckError("Could not open input");
-        avformat_find_stream_info(ctx, null).CheckError("Could not find stream information");
-        av_dict_free(&dict);
-        return ctx;
     }
 
     /// <summary>
@@ -220,7 +220,7 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
     }
 
-    /// <inheritdoc cref="ffmpeg.av_guess_frame_rate(AVFormatContext*, AVStream*, AVFrame*)"/>
+    /// <inheritdoc cref="FFmpeg.av_guess_frame_rate(AVFormatContext*, AVStream*, AVFrame*)"/>
     public Rational GuessFrameRate(Handle<AVStream> stream)
     {
         unsafe
