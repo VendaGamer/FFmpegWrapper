@@ -1,7 +1,7 @@
 namespace FFmpegWrapper.Hardware;
 
 
-public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
+public sealed class HardwareFramePool : FFBufferObject<AVHWFramesContext>
 {
     public int Width {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,20 +34,14 @@ public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => GetFormats(AVHWFrameTransferDirection.AV_HWFRAME_TRANSFER_DIRECTION_FROM);
     }
-
-    public override Handle<AVHWFramesContext> Handle {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Buffer.Data;
-    }
-
-    public readonly MediaBuffer<AVHWFramesContext> Buffer;
-    private bool _isInit;
+    
+    internal bool IsInit;
 
     public HardwareFramePool(MediaBuffer<AVHWDeviceContext> deviceCtx, HWPictureFormat format) : this(deviceCtx)
     {
         unsafe {
-            av_hwframe_ctx_init(Buffer.Handle);
-            _isInit = true;
+            av_hwframe_ctx_init(_handle);
+            IsInit = true;
         }
     }
     
@@ -58,10 +52,8 @@ public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
             var allocated = av_hwframe_ctx_alloc(deviceCtx.Handle);
             if (allocated is null)
                 throw new Exception($"Could not allocate {nameof(AVHWFramesContext)}");
-            
-            Buffer = new MediaBuffer<AVHWFramesContext>(
-                new Handle<AVBufferRef>(allocated, new SkipValidation())
-            );
+
+            _handle = allocated;
         }
     }
 
@@ -88,9 +80,14 @@ public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected override unsafe void Free()
     {
-        fixed (AVBufferRef** ppCtx = &Buffer._handle) {
+        fixed (AVBufferRef** ppCtx = &_handle) {
             av_buffer_unref(ppCtx);
         }
+    }
+    
+    public override unsafe ref AVHWFramesContext* GetPinnableReference()
+    {
+        return ref *(AVHWFramesContext**)&Buffer._handle->data;
     }
 
     private ReadOnlySpan<AVPixelFormat> GetFormats(AVHWFrameTransferDirection direction)
@@ -105,5 +102,4 @@ public sealed class HardwareFramePool : FFObjectBase<AVHWFramesContext>
             return FFHelper.GetSpanFromSentinelTerminatedPtr(formats, AVPixelFormat.AV_PIX_FMT_NONE);
         }
     }
-    
 }

@@ -214,23 +214,21 @@ public sealed class VideoFrame : MediaFrame
     {
         unsafe {
             ref var handle = ref Handle.Ref;
-            
-            if (!IsHardwareFrame) {
-                throw new InvalidOperationException("Cannot create mapping of non-hardware frame.");
-            }
 
-            mappedFrame = new VideoFrame();
-            var mapping = mappedFrame.Handle.Raw;
-            
-            int result = av_hwframe_map(mapping, _handle, (int)flags);
+            if (!IsHardwareFrame)
+                goto Fail;
+
+            var frame = av_frame_alloc();
+            int result = av_hwframe_map(frame, _handle, (int)flags);
 
             if (result is 0) {
-                mapping->width = handle.width;
-                mapping->height = handle.height;
+                frame->width = handle.width;
+                frame->height = handle.height;
+                mappedFrame = new VideoFrame(WrapperHelper.UnsafeHandle(frame));
                 return true;
             }
             
-            mappedFrame.Dispose();
+            Fail:
             mappedFrame = null;
             return false;
         }
@@ -299,16 +297,16 @@ public sealed class VideoFrame : MediaFrame
     }
 
     /// <summary> Fills this frame with black pixels. </summary>
-    public void Clear()
+    public bool Clear()
     {
         unsafe {
             var handle = Handle.Raw;
             
-            av_image_fill_black(
+            return av_image_fill_black(
                 &handle->data._0, (nint*)&handle->linesize._0,
                 (AVPixelFormat)handle->format, handle->color_range,
                 handle->width, handle->height
-            ).CheckError("Failed to clear frame.");
+            ) is 0;
         }
     }
     

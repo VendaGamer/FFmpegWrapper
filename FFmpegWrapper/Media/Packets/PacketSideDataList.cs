@@ -3,22 +3,21 @@ namespace FFmpegWrapper.Media.Packets;
 using System.Text;
 using CommunityToolkit.HighPerformance;
 
-public readonly ref struct PacketSideDataList
+public readonly struct PacketSideDataList
 {
-    public HandleSource<AVPacketSideData> Handle {
+    public HandleSource<AVPacketSideData> Source {
         get {
             unsafe
             {
-                return _handle;
+                return new HandleSource<AVPacketSideData>(_handle);
             }
         }
     }
 
     public int Count {
         get {
-            unsafe
-            {
-                return (*_count);
+            unsafe {
+                return new Handle<int>(_count).Ref;
             }
         }
     }
@@ -28,22 +27,17 @@ public readonly ref struct PacketSideDataList
         get {
             unsafe
             {
-                if ((uint)index >= (uint)_count) {
+                if ((uint)index >= (uint)Count) {
                     throw new IndexOutOfRangeException();
                 }
 
-                return new PacketSideData(
-                    new Handle<AVPacketSideData>(
-                        _handle[index],
-                        new SkipValidation()
-                    )
-                );
+                return *(PacketSideData*)&_handle[index];
             }
         }
     }
     
-    private readonly unsafe AVPacketSideData** _handle;
-    private readonly unsafe int* _count;
+    internal readonly unsafe AVPacketSideData** _handle;
+    internal readonly unsafe int* _count;
 
     public PacketSideDataList(HandleSource<AVPacketSideData> entries, Handle<int> count)
     {
@@ -65,12 +59,7 @@ public readonly ref struct PacketSideDataList
                 return false;
             }
 
-            sideData = new PacketSideData(
-                new Handle<AVPacketSideData>(
-                    entry,
-                    new SkipValidation()
-                )
-            );
+            sideData = *(PacketSideData*)&entry;
             
             return true;
         }
@@ -85,12 +74,7 @@ public readonly ref struct PacketSideDataList
             if (entry is null)
                 throw new Exception("Unable to allocate side data");
             
-            return new PacketSideData(
-                new Handle<AVPacketSideData>(
-                    entry,
-                    new SkipValidation()
-                )
-            );
+            return *(PacketSideData*)&entry;
         }
     }
 

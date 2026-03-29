@@ -5,6 +5,8 @@ public abstract class FFObjectBase<TRaw> : OwnedObject<TRaw>, IHandleOwner<TRaw>
 {
     public abstract Handle<TRaw> Handle { get; }
     
+    public abstract unsafe ref TRaw* GetPinnableReference();
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Handle<TRaw>(FFObjectBase<TRaw> ownedObject) => ownedObject.Handle;
     

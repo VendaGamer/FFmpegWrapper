@@ -38,7 +38,7 @@ public readonly struct Rational(int num, int den)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TimeSpan? GetTimeSpan(long timestamp, Rational scale)
     {
-        if (timestamp == AV_NOPTS_VALUE) {
+        if (timestamp is AV_NOPTS_VALUE) {
             return null;
         }
         
@@ -99,7 +99,7 @@ public readonly struct Rational(int num, int den)
     public static explicit operator double(Rational q) => q.Num / (double)q.Den;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Rational(int num) => new(1, num);
+    public static implicit operator Rational(int num) => new(num, 1);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Rational(AVRational q) => new(q.num, q.den);
@@ -138,11 +138,11 @@ public readonly struct Rational(int num, int den)
     }
 
     /// <inheritdoc />
-    public int GetHashCode(Rational obj)
+    public int GetHashCode(Rational rational)
     {
         unchecked
         {
-            return (obj.Num * 397) ^ obj.Den;
+            return (rational.Num * 397) ^ rational.Den;
         }
     }
 }

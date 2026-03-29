@@ -49,15 +49,14 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     public ReadOnlySpan<byte> ExtraData {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            unsafe
-            {
-                ThrowIfDisposed();
+            unsafe {
+                var handle = Handle.Raw;
 
-                if (_handle->extradata is null) {
+                if (handle->extradata is null) {
                     return ReadOnlySpan<byte>.Empty;
                 }
 
-                return new ReadOnlySpan<byte>(_handle->extradata, _handle->extradata_size);
+                return new ReadOnlySpan<byte>(handle->extradata, handle->extradata_size);
             }
         }
     }
@@ -84,11 +83,11 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                var raw = Handle.Raw;
+                var handle = Handle.Raw;
                 
                 return new PacketSideDataList(
-                    &_handle->coded_side_data,
-                    FFHelper.UnsafeHandle(&raw->nb_coded_side_data)
+                    WrapperHelper.UnsafeHandle(&_handle->coded_side_data),
+                    WrapperHelper.UnsafeHandle(&handle->nb_coded_side_data)
                 );
             }
         }
@@ -107,7 +106,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
             if (handle is null)
                 throw new Exception($"Could not allocate {nameof(AVCodecContext)}");
 
-            return FFHelper.UnsafeHandle(handle);
+            return WrapperHelper.UnsafeHandle(handle);
         }
     }
     
@@ -132,7 +131,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         get {
             unsafe
             {
-                return new MediaCodec(FFHelper.UnsafeHandle(Handle.Ref.codec));
+                return new MediaCodec(WrapperHelper.UnsafeHandle(Handle.Ref.codec));
             }
         }
     }
@@ -270,7 +269,7 @@ public abstract class CodecBase : FFObject<AVCodecContext>
 
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected sealed override void Free()
+    protected override void Free()
     {
         unsafe
         {

@@ -1,7 +1,6 @@
 namespace FFmpegWrapper.Hardware;
 
 using System.Diagnostics.CodeAnalysis;
-
 using Codecs;
 
 /// <summary>
@@ -143,12 +142,7 @@ public sealed class HardwareDevice : FFBufferObject<AVHWDeviceContext>
                 return false;
             }
             
-            device = new HardwareDevice(
-                new MediaBuffer<AVHWDeviceContext>(
-                    new Handle<AVBufferRef>(ctx, new SkipValidation())
-                )
-            );
-            
+            device = new HardwareDevice(*(MediaBuffer<AVHWDeviceContext>*)&ctx);
             return true;
         }
     }
@@ -161,35 +155,31 @@ public sealed class HardwareDevice : FFBufferObject<AVHWDeviceContext>
         PictureFormat swFormat,
         int initialSize,
         [NotNullWhen(true)]
-        HardwareFramePool? pool)
+        out HardwareFramePool? pool)
     {
         unsafe
         {
             var poolRef = av_hwframe_ctx_alloc(Buffer.Handle);
-            if (poolRef is null) {
-                return false;
-            }
+            if (poolRef is null)
+                goto Fail;
 
-            pool = new HardwareFramePool(
-                new MediaBuffer<AVHWDeviceContext>(
-                    new Handle<AVBufferRef>(poolRef, new SkipValidation())
-                )
-            );
+            var handle = (AVHWFramesContext*)poolRef->data;
             
-            ref var handle = ref pool.Handle.Ref;
+            handle->format = GetDefaultSurfaceFormat();
+            handle->sw_format = swFormat.PixelFormat;
+            handle->width = swFormat.Width;
+            handle->height = swFormat.Height;
+            handle->initial_pool_size = initialSize;
+
+            if (av_hwframe_ctx_init(poolRef) < 0)
+                goto Fail;
             
-            handle.format = GetDefaultSurfaceFormat();
-            handle.sw_format = swFormat.PixelFormat;
-            handle.width = swFormat.Width;
-            handle.height = swFormat.Height;
-            handle.initial_pool_size = initialSize;
-
-            if (av_hwframe_ctx_init(poolRef) < 0) {
-                pool.Dispose();
-                return false;
-            }
-
+            pool = new HardwareFramePool(*(MediaBuffer<AVHWDeviceContext>*)&poolRef);
             return true;
+            
+            Fail:
+            pool = null;
+            return false;
         }
     }
 

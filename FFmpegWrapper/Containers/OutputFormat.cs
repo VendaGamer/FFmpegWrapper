@@ -120,12 +120,7 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
                 AVOutputFormat* outputFormat;
                 
                 while ((outputFormat = av_muxer_iterate(&iterState)) is not null) {
-                    builder.Add(
-                        new OutputFormat(new Handle<AVOutputFormat>(
-                            outputFormat,
-                            new SkipValidation()
-                        ))
-                    );
+                    builder.Add(*(OutputFormat*)&outputFormat);
                 }
             }
 
@@ -143,13 +138,10 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
                 goto NotFound;
 
             
-            var res = av_guess_format(shortName.RawHandle, null, null);
+            var outputFormat = av_guess_format(shortName.RawHandle, null, null);
 
-            if (res is not null) {
-                format = new OutputFormat(new Handle<AVOutputFormat>(
-                    res,
-                    new SkipValidation()
-                ));
+            if (outputFormat is not null) {
+                format = *(OutputFormat*)&outputFormat;
                 return true;
             }
             
@@ -168,13 +160,10 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
                 goto NotFound;
 
             
-            var res = av_guess_format(null, fileName.RawHandle, null);
+            var outputFormat = av_guess_format(null, fileName.RawHandle, null);
 
-            if (res is not null) {
-                format = new OutputFormat(new Handle<AVOutputFormat>(
-                    res,
-                    new SkipValidation()
-                ));
+            if (outputFormat is not null) {
+                format = *(OutputFormat*)&outputFormat;
                 return true;
             }
             
@@ -192,13 +181,10 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
                 goto NotFound;
 
             
-            var res = av_guess_format(null, null, fileName.RawHandle);
+            var outputFormat = av_guess_format(null, null, fileName.RawHandle);
 
-            if (res is not null) {
-                format = new OutputFormat(new Handle<AVOutputFormat>(
-                    res,
-                    new SkipValidation()
-                ));
+            if (outputFormat is not null) {
+                format = *(OutputFormat*)&outputFormat;
                 return true;
             }
             
@@ -208,25 +194,22 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
         }
     }
     
-    public static bool TryFindByExtension(scoped ReadOnlySpan<byte> extension, out OutputFormat outputFormat)
+    public static bool TryFindByExtension(scoped ReadOnlySpan<byte> extension, out OutputFormat format)
     {
         unsafe {
 
             if (extension.IsEmpty)
                 goto NotFound;
             
-            var res = av_guess_format(null, extension.RawHandle, null);
+            var outputFormat = av_guess_format(null, extension.RawHandle, null);
 
-            if (res is not null) {
-                outputFormat = new OutputFormat(new Handle<AVOutputFormat>(
-                    res,
-                    new SkipValidation()
-                ));
+            if (outputFormat is not null) {
+                format = *(OutputFormat*)&outputFormat;
                 return true;
             }
             
             NotFound:
-            outputFormat = default;
+            format = default;
             return false;
         }
     }

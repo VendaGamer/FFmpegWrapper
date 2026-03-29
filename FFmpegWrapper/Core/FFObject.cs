@@ -2,22 +2,22 @@
 
 using System.Runtime.InteropServices;
 
-public abstract class FFObject<TRaw> : FFObjectBase<TRaw>
+public abstract class FFObject<TRaw> : FFObjectBase<TRaw>, IHandleSource<TRaw>
     where TRaw : unmanaged
 {
     /// <summary>
     /// pointer of the underlying unmanaged structure.
     /// </summary>
-    internal unsafe TRaw* _handle;
+    protected internal unsafe TRaw* _handle;
 
     public override Handle<TRaw> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
                 if (_handle is null)
-                    throw new ObjectDisposedException(nameof(FFObject<TRaw>));
+                    throw new ObjectDisposedException(nameof(TRaw));
 
-                return new Handle<TRaw>(_handle, new SkipValidation());
+                return WrapperHelper.UnsafeHandle(_handle);
             }
         }
     }
@@ -35,7 +35,7 @@ public abstract class FFObject<TRaw> : FFObjectBase<TRaw>
             throw new Exception($"Could not allocate underlying {nameof(TRaw)} structure");
 
         unsafe {
-            _handle = new Handle<TRaw>(handle, new SkipValidation());
+            _handle = handle;
         }
     }
 
@@ -46,5 +46,11 @@ public abstract class FFObject<TRaw> : FFObjectBase<TRaw>
         {
             _handle = handle;
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override unsafe ref TRaw* GetPinnableReference()
+    {
+        return ref _handle;
     }
 }

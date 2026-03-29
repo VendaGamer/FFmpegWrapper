@@ -6,7 +6,7 @@ public readonly ref struct CodecParameters : IHandleObserver<AVCodecParameters>
 
     public PictureFormat PictureFormat {
         get {
-            var handle = Handle.Ref;
+            ref var handle = ref Handle.Ref;
             
             return new PictureFormat(handle.width, handle.height, (AVPixelFormat)handle.format,handle.sample_aspect_ratio);
         }
@@ -14,7 +14,7 @@ public readonly ref struct CodecParameters : IHandleObserver<AVCodecParameters>
 
     public AudioFormat AudioFormat {
         get {
-            var handle = Handle.Ref;
+            ref var handle = ref Handle.Ref;
             
             return new AudioFormat((AVSampleFormat)handle.format, handle.sample_rate, handle.ch_layout);
         }
@@ -31,7 +31,7 @@ public readonly ref struct CodecParameters : IHandleObserver<AVCodecParameters>
     public CodecParameters(Handle<AVCodecParameters> handle)
     {
         unsafe {
-            _handle =  handle;
+            _handle = handle;
         }
     }
 }

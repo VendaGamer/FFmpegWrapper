@@ -54,11 +54,11 @@ public readonly struct CodecHardwareConfig : IHandleObserver<AVCodecHWConfig>
                     {
                         if (codec.IsDecoder) {
                             decBuilder.Add(new CodecHardwareConfig(
-                                codec, FFHelper.UnsafeHandle(res)
+                                codec, WrapperHelper.UnsafeHandle(res)
                             ));
                         } else {
                             encBuilder.Add(new CodecHardwareConfig(
-                                codec, FFHelper.UnsafeHandle(res)
+                                codec, WrapperHelper.UnsafeHandle(res)
                             ));
                         }
 

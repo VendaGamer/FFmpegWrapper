@@ -56,15 +56,11 @@ public readonly struct ContextOption(Handle<AVOption> handle)
         get => Handle.Ref.offset;
     }
 
-    public OptionValue? DefaultValue {
+    public OptionValue DefaultValue {
         get {
             unsafe {
                 var handle = Handle.Raw;
-                return new OptionValue(
-                    new Handle<AVOption_default_val>(
-                    &handle->default_val,
-                    new SkipValidation()
-                ), handle->type);
+                return new OptionValue(WrapperHelper.UnsafeHandle(&handle->default_val), handle->type);
             }
         }
     }
@@ -86,7 +82,7 @@ public readonly struct ContextOption(Handle<AVOption> handle)
             //a static null terminated array, so this should be mostly fine.
             for (AVOption* opt = _handle + 1; opt->name is not null; opt++) {
                 if (opt->type == AVOptionType.AV_OPT_TYPE_CONST && opt->unit == _handle->unit) {
-                    list.Add(new ContextOption(new Handle<AVOption>(opt, new SkipValidation())));
+                    list.Add(new ContextOption(WrapperHelper.UnsafeHandle(opt)));
                 }
             }
             return list;
@@ -150,7 +146,7 @@ public readonly struct ContextOption(Handle<AVOption> handle)
             if (iter->type is AVOptionType.AV_OPT_TYPE_CONST || (skipDefaults && av_opt_is_set_to_default(obj, iter) is not 0)) 
                 continue;
 
-            opts.Add(new ContextOption(new Handle<AVOption>(iter, new SkipValidation())));
+            opts.Add(new ContextOption(WrapperHelper.UnsafeHandle(iter)));
         }
 
         if (!removeAliases) {

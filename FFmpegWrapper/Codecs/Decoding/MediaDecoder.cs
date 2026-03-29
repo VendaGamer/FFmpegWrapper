@@ -5,33 +5,40 @@ using Extensions;
 
 public abstract class MediaDecoder : CodecBase
 {
-    public IMemoryOwner<byte>? ExtraData {
-        protected get;
-        set {
-            unsafe {
-                var handle = Handle.Raw;
-                field?.Dispose();
-                
-                if (value is null) {
-                    handle->extradata = null;
-                    handle->extradata_size = 0;
-                    return;
-                }
-
-                field = value;
-                var span = value.Memory.Span;
-                handle->extradata = span.RawHandle;
-                handle->extradata_size = span.Length;
+    /// <summary>
+    /// Will be freed after calling Free
+    /// </summary>
+    protected internal MemoryHandle ExtraDataHandle;
+    
+    
+    /// <summary>
+    /// Pass defualt to clear extraData
+    /// </summary>
+    /// <param name="extraData"></param>
+    public void SetExtraData(ReadOnlyMemory<byte> extraData)
+    {
+        unsafe {
+            var handle = Handle.Raw;
+            if (extraData.IsEmpty) {
+                handle->extradata = null;
+                handle->extradata_size = 0;
+                ExtraDataHandle.Dispose();
+                ExtraDataHandle = default;
+                return;
             }
+            
+            ExtraDataHandle = extraData.Pin();
+            handle->extradata = (byte*)ExtraDataHandle.Pointer;
+            handle->extradata_size = extraData.Length;
         }
     }
     
     #region Constructors
 
-    protected MediaDecoder(Handle<AVCodecContext> ctx) : base(ctx)
+    protected MediaDecoder(Handle<AVCodecContext> ctxHandle) : base(ctxHandle)
     {
         unsafe {
-            if (av_codec_is_decoder(ctx.Raw->codec) is 0)
+            if (av_codec_is_decoder(ctxHandle.Raw->codec) is 0)
                 throw new ArgumentException("Codec is not a decoder");
         }
     }
@@ -97,11 +104,10 @@ public abstract class MediaDecoder : CodecBase
             return true;
         }
     }
-    
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected override void FreeManaged()
+    protected override void Free()
     {
-        ExtraData?.Dispose();
+        ExtraDataHandle.Dispose();
+        base.Free();
     }
 }

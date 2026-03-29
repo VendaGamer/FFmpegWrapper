@@ -1,13 +1,12 @@
 namespace FFmpegWrapper.Tests;
 
 using Media;
-using Xunit.Abstractions;
 
-public class FormatTests(ITestOutputHelper testOutputHelper) : TestBase
+public class FormatTests : TestBase
 {
     [Fact]
     public void Test()
     {
-        testOutputHelper.WriteLine($"Okay: {ChannelLayout.GetDefault(14)}");
+        Assert.Equal("9.1.4", ChannelLayout.GetDefault(14).ToString());
     }
 }

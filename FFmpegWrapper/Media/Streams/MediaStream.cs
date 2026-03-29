@@ -2,8 +2,6 @@
 
 using Core;
 
-using Parameters;
-
 public readonly struct MediaStream
 {
     public Handle<AVStream> Handle {
@@ -38,20 +36,19 @@ public readonly struct MediaStream
     /// <inheritdoc cref="AVStream.r_frame_rate" />
     public Rational RealFrameRate => Handle.Ref.r_frame_rate;
 
-    public ObservedMediaDictionary Metadata {
+    public MediaDictionary<HandleSource<AVDictionary>> Metadata {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return new ObservedMediaDictionary(&Handle.Raw->metadata);
+                return new MediaDictionary<HandleSource<AVDictionary>>(WrapperHelper.UnsafeHandle(&Handle.Raw->metadata));
             }
         }
     }
 
     /// <inheritdoc cref="AVStream.disposition" />
     public AVDispositionFlags Disposition => (AVDispositionFlags)Handle.Ref.disposition;
-
-    /// <inheritdoc cref="AVStream.codecpar" />
+    
     public CodecParameters CodecPars {
         get {
             unsafe

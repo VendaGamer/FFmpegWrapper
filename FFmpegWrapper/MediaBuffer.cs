@@ -7,7 +7,7 @@ public readonly struct MediaBuffer<TRaw> : IHandleObserver<AVBufferRef>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return new Handle<AVBufferRef>(_handle, new SkipValidation());
+                return new Handle<AVBufferRef>(_handle);
             }
         }
     }
@@ -25,7 +25,7 @@ public readonly struct MediaBuffer<TRaw> : IHandleObserver<AVBufferRef>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return av_buffer_get_opaque(_handle);
+                return av_buffer_get_opaque(Handle);
             }
         }
     }
@@ -34,7 +34,7 @@ public readonly struct MediaBuffer<TRaw> : IHandleObserver<AVBufferRef>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return av_buffer_get_ref_count(_handle);
+                return av_buffer_get_ref_count(Handle);
             }
         }
     }
@@ -43,7 +43,7 @@ public readonly struct MediaBuffer<TRaw> : IHandleObserver<AVBufferRef>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return av_buffer_is_writable(_handle) is 1;
+                return av_buffer_is_writable(Handle) is 1;
             }
         }
     }
@@ -67,9 +67,7 @@ public readonly struct MediaBuffer<TRaw> : IHandleObserver<AVBufferRef>
             if (reference is null)
                 throw new Exception($"Unable to create reference to {nameof(MediaBuffer<>)}");
 
-            return new MediaBuffer<TRaw>(
-                new Handle<AVBufferRef>(reference, new SkipValidation())
-            );
+            return *(MediaBuffer<TRaw>*)&reference;
         }
     }
 

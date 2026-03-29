@@ -2,7 +2,6 @@
 
 using Codecs;
 using Codecs.Decoding;
-using Extensions;
 using Streams;
 
 public class MediaDemuxer : FFObject<AVFormatContext>
@@ -31,12 +30,12 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
     }
 
-    public ObservedMediaDictionary Metadata {
+    public MediaDictionary<HandleSource<AVDictionary>> Metadata {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe
             {
-                return new ObservedMediaDictionary(&Handle.Raw->metadata);
+                return new MediaDictionary<HandleSource<AVDictionary>>(WrapperHelper.UnsafeHandle(&Handle.Raw->metadata));
             }
         }
     }
@@ -59,6 +58,8 @@ public class MediaDemuxer : FFObject<AVFormatContext>
             fixed (byte* pUrl = url) {
                 avformat_open_input(&handle, pUrl, inputFormat, options);
             }
+
+            _handle = handle;
         }
     }
     

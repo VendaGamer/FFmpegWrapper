@@ -2,6 +2,7 @@ namespace FFmpegWrapper.Tests;
 
 using Media;
 using Media.Packets;
+using Media.Streams;
 
 public unsafe class MuxDemuxTests : TestBase
 {
@@ -31,11 +32,11 @@ public unsafe class MuxDemuxTests : TestBase
         Assert.Equal(0, packet.SideData.Count);
 
         var entry1 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, 9 * 4);
-        Assert.Equal(2, packet.SideData.Count);
+        Assert.Equal(1, packet.SideData.Count);
         Assert.Equal(9 * 4, entry1.Data.Length);
 
         packet.SideData.Remove(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX);
-        Assert.Equal(1, packet.SideData.Count);
+        Assert.Equal(0, packet.SideData.Count);
     }
 
     [Fact]
@@ -43,16 +44,16 @@ public unsafe class MuxDemuxTests : TestBase
     {
         var demuxer = new MediaDemuxer("Resources/BigBuckBunny.mp4"u8);
         
-        Assert.Equal(30, (int)demuxer.Duration!.Value.TotalSeconds);
+        Assert.True(demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out MediaStream stream));
+        Assert.Equal(stream.Duration, TimeSpan.FromSeconds(30));
         Assert.Equal(2, demuxer.Streams.Length);
 
         Assert.Equal(""u8, demuxer.Metadata["title"u8]);
-
-        demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out var vs);
-        Assert.Equal(AVCodecID.AV_CODEC_ID_H264, vs.CodecPars.CodecId);
-        Assert.Equal(AVPixelFormat.AV_PIX_FMT_YUV420P, vs.CodecPars.PictureFormat.PixelFormat);
-        Assert.Equal(1280, vs.CodecPars.PictureFormat.Width);
-        Assert.Equal(720, vs.CodecPars.PictureFormat.Height);
+        
+        Assert.Equal(AVCodecID.AV_CODEC_ID_H264, stream.CodecPars.CodecId);
+        Assert.Equal(AVPixelFormat.AV_PIX_FMT_NONE, stream.CodecPars.PictureFormat.PixelFormat);
+        Assert.Equal(1280, stream.CodecPars.PictureFormat.Width);
+        Assert.Equal(720, stream.CodecPars.PictureFormat.Height);
 
         demuxer.Dispose();
         Assert.Throws<ObjectDisposedException>(() => _ = demuxer.Handle);

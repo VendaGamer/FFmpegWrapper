@@ -181,8 +181,7 @@ public readonly struct ChannelLayout : IWrapped<AVChannelLayout>, IEquatable<Cha
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString()
     {
-        unsafe
-        {
+        unsafe {
             var buf = stackalloc byte[128];
             var ptr = (AVChannelLayout*)Unsafe.AsPointer(ref Unsafe.AsRef(in Native));
             var size = av_channel_layout_describe(ptr, buf, 128).CheckError();

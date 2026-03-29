@@ -91,8 +91,8 @@ public abstract class MediaCodecParameters : FFObject<AVCodecParameters>
                 var raw = Handle.Raw;
                 
                 return new PacketSideDataList(
-                    &raw->coded_side_data,
-                    new Handle<int>(&raw->nb_coded_side_data)
+                    WrapperHelper.UnsafeHandle(&raw->coded_side_data),
+                    WrapperHelper.UnsafeHandle(&raw->nb_coded_side_data)
                 );
             }
         }

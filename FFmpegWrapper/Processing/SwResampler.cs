@@ -78,18 +78,18 @@ public sealed class SwResampler : FFObject<SwrContext>
             swr_init(_handle);
         }
 
+        InputFormat = inFmt;
+        OutputFormat = OutputFormat;
         return true;
     }
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns>true if closed, false indicates already closed</returns>
+    
+    /// <returns>true if closed, false indicates already closed or uninit</returns>
     public bool Close()
     {
         unsafe {
             var handle = Handle.Raw;
             
-            if (swr_is_initialized(handle) == 0) {
+            if (swr_is_initialized(handle) is 0) {
                 return false;
             }
 

@@ -8,7 +8,7 @@ public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return new Handle<AVFrame>(_handle, new SkipValidation());
+                return new Handle<AVFrame>(_handle);
             }
         }
     }
@@ -21,12 +21,14 @@ public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
     public FrameSideData this[int index] {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
-            if (index > Count || index < 0) {
+            ref var handle = ref Handle.Ref;
+            
+            if ((uint)index > (uint)handle.nb_side_data) {
                 throw new ArgumentOutOfRangeException();
             }
 
             unsafe {
-                return new FrameSideData((Handle<AVFrameSideData>)Handle.Raw->side_data[index]);
+                return *(FrameSideData*)&handle.side_data[index];
             }
         }
     }
@@ -97,6 +99,7 @@ public readonly struct FrameSideDataList : IHandleObserver<AVFrame>
 
             var handle = Handle.Raw;
         
+            // ReSharper disable once LoopVariableIsNeverChangedInsideLoop
             while (handle->nb_side_data is not 0) {
                 av_frame_remove_side_data(handle, handle->side_data[0]->type);
             }
@@ -132,7 +135,7 @@ public readonly struct FrameSideData
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return new Handle<AVFrameSideData>(_handle, new SkipValidation());
+                return new Handle<AVFrameSideData>(_handle);
             }
         }
     }
@@ -151,11 +154,11 @@ public readonly struct FrameSideData
         get => Handle.Ref.type;
     }
 
-    public ObservedMediaDictionary Metadata {
+    public MediaDictionary<HandleSource<AVDictionary>> Metadata {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return new ObservedMediaDictionary(&Handle.Raw->metadata);
+                return new MediaDictionary<HandleSource<AVDictionary>>(WrapperHelper.UnsafeHandle(&Handle.Raw->metadata));
             }
         }
     }

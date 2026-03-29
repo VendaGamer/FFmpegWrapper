@@ -5,7 +5,16 @@ public class FFBufferObject<TRaw> : FFObjectBase<TRaw>
 {
     public override Handle<TRaw> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Buffer.Data;
+        get
+        {
+            unsafe
+            {
+                if (_handle is null)
+                    throw new ObjectDisposedException(nameof(TRaw));
+                
+                return WrapperHelper.UnsafeHandle((TRaw*)_handle->data);
+            }
+        }
     }
 
     public MediaBuffer<TRaw> Buffer {
@@ -15,9 +24,7 @@ public class FFBufferObject<TRaw> : FFObjectBase<TRaw>
                 if (_handle is null)
                     throw new ObjectDisposedException(nameof(TRaw));
                 
-                return new MediaBuffer<TRaw>(
-                    new Handle<AVBufferRef>(_handle, new SkipValidation()
-                ));
+                return new MediaBuffer<TRaw>(WrapperHelper.UnsafeHandle(_handle));
             }
         }
     }
@@ -30,16 +37,9 @@ public class FFBufferObject<TRaw> : FFObjectBase<TRaw>
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe implicit operator HandleSource<AVBufferRef>(FFBufferObject<TRaw> ownedObject)
+    public override unsafe ref TRaw* GetPinnableReference()
     {
-        fixed(AVBufferRef** ptr = &ownedObject._handle)
-            return ptr;
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe implicit operator AVBufferRef**(FFBufferObject<TRaw> ownedObject)
-    {
-        HandleSource<AVBufferRef> source = ownedObject;
-        return source;
+        ThrowIfDisposed();
+        return ref *(TRaw**)&_handle->data;
     }
 }

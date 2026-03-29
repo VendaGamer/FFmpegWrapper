@@ -4,8 +4,12 @@ using FFmpegBindings.Linked;
 
 public abstract class TestBase
 {
+    private static volatile bool s_isInit;
     protected TestBase()
     {
-        FFmpegLinked.Init();
+        if (!s_isInit) {
+            FFmpegLinked.Init();
+            s_isInit = true;
+        }
     }
 }

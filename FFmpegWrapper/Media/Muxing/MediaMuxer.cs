@@ -129,9 +129,8 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             if ((_handle->oformat->flags & (int)AVFormatCapabilityFlags.AVFMT_GLOBALHEADER) != 0) {
                 encHandle->flags |= (int)AVCodecFlags.AV_CODEC_FLAG_GLOBAL_HEADER;
             }
-
-            var st = new MediaStream(new Handle<AVStream>(stream, new SkipValidation()));
-            return st;
+            
+            return *(MediaStream*)&stream;
         }
     }
 
@@ -159,9 +158,8 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
 
             stream->id = (int)_handle->nb_streams - 1;
             stream->time_base = srcStream.TimeBase;
-
-            var st = new MediaStream(new Handle<AVStream>(stream, new SkipValidation()));
-            return st;
+            
+            return *(MediaStream*)&stream;
         }
     }
     
@@ -245,9 +243,9 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     }
     
 
-    public unsafe void WriteTrailer()
+    public unsafe bool WriteTrailer()
     {
-        av_write_trailer(Handle.Raw);
+        return av_write_trailer(Handle.Raw) is 0;
     }
 
     protected override void FreeManaged()

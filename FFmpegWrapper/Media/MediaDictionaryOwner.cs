@@ -9,12 +9,21 @@ using Extensions;
 /// Efficient wrapper for <see cref="AVDictionary"/>, providing convenient methods for dictionary manipulation.
 /// </summary>
 
-[DebuggerDisplay("DecoderConfigs: {decoderConfigs.Count}, EncoderConfigs: {encoderConfigs.Count}")]
-public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<Utf8KeyValue>
+[DebuggerDisplay("{ToString}")]
+public sealed class MediaDictionaryOwner : FFObject<AVDictionary>
     #if NET8_0_OR_GREATER
-    ,IUtf8SpanParsable<MediaDictionaryOwner>
+    , IUtf8SpanParsable<MediaDictionaryOwner>
     #endif
 {
+    public MediaDictionary<MediaDictionaryOwner> Dictionary {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            ThrowIfDisposed();
+            
+            return new MediaDictionary<MediaDictionaryOwner>(this);
+        }
+    }
+    
     /// <summary>
     /// Creates a new owned MediaDictionary
     /// </summary>
@@ -37,112 +46,6 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
             _handle = target;
         }
     }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ObservedMediaDictionary ToObserved() => new();
-
-    /// <summary>
-    /// Gets the number of entries in the dictionary
-    /// </summary>
-    public int Count {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get {
-            unsafe
-            {
-                return av_dict_count(Handle);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Gets or sets values by key. Throws KeyNotFoundException if key doesn't exist during get.
-    /// </summary>
-    public ReadOnlySpan<byte> this[ReadOnlySpan<byte> key] 
-    {
-        get => GetValue(key);
-        set => SetValue(key, value);
-    }
-    
-    /// <summary>
-    /// Checks if a key exists
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool ContainsKey(ReadOnlySpan<byte> key)
-    {
-        unsafe
-        {
-            return av_dict_get(Handle, key.RawHandle, null, 0) != null;
-        }
-    }
-
-    /// <summary>
-    /// Gets the value associated with the given key, or null if there is no match.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ReadOnlySpan<byte> GetValue(ReadOnlySpan<byte> key, AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE)
-    {
-        unsafe
-        {
-            var entry = av_dict_get(Handle, key.RawHandle, null, (int)flags);
-            return entry is null ? default : FFHelper.GetSpanFromSentinelTerminatedPtr<byte>(entry->value, 0);
-        }
-    }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public long SetIntValue(ReadOnlySpan<byte> key, long value,
-        AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE)
-    {
-        unsafe
-        {
-            fixed(AVDictionary** ptr = &_handle)
-                av_dict_set_int(ptr, key.RawHandle, value, (int)flags).CheckError();
-            return value;
-        }
-    }
-
-    /// <summary>
-    /// Tries to get a value, returning false if the key doesn't exist
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryGetValue(ReadOnlySpan<byte> key, out ReadOnlySpan<byte> value, AVDictFlags flags = 0)
-    {
-        value = GetValue(key, flags);
-        return value.IsEmpty;
-    }
-
-    /// <summary>
-    /// Sets the value associated with the given key, overwriting it if necessary.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetValue(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value,
-        AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE |
-                            AVDictFlags.AV_DICT_DONT_STRDUP_VAL |
-                            AVDictFlags.AV_DICT_DONT_STRDUP_KEY)
-    {
-        unsafe
-        {
-            fixed (AVDictionary** ptr = &_handle) {
-                av_dict_set(ptr, key.RawHandle, value.RawHandle, (int)flags).CheckError();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Clears all entries from the dictionary
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear()
-    {
-        unsafe
-        {
-            fixed (AVDictionary** ptr = &_handle) {
-                av_dict_free(ptr);
-                av_dict_copy(ptr, null, 0);
-            }
-        }
-    }
-    
 
     public static unsafe bool TryParseFromUtf8String(
         ReadOnlySpan<byte> factoryString, 
@@ -173,7 +76,7 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
         }
         
         Succeded:
-        parsed = new MediaDictionaryOwner(new Handle<AVDictionary>(handle, new SkipValidation()));
+        parsed = new MediaDictionaryOwner(WrapperHelper.UnsafeHandle(handle));
         return true;
     }
 
@@ -210,31 +113,12 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
         if (handle is null)
             goto Fail;
         
-        owner = new MediaDictionaryOwner(
-            new Handle<AVDictionary>(
-                handle,
-                new SkipValidation()
-            )
-        );
+        owner = new MediaDictionaryOwner(WrapperHelper.UnsafeHandle(handle));
         return true;
         
         Fail:
         owner = null;
         return false;
-    }
-
-    /// <summary>
-    /// Copies entries from another dictionary
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyFrom(Handle<AVDictionary> other, AVDictFlags flags = 0)
-    {
-        unsafe
-        {
-            fixed (AVDictionary** ptr = &_handle) {
-                av_dict_copy(ptr, other, (int)flags).CheckError();
-            }
-        }
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -260,67 +144,14 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     {
         unsafe
         {
-            if (_handle != null) {
-                ReadOnlySpan<byte> a;
-                fixed (AVDictionary** handle = &_handle) {
-                    av_dict_free(handle);
-                }
+            fixed (AVDictionary** handle = &_handle) {
+                av_dict_free(handle);
             }
         }
     }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public unsafe Enumerator GetEnumerator() => new(Handle);
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator<Utf8KeyValue> IEnumerable<Utf8KeyValue>.GetEnumerator() => GetEnumerator();
-    
-    public struct Enumerator : IEnumerator<Utf8KeyValue>
-    {
-        private readonly unsafe AVDictionary* _dict;
-        private unsafe AVDictionaryEntry* _currentEntry;
-        
-        internal unsafe Enumerator(AVDictionary* dict)
-        {
-            _dict = dict;
-            _currentEntry = null;
-        }
-        
-        /// <summary>
-        /// Current entry
-        /// </summary>
-        public unsafe Utf8KeyValue Current => *_currentEntry;
 
-        /// <inheritdoc />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MoveNext()
-        {
-            unsafe {
-                _currentEntry = av_dict_iterate(_dict, _currentEntry);
-                return _currentEntry is not null;
-            }
-        }
-        object IEnumerator.Current => Current;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void IEnumerator.Reset()
-        {
-            unsafe
-            {
-                _currentEntry = null;
-            }
-        }
-        
-        void IDisposable.Dispose()
-        {
-            
-        }
-    }
-    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static MediaDictionaryOwner Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+    public static MediaDictionaryOwner Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider = null)
     {
         if (!TryParse(utf8Text, provider, out var parsed)) {
             throw new ArgumentException("Could not parse from", nameof(utf8Text));
@@ -330,7 +161,11 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>, IEnumerable<U
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(false)] out MediaDictionaryOwner result)
+    public static bool TryParse(
+        ReadOnlySpan<byte> utf8Text,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)]
+        out MediaDictionaryOwner result)
     {
         return TryParseFromUtf8String(utf8Text, ":"u8, "|"u8, out result);
     }

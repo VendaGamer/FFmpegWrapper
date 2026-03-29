@@ -6,12 +6,8 @@ public class MediaFormatContext : FFObject<AVFormatContext>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get {
             unsafe {
-                return new MediaClass(
-                    new Handle<AVClass>(
-                        avformat_get_class(),
-                        new SkipValidation()
-                    )
-                );
+                var mediaClass = avformat_get_class();
+                return *(MediaClass*)mediaClass;
             }
         }
     }

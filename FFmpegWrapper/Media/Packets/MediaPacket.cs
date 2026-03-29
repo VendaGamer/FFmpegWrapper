@@ -87,10 +87,9 @@ public class MediaPacket : FFObject<AVPacket>
             unsafe
             {
                 var handle = Handle.Raw;
+                var source = &handle->side_data;
                 
-                return new PacketSideDataList(
-                    &handle->side_data, new Handle<int>(&_handle->side_data_elems)
-                );
+                return *(PacketSideDataList*)&source;
             }
         }
     }

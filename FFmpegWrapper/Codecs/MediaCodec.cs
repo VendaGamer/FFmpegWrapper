@@ -34,7 +34,7 @@ public readonly struct MediaCodec : IHandleObserver<AVCodec>
                 void* iterState = null;
                 AVCodec* codec;
                 while ((codec = av_codec_iterate(&iterState)) is not null) {
-                    builder.Add(new MediaCodec(new Handle<AVCodec>(codec, new SkipValidation())));
+                    builder.Add(new MediaCodec(WrapperHelper.UnsafeHandle(codec)));
                 }
             }
             
@@ -293,9 +293,8 @@ public readonly struct MediaCodec : IHandleObserver<AVCodec>
 
     private static unsafe MediaCodec WrapChecked(AVCodec* ptr, AVCodecID id = 0, ReadOnlySpan<byte> name = default)
     {
-        if (ptr is not null) {
-            return new MediaCodec(new Handle<AVCodec>(ptr, new SkipValidation()));
-        }
+        if (ptr is not null)
+            return new MediaCodec(WrapperHelper.UnsafeHandle(ptr));
         
         throw new KeyNotFoundException($"No registered codec named '{name.ToStringUft8()}'");
     }

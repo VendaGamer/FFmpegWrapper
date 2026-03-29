@@ -1,7 +1,6 @@
 namespace FFmpegWrapper.Core;
 
 using System.Text;
-
 using Extensions;
 
 public readonly struct Utf8KeyValue
@@ -24,6 +23,12 @@ public readonly struct Utf8KeyValue
     {
         _key = key;
         _value = value;
+    }
+
+    public void Deconstruct(out ReadOnlySpan<byte> key, out ReadOnlySpan<byte> value)
+    {
+        key = Key;
+        value = Value;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

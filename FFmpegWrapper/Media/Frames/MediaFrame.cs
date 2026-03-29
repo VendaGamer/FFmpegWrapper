@@ -5,12 +5,7 @@ public abstract class MediaFrame : FFObject<AVFrame>
     /// <inheritdoc cref="AVFrame.best_effort_timestamp" />
     public long? BestEffortTimestamp {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get {
-            unsafe
-            {
-                return Handle.Raw->best_effort_timestamp;
-            }
-        }
+        get => Handle.Ref.best_effort_timestamp;
     }
 
     /// <inheritdoc cref="AVFrame.pts" />
