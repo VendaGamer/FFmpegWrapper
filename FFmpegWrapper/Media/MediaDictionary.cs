@@ -27,7 +27,7 @@ public readonly struct MediaDictionary<TSource> : IEnumerable<Utf8KeyValue>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => GetValue(key);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set => SetValue(key, value, AVDictFlags.AV_DICT_DONT_STRDUP_VAL);
+        set => SetValue(key, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,7 +72,7 @@ public readonly struct MediaDictionary<TSource> : IEnumerable<Utf8KeyValue>
     /// Gets the value associated with the given key, or null if there is no match.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public unsafe ReadOnlySpan<byte> GetValue(ReadOnlySpan<byte> key, AVDictFlags flags = 0)
+    public unsafe ReadOnlySpan<byte> GetValue(ReadOnlySpan<byte> key, AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE)
     {
         var entry = av_dict_get(HandleSource.GetPinnableReference(), key.RawHandle, null, (int)flags);
         return entry is null ? default : FFHelper.Utf8SpanFromPtrNullTerm(entry->value);
@@ -82,10 +82,7 @@ public readonly struct MediaDictionary<TSource> : IEnumerable<Utf8KeyValue>
     /// Sets the value associated with the given key, overwriting it if necessary.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetValue(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value,
-        AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE |
-                            AVDictFlags.AV_DICT_DONT_STRDUP_VAL |
-                            AVDictFlags.AV_DICT_DONT_STRDUP_KEY)
+    public void SetValue(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value, AVDictFlags flags = AVDictFlags.AV_DICT_MATCH_CASE)
     {
         unsafe
         {

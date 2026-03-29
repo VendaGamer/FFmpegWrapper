@@ -144,6 +144,9 @@ public sealed class MediaDictionaryOwner : FFObject<AVDictionary>
     {
         unsafe
         {
+            if(_handle is null)
+                return;
+            
             fixed (AVDictionary** handle = &_handle) {
                 av_dict_free(handle);
             }
