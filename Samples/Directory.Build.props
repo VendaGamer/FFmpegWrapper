@@ -10,13 +10,12 @@
         <InvariantGlobalization>true</InvariantGlobalization>
         <IsPackable>false</IsPackable>
         <BaseOutputPath>../build</BaseOutputPath>
-        <PublishAot>true</PublishAot>
         <UseCurrentRuntimeIdentifier>true</UseCurrentRuntimeIdentifier>
         <RuntimeIdentifiers>any</RuntimeIdentifiers>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" />
+        <ProjectReference Include="../../Deps/Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" />
         <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
     </ItemGroup>
     

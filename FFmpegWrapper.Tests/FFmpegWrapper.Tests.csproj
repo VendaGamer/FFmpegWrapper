@@ -19,7 +19,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         
-        <ProjectReference Include="..\Bindings\FFmpegBindings.Linked\FFmpegBindings.Linked.csproj" />
+        <ProjectReference Include="..\Deps\Bindings\FFmpegBindings.Linked\FFmpegBindings.Linked.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,9 +1,12 @@
-[submodule "Bindings"]
-	path = Bindings
-	url = https://github.com/VendaGamer/FFmpegBindings.git
 [submodule "Deps/BindingWrapperUtils"]
 	path = Deps/BindingWrapperUtils
 	url = https://github.com/VendaGamer/BindingWrapperUtils.git
+	branch = master
 [submodule "Deps/MiniAudioWrapper"]
 	path = Deps/MiniAudioWrapper
 	url = https://github.com/VendaGamer/MiniAudioWrapper.git
+	branch = master
+[submodule "Deps/Bindings"]
+	path = Deps/Bindings
+	url = https://github.com/VendaGamer/FFmpegBindings.git
+	branch = master
