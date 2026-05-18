@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Deps\MiniAudioWrapper\MiniAudioBindings\MiniAudioBindings.Linked\MiniAudioBindings.Linked.csproj" />
+      <ProjectReference Include="..\..\Deps\MiniAudioWrapper\MiniAudioWrapper\MiniAudioWrapper.csproj" />
+    </ItemGroup>
+
+</Project>

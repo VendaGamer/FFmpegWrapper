@@ -12,6 +12,7 @@
   </Folder>
   <Folder Name="/Samples/">
     <Project Path="Samples/AvaloniaIntegration/AvaloniaIntegration.csproj" />
+    <Project Path="Samples/FFmpegMiniAudioInterop/FFmpegMiniAudioInterop.csproj" />
   </Folder>
   <Folder Name="/Samples/Props/">
     <File Path="Samples/Directory.Build.props" />

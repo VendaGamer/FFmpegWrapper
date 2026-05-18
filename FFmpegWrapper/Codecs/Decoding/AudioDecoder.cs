@@ -1,7 +1,5 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
-using System.Runtime.InteropServices;
-
 using Media;
 
 /// <summary>
