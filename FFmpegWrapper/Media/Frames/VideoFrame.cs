@@ -260,7 +260,7 @@ public sealed class VideoFrame : MediaFrame
             // 3) Allocate buffers for destination
             var alloc = av_frame_get_buffer(dest.Handle, 0);
             if (alloc < 0) {
-                ((LavResult)alloc).ThrowIfError("Failed to allocate destination frame buffers");
+                ((AVError)alloc).ThrowIfError("Failed to allocate destination frame buffers");
             }
 
             // 4) Perform the transfer
@@ -412,7 +412,7 @@ public sealed class VideoFrame : MediaFrame
 
             decoder.SendPacket(packet.Handle);
 
-            if (decoder.ReceiveFrame(frame.Handle)) {
+            if (!decoder.ReceiveFrame(frame.Handle).IsSuccess) {
                 return frame;
             }
         }

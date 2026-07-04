@@ -1,6 +1,5 @@
 ﻿using FFmpegBindings.Abstractions;
 using FFmpegWrapper.Codecs.Decoding;
-using FFmpegWrapper.Core;
 using FFmpegWrapper.Media.Streams;
 
 namespace AvaloniaIntegration;
@@ -74,10 +73,10 @@ public sealed class VideoPlayer : IDisposable
             {
                 switch (result)
                 {
-                    case LavResult.EndOfFile:
+                    case AVError.AVERROR_EOF:
                         _demuxingMutex.WaitOne();
                         break;
-                    case LavResult.TryAgain:
+                    case AVError.AVERROR_EAGAIN:
                         goto Read;
                     default:
                         throw new Exception($"unexpected result {result}");

@@ -214,7 +214,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             _tempPacket ??= new MediaPacket();
             encoder.SendFrame(frame);
 
-            while (encoder.ReceivePacket(_tempPacket)) {
+            while (encoder.ReceivePacket(_tempPacket).IsSuccess) {
 
                 _tempPacket.RescaleTS(encoder.TimeBase, stream.TimeBase);
                 _tempPacket.StreamIndex = stream.Index;

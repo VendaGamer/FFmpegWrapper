@@ -1,6 +1,7 @@
 ﻿namespace FFmpegWrapper.Codecs.Decoding;
 
 using System.Buffers;
+
 using Extensions;
 
 public abstract class MediaDecoder : CodecBase
@@ -8,7 +9,7 @@ public abstract class MediaDecoder : CodecBase
     /// <summary>
     /// Will be freed after calling Free
     /// </summary>
-    protected internal MemoryHandle ExtraDataHandle;
+    protected internal MemoryHandle _extraDataHandle;
     
     
     /// <summary>
@@ -22,13 +23,13 @@ public abstract class MediaDecoder : CodecBase
             if (extraData.IsEmpty) {
                 handle->extradata = null;
                 handle->extradata_size = 0;
-                ExtraDataHandle.Dispose();
-                ExtraDataHandle = default;
+                _extraDataHandle.Dispose();
+                _extraDataHandle = default;
                 return;
             }
             
-            ExtraDataHandle = extraData.Pin();
-            handle->extradata = (byte*)ExtraDataHandle.Pointer;
+            _extraDataHandle = extraData.Pin();
+            handle->extradata = (byte*)_extraDataHandle.Pointer;
             handle->extradata_size = extraData.Length;
         }
     }
@@ -61,53 +62,32 @@ public abstract class MediaDecoder : CodecBase
 
     #endregion
     
-    public void SendPacket(NullableHandle<AVPacket> packet)
+    public AVError SendPacket(NullableHandle<AVPacket> packet)
     {
         unsafe
         {
-            ThrowIfDisposed();
-        
-            var result = avcodec_send_packet(_handle, packet!.Handle);
-            // Fast path for success
-            if (result == 0) return;
-        
-            // Only convert to enum and check for specific cases when needed
-            var lavResult = (LavResult)result;
-            
-            if (lavResult != LavResult.EndOfFile) {
-                lavResult.ThrowIfError("Could not decode packet");
-            }
+            ThrowIfDisposed(); 
+            return (AVError)avcodec_send_packet(_handle, packet!.Handle);
         }
     }
 
     /// <inheritdoc cref="avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public LavResult TrySendPacket(NullableHandle<AVPacket> handle)
-    {
-        unsafe
-        {
-            return (LavResult)avcodec_send_packet(Handle, handle);
-        }
-    }
+    public unsafe AVError TrySendPacket(NullableHandle<AVPacket> handle) => (AVError)avcodec_send_packet(Handle, handle);
     
-    public bool ReceiveFrame(Handle<AVFrame> handle)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public AVError ReceiveFrame(Handle<AVFrame> handle)
     {
         unsafe
         {
             ThrowIfDisposed();
-            var result = (LavResult)avcodec_receive_frame(_handle, handle);
-            
-            if (result is LavResult.TryAgain or LavResult.EndOfFile)
-                return false;
-            
-            result.ThrowIfError("Could not decode frame");
-            return true;
+            return (AVError)avcodec_receive_frame(_handle, handle);
         }
     }
 
     protected override void Free()
     {
-        ExtraDataHandle.Dispose();
+        _extraDataHandle.Dispose();
         base.Free();
     }
 }

@@ -81,33 +81,10 @@ public abstract class MediaEncoder : CodecBase
     #endregion
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool ReceivePacket(Handle<AVPacket> packetHandle)
-    {
-        unsafe
-        {
-            var result = (LavResult)avcodec_receive_packet(Handle, packetHandle);
-            
-            if (result is not (LavResult.Success or LavResult.TryAgain or LavResult.EndOfFile)) {
-                result.ThrowIfError("Could not encode packet");
-            }
-            return result >= 0;
-        }
-    }
+    public unsafe AVError ReceivePacket(Handle<AVPacket> packetHandle) => (AVError)avcodec_receive_packet(Handle, packetHandle);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool SendFrame(NullableHandle<AVFrame> frame)
-    {
-        unsafe
-        {
-            var result = (LavResult)avcodec_send_frame(Handle.Raw, frame);
-
-            if (result != LavResult.Success && result != LavResult.EndOfFile) {
-                result.ThrowIfError("Could not encode frame");
-            }
-            
-            return result >= 0;
-        }
-    }
+    public unsafe AVError SendFrame(NullableHandle<AVFrame> frame) => (AVError)avcodec_send_frame(Handle.Raw, frame);
 
     /// <summary> Returns a presentation timestamp (PTS) in terms of <see cref="CodecBase.TimeBase"/> for the given timespan. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

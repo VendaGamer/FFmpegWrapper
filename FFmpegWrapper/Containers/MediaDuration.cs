@@ -1,8 +1,7 @@
 ﻿namespace FFmpegWrapper.Containers;
 
-using FFmpegBindings.Abstractions;
-
 using Core;
+using FFmpegBindings.Abstractions;
 
 public readonly struct MediaDuration
 {

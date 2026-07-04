@@ -15,4 +15,10 @@
       <ProjectReference Include="..\..\Deps\MiniAudioWrapper\MiniAudioWrapper\MiniAudioWrapper.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="test.mp3">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

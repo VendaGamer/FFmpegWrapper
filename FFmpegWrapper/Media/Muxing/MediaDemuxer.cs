@@ -58,10 +58,11 @@ public class MediaDemuxer : FFObject<AVFormatContext>
             fixed (byte* pUrl = url) {
                 avformat_open_input(&handle, pUrl, inputFormat, options);
             }
-
+            
             _handle = handle;
         }
     }
+    
     
     public MediaDemuxer(IHandleOwner<AVIOContext> inputOutputContextOwner)
         : this(inputOutputContextOwner.Handle) 
@@ -169,14 +170,13 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         }
     }
 
-    /// <inheritdoc cref="ffmpeg.av_read_frame(AVFormatContext*, AVPacket*)"/>
-    public LavResult Read(Handle<AVPacket> handle)
-    {
-        unsafe
-        {
-            return(LavResult)av_read_frame(Handle, handle);
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe AVError ReadMeta() => (AVError)avformat_find_stream_info(_handle, null);
+
+
+    /// <inheritdoc cref="FFmpeg.av_read_frame(AVFormatContext*, AVPacket*)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe AVError Read(Handle<AVPacket> handle) => (AVError)av_read_frame(Handle, handle);
 
     /// <summary> Seeks the demuxer to somewhere near <paramref name="timestamp"/>, according to <paramref name="options"/>. </summary>
     /// <param name="timestamp"></param>
