@@ -3,9 +3,14 @@ using CommunityToolkit.HighPerformance.Enumerables;
 
 namespace FFmpegWrapper.Containers;
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+
 using Extensions;
 
-public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
+[DebuggerDisplay("{GetDebuggerDisplayString()}")]
+public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>, IEquatable<OutputFormat>
 {
     public Handle<AVOutputFormat> Handle {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -84,12 +89,6 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
     /// </summary>
     public readonly ReadOnlySpanTokenizer<byte> GetExtensionsTokenizer()
         => Extensions.Tokenize((byte)',');
-
-    // Check if this format supports a specific codec
-    public unsafe bool SupportsCodec(AVCodecID codecId)
-    {
-        return av_guess_codec(Handle, null, null, null, AVMediaType.AVMEDIA_TYPE_UNKNOWN) == codecId;
-    }
 
     // Get all available output formats
 
@@ -228,6 +227,9 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
         return obj is OutputFormat other && Equals(other);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool Equals(OutputFormat other) => other.Handle == Handle;
+
     public override int GetHashCode()
     {
         unsafe
@@ -244,4 +246,8 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>
     {
         return !left.Equals(right);
     }
+
+
+    [ExcludeFromCodeCoverage]
+    private string GetDebuggerDisplayString() => $"Name: {Encoding.UTF8.GetString(Name.ToArray())}\nLongName: {Encoding.UTF8.GetString(LongName.ToArray())}";
 }

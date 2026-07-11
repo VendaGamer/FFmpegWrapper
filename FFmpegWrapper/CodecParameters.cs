@@ -20,11 +20,11 @@ public readonly ref struct CodecParameters : IHandleObserver<AVCodecParameters>
         }
     }
     
-    public AVCodecID CodecId => Handle.Ref.codec_id;
+    public ref AVCodecID CodecId => ref Handle.Ref.codec_id;
     
-    public AVMediaType MediaType => Handle.Ref.codec_type;
+    public ref AVMediaType MediaType => ref Handle.Ref.codec_type;
 
-    public AVColorTransferCharacteristic ColorCharacteristics => Handle.Ref.color_trc;
+    public ref AVColorTransferCharacteristic ColorCharacteristics => ref Handle.Ref.color_trc;
 
     private readonly unsafe AVCodecParameters* _handle;
 

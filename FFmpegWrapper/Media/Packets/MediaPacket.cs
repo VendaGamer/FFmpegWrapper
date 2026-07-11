@@ -48,17 +48,14 @@ public class MediaPacket : FFObject<AVPacket>
     }
 
     /// <summary> Duration of this packet in <see cref="MediaStream.TimeBase"/> units, 0 if unknown. Equals next_pts - this_pts in presentation order.  </summary>
-    public long Duration {
+    public ref long Duration {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Handle.Ref.duration;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set => Handle.Ref.duration = value;
+        get => ref Handle.Ref.duration;
     }
-    public int StreamIndex {
+    
+    public ref int StreamIndex {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Handle.Ref.stream_index;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set => Handle.Ref.stream_index = value;
+        get => ref Handle.Ref.stream_index;
     }
     
     public ref AVPktFlags Flags => ref Unsafe.As<int, AVPktFlags>(ref Handle.Ref.flags);

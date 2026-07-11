@@ -16,7 +16,14 @@ public readonly struct MediaStream
     public int Index => Handle.Ref.index;
 
     /// <inheritdoc cref="AVStream.time_base" />
-    public Rational TimeBase => Handle.Ref.time_base;
+    public ref Rational TimeBase {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get {
+            unsafe {
+                return ref *(Rational*)&Handle.Raw->time_base;
+            }
+        }
+    }
 
     /// <summary> Pts of the first frame of the stream in presentation order, in stream time base. </summary>
     public long? StartTime {

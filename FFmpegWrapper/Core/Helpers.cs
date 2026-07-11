@@ -48,26 +48,17 @@ public static class FFHelper
 #if NET6_0_OR_GREATER
         return MemoryMarshal.CreateReadOnlySpanFromNullTerminated(handle);
 #else
-        int len = 0;
-        if (handle is null) {
-            return ReadOnlySpan<byte>.Empty;
-        }
-        
-        while (handle[len] is not 0) {
-            len++;
-        }
-
-        return new ReadOnlySpan<byte>(handle, len);
+        return new ReadOnlySpan<byte>(handle, Strlen(handle));
 #endif
     }
 
     public unsafe static ReadOnlySpan<T> GetSpanFromSentinelTerminatedPtr<T>(T* handle, T terminator) where T : unmanaged
     {
-        int len = 0;
         if (handle is null) {
             return ReadOnlySpan<T>.Empty;
         }
         
+        int len = 0;
         while (!handle[len].Equals(terminator)) {
             len++;
         }

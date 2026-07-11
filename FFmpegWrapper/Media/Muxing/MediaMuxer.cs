@@ -19,10 +19,16 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             }
         }
     }
+
+    public ref Handle<AVIOContext> IOCtx {
+        get {
+            unsafe {
+                return ref *(Handle<AVIOContext>*)&Handle.Raw->pb;
+            }
+        }
+    }
     
     internal MediaPacket TempPacket => _tempPacket ??= new MediaPacket();
-    
-    public bool IsOpen { get; private set; }
 
     public OutputFormat OutputFormat {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,18 +59,15 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     #region Constructors
     
     
-    public MediaMuxer(ReadOnlySpan<byte> filename)
+    public MediaMuxer(ReadOnlySpan<byte> filename, NullableHandle<AVOutputFormat> outputFormat = default)
     {
         unsafe
         {
             fixed (AVFormatContext** fmtCtx = &_handle) {
-                avformat_alloc_output_context2(fmtCtx, null, null, filename.RawHandle)
+                avformat_alloc_output_context2(fmtCtx, outputFormat, null, filename.RawHandle)
                     .CheckError("Could not allocate muxer");
             }
-            
-            avio_open(&_handle->pb, filename.RawHandle, (int)AVIoFlags.AVIO_FLAG_WRITE).CheckError("Could not open output file");
         }
-
     }
 
     public MediaMuxer(IHandleOwner<AVIOContext> ioContext, ReadOnlySpan<byte> formatExtension)
@@ -111,9 +114,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         unsafe
         {
             ThrowIfDisposed();
-            if (IsOpen) {
-                throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
-            }
             
             var encHandle = encoder.Handle.Raw;
             
@@ -142,10 +142,7 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
         unsafe
         {
             ThrowIfDisposed();
-            if (IsOpen) {
-                throw new InvalidOperationException("Cannot add new streams once the muxer is open.");
-            }
-
+            
             AVStream* stream = avformat_new_stream(_handle, null);
             if (stream == null) {
                 throw new OutOfMemoryException("Could not allocate stream");
@@ -162,16 +159,12 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             return *(MediaStream*)&stream;
         }
     }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="options"></param>
-    /// <param name="ignoreUnknownOptions"></param>
-    /// <exception cref="InvalidOperationException"></exception>
-    public void Open(ReadOnlySpan<Utf8KeyValue> options = default)
+
+    public unsafe void InitOutput<T>(T source) where T : IHandleSource<AVDictionary>
     {
-        
+        fixed (AVDictionary** dict = &source.GetPinnableReference()) {
+            avformat_init_output(Handle, dict);
+        }
     }
     
 
@@ -195,13 +188,19 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <br/>
     /// On return, the packet will have been reset.
     /// </param>
+    public void WriteInterleaved(Handle<AVPacket> packet)
+    {
+        unsafe
+        {
+            av_interleaved_write_frame(_handle, packet).CheckError("Failed to write packet");
+        }
+    }
+
     public void Write(Handle<AVPacket> packet)
     {
         unsafe
         {
-            ThrowIfNotOpen();
-
-            av_interleaved_write_frame(_handle, packet).CheckError("Failed to write packet");
+            av_write_frame(_handle, packet).CheckError("Failed to write packet");
         }
     }
 
@@ -226,20 +225,20 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ThrowIfNotOpen()
-    {
-        ThrowIfDisposed();
+    public unsafe void WriteHeader() => avformat_write_header(Handle.Raw, null);
 
-        if (!IsOpen) {
-            throw new InvalidOperationException("Muxer is not open");
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe void WriteHeader<T>(T? options = default)
+        where T : IHandleSource<AVDictionary>
+    {
+        if (options is null) {
+            WriteHeader();
+            return;
         }
-    }
-
-    public unsafe void WriteHeader(NullableHandle<AVDictionary> options = default)
-    {
-        AVDictionary* opt = options;
-        avformat_write_header(Handle.Raw, &opt);
-        IsOpen = true;
+        
+        fixed (AVDictionary** ptr = &options.GetPinnableReference()) {
+            avformat_write_header(Handle.Raw, ptr);
+        }
     }
     
 
@@ -257,9 +256,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     /// <inheritdoc />
     protected unsafe override void Free()
     {
-        if (IsOpen) {
-            av_write_trailer(_handle);
-        }
         avformat_free_context(_handle);
     }
 
