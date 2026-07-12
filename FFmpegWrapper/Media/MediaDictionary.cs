@@ -5,9 +5,12 @@ using Extensions;
 
 /// <summary>
 /// Useful wrapper for 
-/// </summary>  
-public readonly struct MediaDictionary<TSource> : IEnumerable<Utf8KeyValue>
+/// </summary>
+public readonly ref struct MediaDictionary<TSource> : IEnumerable<Utf8KeyValue>
     where TSource : IHandleSource<AVDictionary>
+    #if NET9_0_OR_GREATER
+    ,allows ref struct
+    #endif
 {
     public unsafe int Count {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

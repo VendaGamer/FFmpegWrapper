@@ -193,14 +193,14 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>, IEquatabl
         }
     }
     
-    public static bool TryFindByExtension(scoped ReadOnlySpan<byte> extension, out OutputFormat format)
+    public static bool TryFindByExtension(scoped ReadOnlySpan<byte> fileName, out OutputFormat format)
     {
         unsafe {
 
-            if (extension.IsEmpty)
+            if (fileName.IsEmpty)
                 goto NotFound;
             
-            var outputFormat = av_guess_format(null, extension.RawHandle, null);
+            var outputFormat = av_guess_format(null, fileName.RawHandle, null);
 
             if (outputFormat is not null) {
                 format = *(OutputFormat*)&outputFormat;
@@ -214,12 +214,12 @@ public readonly struct OutputFormat : IHandleObserver<AVOutputFormat>, IEquatabl
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static OutputFormat FindByExtension(scoped ReadOnlySpan<byte> extension)
+    public static OutputFormat FindByExtension(scoped ReadOnlySpan<byte> fileName)
     {
-        if (TryFindByExtension(extension, out OutputFormat format))
+        if (TryFindByExtension(fileName, out OutputFormat format))
             return format;
 
-        throw new ArgumentException("No output format with such extension", nameof(extension));
+        throw new ArgumentException("No output format with such extension", nameof(fileName));
     }
 
     public override bool Equals(object? obj)

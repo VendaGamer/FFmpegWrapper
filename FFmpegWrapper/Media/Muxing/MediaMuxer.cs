@@ -59,13 +59,21 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
     #region Constructors
     
     
-    public MediaMuxer(ReadOnlySpan<byte> filename, NullableHandle<AVOutputFormat> outputFormat = default)
+    public MediaMuxer(
+        ReadOnlySpan<byte> filename,
+        ReadOnlySpan<byte> formatName = default,
+        NullableHandle<AVOutputFormat> outputFormat = default)
     {
         unsafe
         {
-            fixed (AVFormatContext** fmtCtx = &_handle) {
-                avformat_alloc_output_context2(fmtCtx, outputFormat, null, filename.RawHandle)
+            fixed (byte* pName = filename)
+            fixed (byte* pFmtName = filename)
+            {
+                AVFormatContext* ctx = null;
+                avformat_alloc_output_context2(&ctx, outputFormat, pFmtName, pName)
                     .CheckError("Could not allocate muxer");
+
+                _handle = ctx;
             }
         }
     }
@@ -144,18 +152,6 @@ public sealed class MediaMuxer : FFObject<AVFormatContext>
             ThrowIfDisposed();
             
             AVStream* stream = avformat_new_stream(_handle, null);
-            if (stream == null) {
-                throw new OutOfMemoryException("Could not allocate stream");
-            }
-
-            avcodec_parameters_copy(stream->codecpar,
-                srcStream.Handle.Ref.codecpar).CheckError("Failed to copy codec parameters");
-            
-            stream->codecpar->codec_tag = 0;
-
-            stream->id = (int)_handle->nb_streams - 1;
-            stream->time_base = srcStream.TimeBase;
-            
             return *(MediaStream*)&stream;
         }
     }

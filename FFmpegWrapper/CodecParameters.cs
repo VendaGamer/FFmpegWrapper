@@ -28,6 +28,14 @@ public readonly ref struct CodecParameters : IHandleObserver<AVCodecParameters>
 
     private readonly unsafe AVCodecParameters* _handle;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe bool CopyFrom(Handle<AVCodecParameters> source)
+        => avcodec_parameters_copy(Handle, source) is 0;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe bool CopyTo(Handle<AVCodecParameters> destination)
+        => avcodec_parameters_copy(destination, Handle) is 0;
+
     public CodecParameters(Handle<AVCodecParameters> handle)
     {
         unsafe {
