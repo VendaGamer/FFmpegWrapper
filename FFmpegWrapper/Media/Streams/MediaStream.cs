@@ -12,6 +12,11 @@ public readonly struct MediaStream
             }
         }
     }
+
+    public ref AVDiscard DiscardMode {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Handle.Ref.discard;
+    }
     
     public int Index => Handle.Ref.index;
 
