@@ -70,6 +70,7 @@ public readonly struct MediaStream
         }
     }
     
+    
     /// <summary> Returns the corresponding <see cref="TimeSpan"/> for the given timestamp based on <see cref="TimeBase"/> units. </summary>
     public TimeSpan? GetTimestamp(long pts) => Rational.GetTimeSpan(pts, TimeBase);
     

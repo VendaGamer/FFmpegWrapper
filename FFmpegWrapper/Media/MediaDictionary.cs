@@ -129,6 +129,26 @@ public readonly ref struct MediaDictionary<TSource> : IEnumerable<Utf8KeyValue>
             return new Enumerator(HandleSource.GetPinnableReference());
         }
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override string ToString() => ToString((byte)':', (byte)'|');
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public string ToString(byte utf8KeyValueSeparatorChar, byte utf8PairsSeparator)
+    {
+        unsafe
+        {
+            byte* buffer = null!;
+            
+            av_dict_get_string(HandleSource.GetPinnableReference(), &buffer, utf8KeyValueSeparatorChar, utf8PairsSeparator).CheckError();
+        
+            string str = FFHelper.PtrToStringUtf8(buffer);
+            av_free(buffer);
+        
+            return str;
+        }
+    }
+    
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

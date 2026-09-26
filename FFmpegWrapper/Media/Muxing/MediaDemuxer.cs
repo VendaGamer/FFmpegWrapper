@@ -1,7 +1,18 @@
 ﻿namespace FFmpegWrapper.Media;
 
+using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
+
 using Codecs;
 using Codecs.Decoding;
+
+using Extensions;
+
+using Muxing;
+
 using Streams;
 
 public class MediaDemuxer : FFObject<AVFormatContext>
@@ -56,10 +67,60 @@ public class MediaDemuxer : FFObject<AVFormatContext>
         unsafe {
             AVFormatContext* handle = null;
             fixed (byte* pUrl = url) {
-                avformat_open_input(&handle, pUrl, inputFormat, options);
+                avformat_open_input(&handle, pUrl, inputFormat, options).CheckError("Cannot create demuxer.");
             }
             
             _handle = handle;
+        }
+    }
+    
+    public static AVError TryCreate(
+        ReadOnlySpan<char> url,
+        out MediaDemuxer? muxer,
+        NullableHandle<AVInputFormat> inputFormat = default,
+        NullableHandleSource<AVDictionary> options = default)
+    {
+        byte[]? array = null;
+        try
+        {
+            var minLen = Encoding.UTF8.GetMaxByteCount(url.Length);
+            scoped Span<byte> span;
+
+            if (minLen < 1024)
+                span = array = ArrayPool<byte>.Shared.Rent(minLen);
+            else
+                span = stackalloc byte[minLen];
+            
+            Encoding.UTF8.GetBytes(url, span);
+            return TryCreate(span,  out muxer, inputFormat, options);
+        }
+        finally
+        {
+            if(array is not null)
+                ArrayPool<byte>.Shared.Return(array);
+        }
+    }
+
+    public static AVError TryCreate(
+        ReadOnlySpan<byte> urlUtf8,
+        out MediaDemuxer? muxer,
+        NullableHandle<AVInputFormat> inputFormat = default,
+        NullableHandleSource<AVDictionary> options = default)
+    {
+        unsafe {
+            AVError result;
+            muxer = null;
+            
+            AVFormatContext* handle = null;
+            fixed (byte* pUrl = urlUtf8) {
+                result = (AVError)avformat_open_input(&handle, pUrl, inputFormat, options);
+            }
+
+            if (result.IsSuccess) 
+                muxer = new MediaDemuxer(WrapperHelper.UnsafeHandle(handle));
+            
+             
+            return result;
         }
     }
     
