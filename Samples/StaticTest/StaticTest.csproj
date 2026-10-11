@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFrameworks>net10.0;net462</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(TargetFramework) == 'net10.0'">
+        <PublishAot>true</PublishAot>
+        <PublishTrimmed>true</PublishTrimmed>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(TargetFramework) == 'net462' AND !$([MSBuild]::IsOSPlatform('Windows'))">
+        <RunCommand Condition="$(RunCommand) == ''">mono</RunCommand>
+        <RunArguments Condition="$(RunArguments) == ''">&quot;$(TargetPath)&quot; $(StartArguments)</RunArguments>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$(_IsPublishing) == 'yes' AND $(TargetFramework) == 'net10.0'">
+        <DirectPInvoke Include="avcodec-62.dll" />
+        <DirectPInvoke Include="avdevice-62.dll" />
+        <DirectPInvoke Include="avfilter-11.dll" />
+        <DirectPInvoke Include="avformat-62.dll" />
+        <DirectPInvoke Include="avutil-60.dll" />
+        <DirectPInvoke Include="swresample-6.dll" />
+        <DirectPInvoke Include="swscale-9.dll" />
+        
+        <NativeLibrary Include="./Runtime/$(RuntimeIdentifier)/*.lib*" />
+    </ItemGroup>
+
+</Project>
