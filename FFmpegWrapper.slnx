@@ -11,9 +11,7 @@
     <Project Path="Deps/MiniAudioWrapper/MiniAudioWrapper/MiniAudioWrapper.csproj" />
   </Folder>
   <Folder Name="/Samples/">
-    <Project Path="Samples/AvaloniaIntegration/AvaloniaIntegration.csproj" />
     <Project Path="Samples/FFmpegMiniAudioInterop/FFmpegMiniAudioInterop.csproj" />
-    <Project Path="Samples/StaticTest/StaticTest.csproj" />
   </Folder>
   <Folder Name="/Samples/Props/">
     <File Path="Samples/Directory.Build.props" />

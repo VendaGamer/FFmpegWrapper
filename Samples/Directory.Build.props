@@ -15,9 +15,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../Deps/Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" >
-            <AdditionalProperties Condition="$(_IsPublishing) == 'yes'">DefineConstants=LIBS_STATIC</AdditionalProperties>
-        </ProjectReference>
+        <ProjectReference Include="../../Deps/Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" />
         <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
     </ItemGroup>
     
