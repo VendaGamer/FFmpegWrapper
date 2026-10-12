@@ -24,17 +24,11 @@ public sealed class FFmpegAudioDevice : AudioDevice
 
     private static ma_device_config Configure(MediaDemuxer demuxer)
     {
-        if(!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, out var stream).IsSuccess)
+        if (!demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, out var stream))
+            return default;
         
-        
-        unsafe {
-            Native = MiniAudio.ma_device_config_init(ma_device_type.ma_device_type_playback);
-            Native.dataCallback = &OnData;
-            Native.pUserData = ctx;
-            Native.playback.channels = (uint)ctx.Ref.ch_layout.nb_channels;
-            Native.playback.format = ToMaFormat(ctx.Ref.sample_fmt);
-            Native.sampleRate = (uint)ctx.Ref.sample_rate;
-        }
+        //todo:
+        return default;
     }
 
     protected override unsafe void Free()

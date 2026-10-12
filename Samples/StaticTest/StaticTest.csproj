@@ -10,6 +10,7 @@
     <PropertyGroup Condition="$(TargetFramework) == 'net10.0'">
         <PublishAot>true</PublishAot>
         <PublishTrimmed>true</PublishTrimmed>
+        <IlcCppLinkerCustomWarningRegularExpression>error LNK\d+</IlcCppLinkerCustomWarningRegularExpression>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(TargetFramework) == 'net462' AND !$([MSBuild]::IsOSPlatform('Windows'))">
@@ -18,15 +19,26 @@
     </PropertyGroup>
 
     <ItemGroup Condition="$(_IsPublishing) == 'yes' AND $(TargetFramework) == 'net10.0'">
-        <DirectPInvoke Include="avcodec-62.dll" />
-        <DirectPInvoke Include="avdevice-62.dll" />
-        <DirectPInvoke Include="avfilter-11.dll" />
-        <DirectPInvoke Include="avformat-62.dll" />
-        <DirectPInvoke Include="avutil-60.dll" />
-        <DirectPInvoke Include="swresample-6.dll" />
-        <DirectPInvoke Include="swscale-9.dll" />
+        <DirectPInvoke Include="__Internal" />
         
-        <NativeLibrary Include="./Runtime/$(RuntimeIdentifier)/*.lib*" />
+        <NativeLibrary Include="./Runtime/$(RuntimeIdentifier)/*.lib" />
+        <LinkerArg Include="/FORCE:UNRESOLVED" />
+
+        <LinkerArg Include="strmiids.lib" />
+        <LinkerArg Include="mfuuid.lib" />
+        <LinkerArg Include="mfplat.lib" />
+        <LinkerArg Include="gdi32.lib" />
+        <LinkerArg Include="user32.lib" />
+        <LinkerArg Include="shlwapi.lib" />
+        <LinkerArg Include="ole32.lib" />
+        <LinkerArg Include="strmiids.lib" />
+        <LinkerArg Include="mfuuid.lib" />
+        <LinkerArg Include="mfplat.lib" />
+        <LinkerArg Include="vfw32.lib" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="Runtime\win-x64\" />
     </ItemGroup>
 
 </Project>
