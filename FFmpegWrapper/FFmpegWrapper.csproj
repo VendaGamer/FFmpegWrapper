@@ -20,6 +20,7 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
         <EnableAotAnalyzer>true</EnableAotAnalyzer>
+        <IsTrimmable>true</IsTrimmable>
     </PropertyGroup>
 
     <PropertyGroup>

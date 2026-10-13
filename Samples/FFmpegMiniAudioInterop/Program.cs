@@ -12,8 +12,4 @@ demuxer.ReadMeta();
 var device = new FFmpegAudioDevice(demuxer);
 
 device.Start();
-
-
-while (true) {
-    
-}
+Console.ReadLine();

@@ -23,7 +23,6 @@ public readonly struct MediaCodec : IHandleObserver<AVCodec>
         
         public static ImmutableArray<MediaCodec> GetAllAvailableCodecs()
         {
-            
             if (!s_availableCodecs.IsDefault) {
                 return s_availableCodecs;
             }

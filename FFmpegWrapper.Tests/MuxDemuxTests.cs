@@ -4,58 +4,57 @@ using Media;
 using Media.Packets;
 using Media.Streams;
 
-public unsafe class MuxDemuxTests : TestBase
+public class MuxDemuxTests
 {
-
-    [Fact]
-    public void MediaPacket()
+    [Test]
+    public async Task MediaPacket()
     {
         var pkt = new MediaPacket(1024);
-        Assert.Null(pkt.PresentationTimestamp);
-        Assert.Equal(1024, pkt.Data.Length);
+        await Assert.That(pkt.PresentationTimestamp).IsNull();
+        await Assert.That(pkt.Data.Length).IsEqualTo(1024);
 
         pkt.PresentationTimestamp = 1234;
         pkt.SetData(new byte[2048]);
 
-        Assert.Equal(1234, pkt.Handle.Ref.pts);
-        Assert.Equal(2048, pkt.Data.Length);
+        await Assert.That(pkt.Handle.Ref.pts).IsEqualTo(1234);
+        await Assert.That(pkt.Data.Length).IsEqualTo(2048);
 
         pkt.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => _ = pkt.Handle);
+        await Assert.That(() => _ = pkt.Handle).Throws<ObjectDisposedException>();
     }
 
-    [Fact]
-    public void PacketSideData_Integration()
+    [Test]
+    public async Task PacketSideData_Integration()
     {
         using var packet = new MediaPacket();
 
-        Assert.Equal(0, packet.SideData.Count);
+        await Assert.That(packet.SideData.Count).IsEqualTo(0);
 
         var entry1 = packet.SideData.Add(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX, 9 * 4);
-        Assert.Equal(1, packet.SideData.Count);
-        Assert.Equal(9 * 4, entry1.Data.Length);
+        await Assert.That(packet.SideData.Count).IsEqualTo(1);
+        await Assert.That(entry1.Data.Length).IsEqualTo(9 * 4);
 
         packet.SideData.Remove(AVPacketSideDataType.AV_PKT_DATA_DISPLAYMATRIX);
-        Assert.Equal(0, packet.SideData.Count);
+        await Assert.That(packet.SideData.Count).IsEqualTo(0);
     }
 
-    [Fact]
-    public void DemuxMetadata()
+    [Test]
+    public async Task DemuxMetadata()
     {
         var demuxer = new MediaDemuxer("Resources/BigBuckBunny.mp4"u8);
         
-        Assert.True(demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out MediaStream stream));
-        Assert.Equal(stream.Duration, TimeSpan.FromSeconds(30));
-        Assert.Equal(2, demuxer.Streams.Length);
+        await Assert.That(demuxer.TryFindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, out MediaStream stream)).IsTrue();
+        await Assert.That(stream.Duration).IsEqualTo(TimeSpan.FromSeconds(30));
+        await Assert.That(demuxer.Streams.Length).IsEqualTo(2);
 
-        Assert.Equal(""u8, demuxer.Metadata["title"u8]);
+        await Assert.That(demuxer.Metadata["title"u8].IsEmpty).IsTrue();
         
-        Assert.Equal(AVCodecID.AV_CODEC_ID_H264, stream.CodecPars.CodecId);
-        Assert.Equal(AVPixelFormat.AV_PIX_FMT_NONE, stream.CodecPars.PictureFormat.PixelFormat);
-        Assert.Equal(1280, stream.CodecPars.PictureFormat.Width);
-        Assert.Equal(720, stream.CodecPars.PictureFormat.Height);
+        await Assert.That(stream.CodecPars.CodecId).IsEqualTo(AVCodecID.AV_CODEC_ID_H264);
+        await Assert.That(stream.CodecPars.PictureFormat.PixelFormat).IsEqualTo(AVPixelFormat.AV_PIX_FMT_NONE);
+        await Assert.That(stream.CodecPars.PictureFormat.Width).IsEqualTo(1280);
+        await Assert.That(stream.CodecPars.PictureFormat.Height).IsEqualTo(720);
 
         demuxer.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => _ = demuxer.Handle);
+        await Assert.That(() => _ = demuxer.Handle).Throws<ObjectDisposedException>();
     }
 }

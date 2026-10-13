@@ -9,14 +9,16 @@
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <InvariantGlobalization>true</InvariantGlobalization>
         <IsPackable>false</IsPackable>
-        <BaseOutputPath>../build</BaseOutputPath>
         <UseCurrentRuntimeIdentifier>true</UseCurrentRuntimeIdentifier>
         <RuntimeIdentifiers>any</RuntimeIdentifiers>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../Deps/Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" />
-        <ProjectReference Include="../../FFmpegWrapper/FFmpegWrapper.csproj" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)../Deps/Bindings/FFmpegBindings.Linked/FFmpegBindings.Linked.csproj" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)../FFmpegWrapper/FFmpegWrapper.csproj" />
+        
+        <Compile Include="$(MSBuildThisFileDirectory)../Deps/Bindings/FFmpegBindings.Linked/Generated/**/*.cs"
+                 LinkBase="FFmpegBindings.Linked"/>
     </ItemGroup>
     
 </Project>

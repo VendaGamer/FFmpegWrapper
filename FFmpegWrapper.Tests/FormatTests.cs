@@ -2,11 +2,11 @@ namespace FFmpegWrapper.Tests;
 
 using Media;
 
-public class FormatTests : TestBase
+public class FormatTests
 {
-    [Fact]
-    public void Test()
+    [Test]
+    public async Task Test()
     {
-        Assert.Equal("9.1.4", ChannelLayout.GetDefault(14).ToString());
+        await Assert.That(ChannelLayout.GetDefault(14).ToString() is "9.1.4").IsTrue();
     }
 }

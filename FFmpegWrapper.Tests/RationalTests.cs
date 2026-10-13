@@ -2,64 +2,64 @@ namespace FFmpegWrapper.Tests;
 
 using Core;
 
-public class RationalTests : TestBase
+public class RationalTests
 {
-    [Fact]
-    public void Casting()
+    [Test]
+    public async Task Casting()
     {
         var orig = new AVRational { num = 123, den = 456 };
 
-        Assert.Equal(new Rational(123, 456), (Rational)orig);
-        Assert.Equal(orig, (AVRational)(Rational)orig);
-        Assert.Equal(new Rational(123, 1), 123);
+        await Assert.That((Rational)orig).IsEqualTo(new Rational(123, 456));
+        await Assert.That((AVRational)(Rational)orig).IsEqualTo(orig);
+        await Assert.That(123).IsEqualTo(new Rational(123, 1));
 
-        Assert.Equal(0.125, (double)new Rational(1, 8));
-        Assert.Equal(new Rational(22, 7), Rational.FromDouble(3.14159, 100));
+        await Assert.That((double)new Rational(1, 8)).IsEqualTo(0.125);
+        await Assert.That(Rational.FromDouble(3.14159, 100)).IsEqualTo(new Rational(22, 7));
     }
 
-    [Fact]
-    public void Rescale()
+    [Test]
+    public async Task Rescale()
     {
-        Assert.Equal(1235, Rational.Rescale(123456, new Rational(1, 100), new Rational(1, 1)));
-        Assert.Equal(TimeSpan.FromMilliseconds(123456), Rational.GetTimeSpan(123456, new Rational(1, 1000)));
+        await Assert.That(Rational.Rescale(123456, new Rational(1, 100), new Rational(1, 1))).IsEqualTo(1235);
+        await Assert.That(Rational.GetTimeSpan(123456, new Rational(1, 1000))).IsEqualTo(TimeSpan.FromMilliseconds(123456));
     }
 
-    [Fact]
-    public void Arithmetic()
+    [Test]
+    public async Task Arithmetic()
     {
         var half = new Rational(1, 2);
         var quart = new Rational(1, 4);
         var negQuart = new Rational(-1, 4);
 
-        Assert.Equal(new Rational(1, 1), half + half);
-        Assert.Equal(new Rational(0, 1), half - half);
-        Assert.Equal(new Rational(1, 4), half * half);
-        Assert.Equal(new Rational(2, 1), half / quart);
+        await Assert.That(half + half).IsEqualTo(new Rational(1, 1));
+        await Assert.That(half - half).IsEqualTo(new Rational(0, 1));
+        await Assert.That(half * half).IsEqualTo(new Rational(1, 4));
+        await Assert.That(half / quart).IsEqualTo(new Rational(2, 1));
 
-        Assert.Equal(new Rational(1, 4), half + negQuart);
-        Assert.Equal(new Rational(3, 4), half - negQuart);
-        Assert.Equal(new Rational(-1, 8), half * negQuart);
-        Assert.Equal(new Rational(-2, 1), half / negQuart);
+        await Assert.That(half + negQuart).IsEqualTo(new Rational(1, 4));
+        await Assert.That(half - negQuart).IsEqualTo(new Rational(3, 4));
+        await Assert.That(half * negQuart).IsEqualTo(new Rational(-1, 8));
+        await Assert.That(half / negQuart).IsEqualTo(new Rational(-2, 1));
     }
 
-    [Fact]
-    public void Comparison()
+    [Test]
+    public async Task Comparison()
     {
-        Assert.Equal(0, new Rational(5, 10).CompareTo(new Rational(1, 2)));
-        Assert.Equal(0, new Rational(5, 1).CompareTo(new Rational(10, 2)));
+        await Assert.That(new Rational(5, 10).CompareTo(new Rational(1, 2))).IsEqualTo(0);
+        await Assert.That(new Rational(5, 1).CompareTo(new Rational(10, 2))).IsEqualTo(0);
 
-        Assert.Equal(-1, new Rational(5, 1).CompareTo(new Rational(10, 1)));
-        Assert.Equal(+1, new Rational(10, 1).CompareTo(new Rational(5, 1)));
+        await Assert.That(new Rational(5, 1).CompareTo(new Rational(10, 1))).IsEqualTo(-1);
+        await Assert.That(new Rational(10, 1).CompareTo(new Rational(5, 1))).IsEqualTo(1);
 
-        Assert.Equal(-1, new Rational(1, 4).CompareTo(new Rational(1, 2)));
-        Assert.Equal(+1, new Rational(1, 2).CompareTo(new Rational(1, 4)));
+        await Assert.That(new Rational(1, 4).CompareTo(new Rational(1, 2))).IsEqualTo(-1);
+        await Assert.That(new Rational(1, 2).CompareTo(new Rational(1, 4))).IsEqualTo(1);
 
-        Assert.Equal(0, new Rational(123, 0).CompareTo(new Rational(456, 0)));
-        Assert.Equal(int.MinValue, new Rational(0, 0).CompareTo(new Rational(456, 0)));
+        await Assert.That(new Rational(123, 0).CompareTo(new Rational(456, 0))).IsEqualTo(0);
+        await Assert.That(new Rational(0, 0).CompareTo(new Rational(456, 0))).IsEqualTo(int.MinValue);
 
-        Assert.True(new Rational(0, 0).Equals(new Rational(0, 0))); // NaN
-        Assert.True(new Rational(123, 0).Equals(new Rational(456, 0))); // Inf
-        Assert.False(new Rational(-123, 0).Equals(new Rational(456, 0))); // -Inf
-        Assert.False(new Rational(123, 0).Equals(new Rational(-456, 0))); // -Inf
+        await Assert.That(new Rational(0, 0).Equals(new Rational(0, 0))).IsTrue(); // NaN
+        await Assert.That(new Rational(123, 0).Equals(new Rational(456, 0))).IsTrue(); // Inf
+        await Assert.That(new Rational(-123, 0).Equals(new Rational(456, 0))).IsFalse(); // -Inf
+        await Assert.That(new Rational(123, 0).Equals(new Rational(-456, 0))).IsFalse(); // -Inf
     }
 }
