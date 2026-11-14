@@ -122,7 +122,7 @@ public sealed class FFmpegAudioDevice : AudioDevice, IDisposable
                 state->BufferedFrameCount -= framesToCopy;
                 state->BufferReadOffset += framesToCopy;
                 
-                FFmpeg.av_frame_unref(state->Frame);
+                FFmpeg.av_frame_unref(state->Frame);    
             }
             else if (response == (int)AVError.AVERROR_EAGAIN)
             {

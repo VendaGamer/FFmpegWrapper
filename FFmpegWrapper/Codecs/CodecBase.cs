@@ -116,12 +116,10 @@ public abstract class CodecBase : FFObject<AVCodecContext>
         unsafe {
             ref var ctx = ref handle.Ref;
             
-            ctx.execute =
-                (delegate* unmanaged[Cdecl]<AVCodecContext*, delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int>, void*, int*, int, int, int>)
+            ctx.execute = (delegate*<AVCodecContext*, delegate*<AVCodecContext*, void*, int>, void*, int*, int, int, int>)
                 Marshal.GetFunctionPointerForDelegate(Execute);
             
-            ctx.execute2 = 
-                (delegate* unmanaged[Cdecl]<AVCodecContext*, delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int, int, int>, void*, int*, int, int>)
+            ctx.execute2 = (delegate*<AVCodecContext*, delegate*<AVCodecContext*, void*, int, int, int>, void*, int*, int, int>)
                 Marshal.GetFunctionPointerForDelegate(Execute2);
         }
     }
@@ -256,14 +254,14 @@ public abstract class CodecBase : FFObject<AVCodecContext>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected virtual unsafe int Execute(
         AVCodecContext* ctx,
-        delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int> function,
+        delegate* <AVCodecContext*, void*, int> function,
         void* arg, int* ret, int count, int size) 
             => avcodec_default_execute(ctx, function, arg, ret, count, size);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected virtual unsafe int Execute2(
         AVCodecContext* ctx,
-        delegate* unmanaged[Cdecl]<AVCodecContext*, void*, int, int, int> function,
+        delegate* <AVCodecContext*, void*, int, int, int> function,
         void* arg, int* ret, int count)
             => avcodec_default_execute2(ctx, function, arg, ret, count);
 
