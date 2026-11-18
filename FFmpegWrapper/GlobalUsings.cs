@@ -10,4 +10,3 @@ global using FFmpegWrapper.Media.Frames;
 global using FFmpegWrapper.Media.Packets;
 global using static FFmpegBindings.Abstractions.FFmpeg;
 global using static FFmpegBindings.Abstractions.FFmpegConstants;
-global using static FFmpegBindings.Abstractions.FFmpegDelegates;

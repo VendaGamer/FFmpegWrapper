@@ -9,7 +9,7 @@ public abstract class BufferPool : FFObject<AVBufferPool>
     {
         unsafe {
             _handle = av_buffer_pool_init(size,
-            (delegate* unmanaged[Cdecl]<nuint, AVBufferRef*>)
+            (delegate* <nuint, AVBufferRef*>)
                 Marshal.GetFunctionPointerForDelegate(AllocateBuffer));
         }
     }
